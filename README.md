@@ -1,5 +1,5 @@
 # Bhasha Mitra
-
+![alt text](<Bhasha Mitra Logo.png>)
 > One India. Many Languages.
 
 Bhasha Mitra is an offline AI-powered video translation platform designed to make multilingual content accessible across Indian languages.
