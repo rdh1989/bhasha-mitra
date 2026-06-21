@@ -1,0 +1,5 @@
+SUPPORTED_LANGUAGES = [
+    "Marathi"
+]
+
+DEFAULT_LANGUAGE = "Marathi"

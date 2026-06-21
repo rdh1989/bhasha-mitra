@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bhasha Mitra</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', path='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/sidebar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/topbar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        {% include 'components/sidebar.html' %}
+
+        <div class="main-wrapper">
+            {% include 'components/topbar.html' %}
+
+            <main class="page-content">
+                <div class="watermark">
+                    <img src="{{ url_for('static', path='images/logo.png') }}" alt="watermark">
+                </div>
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+</body>
+</html>

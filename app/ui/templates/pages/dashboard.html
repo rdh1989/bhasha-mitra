@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero-section">
+    <h1>Welcome to Bhasha Mitra! 👋</h1>
+    <p>Translate videos into regional languages with high accuracy.</p>
+</div>
+
+<div class="main-grid">
+    <!-- Left Column: Upload Card -->
+    <div class="left-column">
+        <div class="upload-section">
+            <div class="upload-icon-large">☁️</div>
+            <h2>Upload Video</h2>
+            <p>Drag & drop your files,<br>or browse your device</p>
+            <button class="upload-button">📤 Choose Video File</button>
+            <p class="upload-specs">Supports: MIM, MKV, AVI, MOV | Max Size: 2GB</p>
+        </div>
+
+        <div class="activity-section">
+            <div class="section-header">
+                <h3>📊 Recent Activity</h3>
+                <a href="#">View All →</a>
+            </div>
+            <div class="activity-list">
+                <div class="activity-item">
+                    <div class="activity-icon processing">⟳</div>
+                    <div class="activity-details">
+                        <div class="activity-title">AI_Training_Module.mp4</div>
+                        <div class="activity-meta">English → Marathi</div>
+                    </div>
+                    <div class="activity-progress">
+                        <div class="progress-bar"><div class="progress-fill" style="width: 45%"></div></div>
+                        <span class="progress-text">45%</span>
+                    </div>
+                    <span class="time">2 min ago</span>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-icon completed">✓</div>
+                    <div class="activity-details">
+                        <div class="activity-title">History_of_India.mp4</div>
+                        <div class="activity-meta">English → Hindi</div>
+                    </div>
+                    <div class="activity-progress">
+                        <div class="progress-bar"><div class="progress-fill" style="width: 100%"></div></div>
+                        <span class="progress-text">100%</span>
+                    </div>
+                    <span class="time">15 min ago</span>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-icon completed">✓</div>
+                    <div class="activity-details">
+                        <div class="activity-title">Python_Basics.mp4</div>
+                        <div class="activity-meta">English → Marathi</div>
+                    </div>
+                    <div class="activity-progress">
+                        <div class="progress-bar"><div class="progress-fill" style="width: 100%"></div></div>
+                        <span class="progress-text">100%</span>
+                    </div>
+                    <span class="time">32 min ago</span>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-icon queued">⏱️</div>
+                    <div class="activity-details">
+                        <div class="activity-title">News_Today_Clip.mp4</div>
+                        <div class="activity-meta">English → Hindi</div>
+                    </div>
+                    <div class="activity-progress">
+                        <div class="progress-bar"><div class="progress-fill" style="width: 0%"></div></div>
+                        <span class="progress-text">0%</span>
+                    </div>
+                    <span class="time">48 min ago</span>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-icon completed">✓</div>
+                    <div class="activity-details">
+                        <div class="activity-title">Motivation_Speech.mp4</div>
+                        <div class="activity-meta">English → Marathi</div>
+                    </div>
+                    <div class="activity-progress">
+                        <div class="progress-bar"><div class="progress-fill" style="width: 100%"></div></div>
+                        <span class="progress-text">100%</span>
+                    </div>
+                    <span class="time">1 h ago</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="languages-section">
+            <h3>🌐 Supported Languages</h3>
+            <p class="lang-count">12 Languages Supported</p>
+            <div class="language-list">
+                <div class="lang-item">मराठी<br><small>Marathi</small></div>
+                <div class="lang-item">हिंदी<br><small>Hindi</small></div>
+                <div class="lang-item">ગુજરાતી<br><small>Gujarati</small></div>
+                <div class="lang-item">বাংলা<br><small>Bengali</small></div>
+                <div class="lang-item">தமிழ்<br><small>Tamil</small></div>
+                <div class="lang-item">తెలుగు<br><small>Telugu</small></div>
+                <div class="lang-item">+6 More</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Insights & Analytics -->
+    <div class="right-column">
+        <div class="insights-header">
+            <h2>📊 Platform Insights</h2>
+            <a href="#" class="view-analytics">View Detailed Analytics →</a>
+        </div>
+
+        <div class="stats-cards">
+            <div class="stat-card-large purple">
+                <div class="stat-icon">▶️</div>
+                <div class="stat-content">
+                    <h4>Videos Processed</h4>
+                    <div class="stat-value">1,245</div>
+                    <div class="stat-label">Total videos</div>
+                    <div class="stat-chart"><div class="chart-line"></div></div>
+                    <div class="stat-change">↑ 18.6% this month</div>
+                </div>
+            </div>
+            <div class="stat-card-large orange">
+                <div class="stat-icon">⏱️</div>
+                <div class="stat-content">
+                    <h4>Translation Hours</h4>
+                    <div class="stat-value">842.5</div>
+                    <div class="stat-label">Total hours</div>
+                    <div class="stat-chart"><div class="chart-line"></div></div>
+                    <div class="stat-change">↑ 22.4% this month</div>
+                </div>
+            </div>
+            <div class="stat-card-large green">
+                <div class="stat-icon">✓</div>
+                <div class="stat-content">
+                    <h4>Completed Jobs</h4>
+                    <div class="stat-value">318</div>
+                    <div class="stat-label">Total completed</div>
+                    <div class="stat-chart"><div class="chart-line"></div></div>
+                    <div class="stat-change">↑ 15.2% this month</div>
+                </div>
+            </div>
+            <div class="stat-card-large blue">
+                <div class="stat-icon">💼</div>
+                <div class="stat-content">
+                    <h4>Active Jobs</h4>
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">Jobs in progress</div>
+                    <div class="stat-chart"><div class="chart-line"></div></div>
+                    <a href="#" class="view-jobs">View All Jobs →</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="translations-section">
+            <div class="section-header">
+                <h3>📺 Recent Translations</h3>
+                <a href="#">View All →</a>
+            </div>
+            <div class="translations-table">
+                <div class="table-header">
+                    <div class="col-thumb"></div>
+                    <div class="col-video">Video Name</div>
+                    <div class="col-lang">Language</div>
+                    <div class="col-duration">Duration</div>
+                    <div class="col-status">Status</div>
+                    <div class="col-date">Date</div>
+                    <div class="col-action">Action</div>
+                </div>
+                <div class="table-row">
+                    <div class="col-thumb">🎥</div>
+                    <div class="col-video">Introduction to AI.mp4</div>
+                    <div class="col-lang">English → Marathi</div>
+                    <div class="col-duration">12:45</div>
+                    <div class="col-status"><span class="badge completed">● Completed</span></div>
+                    <div class="col-date">May 19, 2025</div>
+                    <div class="col-action">⬇️</div>
+                </div>
+                <div class="table-row">
+                    <div class="col-thumb">🎥</div>
+                    <div class="col-video">Business Fundamentals.mp4</div>
+                    <div class="col-lang">English → Hindi</div>
+                    <div class="col-duration">18:22</div>
+                    <div class="col-status"><span class="badge completed">● Completed</span></div>
+                    <div class="col-date">May 18, 2025</div>
+                    <div class="col-action">⬇️</div>
+                </div>
+                <div class="table-row">
+                    <div class="col-thumb">🎥</div>
+                    <div class="col-video">Indian Constitution.mp4</div>
+                    <div class="col-lang">English → Marathi</div>
+                    <div class="col-duration">22:10</div>
+                    <div class="col-status"><span class="badge completed">● Completed</span></div>
+                    <div class="col-date">May 18, 2025</div>
+                    <div class="col-action">⬇️</div>
+                </div>
+                <div class="table-row">
+                    <div class="col-thumb">🎥</div>
+                    <div class="col-video">Science Explained.mp4</div>
+                    <div class="col-lang">English → Hindi</div>
+                    <div class="col-duration">15:30</div>
+                    <div class="col-status"><span class="badge processing">● Processing</span></div>
+                    <div class="col-date">May 17, 2025</div>
+                    <div class="col-action">🔄</div>
+                </div>
+                <div class="table-row">
+                    <div class="col-thumb">🎥</div>
+                    <div class="col-video">Space Exploration.mp4</div>
+                    <div class="col-lang">English → Marathi</div>
+                    <div class="col-duration">25:05</div>
+                    <div class="col-status"><span class="badge failed">● Failed</span></div>
+                    <div class="col-date">May 17, 2025</div>
+                    <div class="col-action">🔁</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="system-info">
+            <h3>💻 System Information</h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Model Status</label>
+                    <div class="info-value"><span class="status-ok">✓</span> All Models Loaded</div>
+                </div>
+                <div class="info-item">
+                    <label>GPU Status</label>
+                    <div class="info-value"><span class="status-ok">✓</span> Active</div>
+                </div>
+                <div class="info-item">
+                    <label>Storage Used</label>
+                    <div class="info-value">256 GB / 1 TB</div>
+                </div>
+                <div class="info-item">
+                    <label>Uptime</label>
+                    <div class="info-value">2d 14h 32m</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
