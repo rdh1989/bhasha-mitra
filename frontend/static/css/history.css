@@ -1,0 +1,574 @@
+/******************************************************************************
+ *
+ * Bhasha Mitra
+ * History Page Stylesheet
+ *
+ * Description:
+ * Translation History UI
+ *
+ * Author  : Team 4
+ * Version : 1.0.0
+ *
+ *****************************************************************************/
+
+/*=============================================================================
+    Layout
+=============================================================================*/
+
+.history-page{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:30px;
+
+}
+
+/*=============================================================================
+    Toolbar
+=============================================================================*/
+
+.history-toolbar{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    gap:20px;
+
+    flex-wrap:wrap;
+
+}
+
+.history-search{
+
+    flex:1;
+
+    min-width:300px;
+
+    position:relative;
+
+}
+
+.history-search input{
+
+    width:100%;
+
+    height:48px;
+
+    padding:0 18px 0 50px;
+
+    border:1px solid var(--border-color);
+
+    border-radius:14px;
+
+    background:#ffffff;
+
+}
+
+.history-search i{
+
+    position:absolute;
+
+    left:18px;
+
+    top:50%;
+
+    transform:translateY(-50%);
+
+    color:#9CA3AF;
+
+}
+
+.history-filters{
+
+    display:flex;
+
+    gap:12px;
+
+    flex-wrap:wrap;
+
+}
+
+.history-filters select{
+
+    min-width:170px;
+
+}
+
+/*=============================================================================
+    History Card
+=============================================================================*/
+
+.history-card{
+
+    background:#ffffff;
+
+    border-radius:22px;
+
+    padding:24px;
+
+    box-shadow:var(--shadow-small);
+
+    overflow:hidden;
+
+}
+
+/*=============================================================================
+    Table
+=============================================================================*/
+
+.table-wrapper{
+
+    overflow-x:auto;
+
+}
+
+.history-table{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+}
+
+.history-table thead{
+
+    background:#F8FAFC;
+
+}
+
+.history-table th{
+
+    padding:18px;
+
+    text-align:left;
+
+    font-size:14px;
+
+    font-weight:600;
+
+    color:var(--text-primary);
+
+    border-bottom:1px solid var(--border-color);
+
+}
+
+.history-table td{
+
+    padding:18px;
+
+    border-bottom:1px solid #EEF2F7;
+
+    vertical-align:middle;
+
+}
+
+.history-table tbody tr{
+
+    transition:.25s;
+
+}
+
+.history-table tbody tr:hover{
+
+    background:#FAFBFF;
+
+}
+
+/*=============================================================================
+    Video Info
+=============================================================================*/
+
+.video-info{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:14px;
+
+}
+
+.video-icon{
+
+    width:48px;
+
+    height:48px;
+
+    border-radius:14px;
+
+    background:#ECE8FF;
+
+    color:var(--primary-color);
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    font-size:22px;
+
+}
+
+.video-name{
+
+    font-weight:600;
+
+}
+
+.video-meta{
+
+    font-size:13px;
+
+    color:var(--text-secondary);
+
+}
+
+/*=============================================================================
+    Language Badge
+=============================================================================*/
+
+.language-pair{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    font-weight:600;
+
+}
+
+.language-arrow{
+
+    color:var(--primary-color);
+
+}
+
+/*=============================================================================
+    Status
+=============================================================================*/
+
+.status{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    padding:8px 14px;
+
+    border-radius:999px;
+
+    font-size:13px;
+
+    font-weight:600;
+
+}
+
+.status.completed{
+
+    background:#EAFBF1;
+
+    color:#16A34A;
+
+}
+
+.status.running{
+
+    background:#EFF6FF;
+
+    color:#2563EB;
+
+}
+
+.status.failed{
+
+    background:#FEF2F2;
+
+    color:#DC2626;
+
+}
+
+.status.pending{
+
+    background:#FFF8E6;
+
+    color:#D97706;
+
+}
+
+.status-dot{
+
+    width:8px;
+
+    height:8px;
+
+    border-radius:50%;
+
+    background:currentColor;
+
+}
+
+/*=============================================================================
+    Actions
+=============================================================================*/
+
+.action-buttons{
+
+    display:flex;
+
+    gap:10px;
+
+}
+
+.action-btn{
+
+    width:40px;
+
+    height:40px;
+
+    border:none;
+
+    border-radius:12px;
+
+    cursor:pointer;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    transition:.25s;
+
+}
+
+.action-btn.download{
+
+    background:#EEF4FF;
+
+    color:#2563EB;
+
+}
+
+.action-btn.view{
+
+    background:#ECE8FF;
+
+    color:var(--primary-color);
+
+}
+
+.action-btn.delete{
+
+    background:#FEF2F2;
+
+    color:#DC2626;
+
+}
+
+.action-btn:hover{
+
+    transform:translateY(-2px);
+
+    box-shadow:var(--shadow-small);
+
+}
+
+/*=============================================================================
+    Pagination
+=============================================================================*/
+
+.pagination{
+
+    margin-top:24px;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    flex-wrap:wrap;
+
+    gap:16px;
+
+}
+
+.pagination-info{
+
+    color:var(--text-secondary);
+
+    font-size:14px;
+
+}
+
+.pagination-buttons{
+
+    display:flex;
+
+    gap:8px;
+
+}
+
+.page-btn{
+
+    width:42px;
+
+    height:42px;
+
+    border:none;
+
+    border-radius:12px;
+
+    background:#ffffff;
+
+    border:1px solid var(--border-color);
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.page-btn:hover{
+
+    background:#F3F0FF;
+
+}
+
+.page-btn.active{
+
+    background:linear-gradient(
+        135deg,
+        var(--primary-color),
+        var(--secondary-color)
+    );
+
+    color:#ffffff;
+
+}
+
+/*=============================================================================
+    Empty State
+=============================================================================*/
+
+.empty-history{
+
+    padding:80px 30px;
+
+    text-align:center;
+
+}
+
+.empty-history i{
+
+    font-size:70px;
+
+    color:#CBD5E1;
+
+    margin-bottom:24px;
+
+}
+
+.empty-history h2{
+
+    margin-bottom:12px;
+
+}
+
+.empty-history p{
+
+    max-width:420px;
+
+    margin:auto;
+
+}
+
+/*=============================================================================
+    Responsive
+=============================================================================*/
+
+@media(max-width:992px){
+
+    .history-toolbar{
+
+        flex-direction:column;
+
+        align-items:stretch;
+
+    }
+
+    .history-search{
+
+        min-width:100%;
+
+    }
+
+}
+
+@media(max-width:768px){
+
+    .history-table thead{
+
+        display:none;
+
+    }
+
+    .history-table,
+
+    .history-table tbody,
+
+    .history-table tr,
+
+    .history-table td{
+
+        display:block;
+
+        width:100%;
+
+    }
+
+    .history-table tr{
+
+        background:#ffffff;
+
+        border-radius:18px;
+
+        margin-bottom:18px;
+
+        box-shadow:var(--shadow-small);
+
+        overflow:hidden;
+
+    }
+
+    .history-table td{
+
+        border:none;
+
+        display:flex;
+
+        justify-content:space-between;
+
+        align-items:center;
+
+        padding:14px 18px;
+
+    }
+
+    .action-buttons{
+
+        justify-content:flex-end;
+
+    }
+
+}

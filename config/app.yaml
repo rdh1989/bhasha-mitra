@@ -1,0 +1,47 @@
+application:
+  name: Bhasha Mitra
+  description: Offline AI-powered multilingual video translation platform
+  version: 1.0.0
+  environment: development
+  debug: true
+
+server:
+  host: 127.0.0.1
+  port: 8000
+  workers: 1
+  reload: true
+
+api:
+  prefix: /api/v1
+  title: Bhasha Mitra API
+  docs_url: /docs
+  redoc_url: /redoc
+  openapi_url: /openapi.json
+
+upload:
+  max_file_size_mb: 2048
+  allowed_extensions:
+    - mp4
+    - mkv
+    - avi
+    - mov
+    - webm
+
+jobs:
+  max_concurrent_jobs: 2
+  cleanup_after_days: 30
+
+frontend:
+  enabled: true
+
+timezone: Asia/Kolkata
+
+ai:
+
+  config_directory: config/ai
+  providers: providers.yaml
+  models: models.yaml
+  languages: languages.yaml
+  manifest: manifest.json
+  model_root: models
+  ffmpeg_root: third_party/ffmpeg

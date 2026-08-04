@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}
+Upload Video | {{ app_name }}
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet"
+      href="{{ url_for('static', path='css/upload.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1>Video Translation</h1>
+
+        <p>
+            Upload a video and translate it into any supported language.
+        </p>
+
+    </div>
+
+</div>
+
+<div class="upload-page">
+
+    <!-- ==========================================================
+         Upload Panel
+    =========================================================== -->
+
+    <section class="upload-panel card">
+
+        <h2>Upload Video</h2>
+
+        <form id="uploadForm"
+              enctype="multipart/form-data">
+
+            <label
+                class="upload-area"
+                id="uploadArea">
+
+                <input
+                    id="videoFile"
+                    name="video"
+                    type="file"
+                    accept="video/*"
+                    hidden>
+
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+
+                <h3>Drag & Drop Video</h3>
+
+                <span>MP4 • MOV • AVI • MKV</span>
+
+                <button
+                    type="button"
+                    class="btn btn-primary">
+
+                    Browse Files
+
+                </button>
+
+            </label>
+
+        </form>
+
+        <!-- Preview -->
+
+        <div
+            id="videoPreview"
+            class="video-preview"
+            style="display:none;">
+
+            <video controls width="100%"></video>
+
+        </div>
+
+        <!-- Upload Progress -->
+
+        <div
+            id="uploadProgress"
+            class="upload-progress card"
+            style="display:none;">
+
+            <h4>Upload Progress</h4>
+
+            <div class="progress">
+
+                <div
+                    id="uploadProgressBar"
+                    class="progress-bar"
+                    style="width:0%;">
+
+                </div>
+
+            </div>
+
+            <p id="uploadProgressText">0%</p>
+
+        </div>
+
+    </section>
+
+    <!-- ==========================================================
+         Translation Settings
+    =========================================================== -->
+
+    <section class="translation-panel card">
+
+        <h2>Translation Settings</h2>
+
+        <!-- Source Language -->
+
+        <div class="form-group">
+
+            <label>Source Language</label>
+
+            <select
+                id="sourceLanguage"
+                class="input"
+                name="source_language">
+
+                <option value="auto" selected>Auto Detect</option>
+                <option value="en">English</option>
+                <option value="hi">Hindi</option>
+                <option value="mr">Marathi</option>
+                <option value="ta">Tamil</option>
+                <option value="te">Telugu</option>
+                <option value="kn">Kannada</option>
+                <option value="gu">Gujarati</option>
+                <option value="bn">Bengali</option>
+
+            </select>
+
+        </div>
+
+        <!-- Target Language -->
+
+        <div class="form-group">
+
+            <label>Target Language</label>
+
+            <select
+                id="targetLanguage"
+                class="input"
+                name="target_language">
+
+                <option value="mr" selected>Marathi</option>
+                <option value="hi">Hindi</option>
+                <option value="ta">Tamil</option>
+                <option value="te">Telugu</option>
+                <option value="kn">Kannada</option>
+                <option value="gu">Gujarati</option>
+                <option value="bn">Bengali</option>
+                <option value="en">English</option>
+
+            </select>
+
+        </div>
+
+        <!-- Provider -->
+
+        <div class="form-group">
+
+            <label>Translation Provider</label>
+
+            <select
+                id="provider"
+                class="input"
+                name="provider">
+
+                <option value="local" selected>Local AI</option>
+                <option value="bhashini">Bhashini (Future)</option>
+                <option value="azure">Azure AI (Future)</option>
+                <option value="openai">OpenAI (Future)</option>
+
+            </select>
+
+        </div>
+
+        <!-- Output -->
+
+        <div class="form-group">
+
+            <label>Output Options</label>
+
+            <div class="checkbox-group">
+
+                <label>
+                    <input
+                        id="subtitleOutput"
+                        type="checkbox"
+                        checked>
+
+                    Subtitle (.srt)
+                </label>
+
+                <label>
+                    <input
+                        id="voiceOutput"
+                        type="checkbox">
+
+                    Voice Over
+                </label>
+
+                <label>
+                    <input
+                        id="transcriptOutput"
+                        type="checkbox">
+
+                    Transcript
+                </label>
+
+            </div>
+
+        </div>
+
+        <!-- Start -->
+
+        <button
+            id="startTranslation"
+            type="button"
+            class="btn btn-primary full-width">
+
+            <i class="fa-solid fa-language"></i>
+
+            Start Translation
+
+        </button>
+
+    </section>
+
+</div>
+
+{% endblock %}
+
+{% block js %}
+
+<script src="{{ url_for('static', path='js/api.js') }}"></script>
+
+<script src="{{ url_for('static', path='js/upload.js') }}"></script>
+
+{% endblock %}

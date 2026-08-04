@@ -1,0 +1,540 @@
+/******************************************************************************
+ *
+ * Bhasha Mitra
+ * Layout Stylesheet
+ *
+ * Description:
+ * Application shell (Sidebar, Header, Main Layout)
+ *
+ * Author  : Team 4
+ * Version : 2.0.0
+ *
+ *****************************************************************************/
+
+/*=============================================================================
+  Sidebar
+=============================================================================*/
+
+.sidebar{
+
+    width:280px;
+
+    min-width:280px;
+
+    height:100vh;
+
+    display:flex;
+
+    flex-direction:column;
+
+    background:#ffffff;
+
+    border-right:1px solid var(--border-color);
+
+    position:sticky;
+
+    top:0;
+
+    overflow:hidden;
+
+    transition:width .30s ease;
+
+    z-index:200;
+
+}
+
+/*=============================================================================
+  Logo
+=============================================================================*/
+
+.sidebar-logo{
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    padding:26px 20px;
+
+    min-height:90px;
+
+}
+
+.sidebar-logo img{
+
+    width:180px;
+
+    height:auto;
+
+}
+
+/*=============================================================================
+  Navigation
+=============================================================================*/
+
+.sidebar-nav{
+
+    flex:1;
+
+    overflow-y:auto;
+
+    padding:10px 14px;
+
+}
+
+.nav-item{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:14px;
+
+    padding:13px 18px;
+
+    margin-bottom:6px;
+
+    border-radius:14px;
+
+    color:var(--text-primary);
+
+    font-weight:500;
+
+    transition:all .25s ease;
+
+}
+
+.nav-item i{
+
+    width:22px;
+
+    text-align:center;
+
+    font-size:18px;
+
+}
+
+.nav-item:hover{
+
+    background:#F4F1FF;
+
+    color:var(--primary-color);
+
+}
+
+.nav-item.active{
+
+    background:linear-gradient(
+        90deg,
+        var(--primary),
+        var(--secondary)
+    );
+
+    color:#ffffff;
+
+    box-shadow:var(--shadow-medium);
+
+}
+
+/*=============================================================================
+  Footer
+=============================================================================*/
+
+.sidebar-footer{
+
+    padding:18px;
+
+}
+
+.status-card{
+
+    padding:18px;
+
+    border-radius:18px;
+
+    background:linear-gradient(
+        180deg,
+        #10389E,
+        #05194B
+    );
+
+    color:#ffffff;
+
+}
+
+.status-header{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    margin-bottom:16px;
+
+}
+
+.status-indicator{
+
+    width:10px;
+
+    height:10px;
+
+    border-radius:50%;
+
+    background:#22C55E;
+
+}
+
+.status-title{
+
+    font-weight:600;
+
+}
+
+.status-body{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+}
+
+.status-body img{
+
+    width:54px;
+
+}
+
+.status-text{
+
+    color:#C7FFD8;
+
+    font-size:13px;
+
+}
+
+.status-version{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    margin-top:18px;
+
+    font-size:11px;
+
+    opacity:.85;
+
+}
+
+/*=============================================================================
+  Main Wrapper
+=============================================================================*/
+
+.main-wrapper{
+
+    flex:1;
+
+    display:flex;
+
+    flex-direction:column;
+
+    min-width:0;
+
+}
+
+/*=============================================================================
+  Header
+=============================================================================*/
+
+.top-header{
+
+    height:74px;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:0 28px;
+
+    background:#ffffff;
+
+    border-bottom:1px solid var(--border-color);
+
+    position:sticky;
+
+    top:0;
+
+    z-index:150;
+
+}
+
+.header-left{
+
+    display:flex;
+
+    align-items:center;
+
+}
+
+.header-right{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:16px;
+
+}
+
+/*=============================================================================
+  Search
+=============================================================================*/
+
+.search-box{
+
+    width:360px;
+
+    height:46px;
+
+    display:flex;
+
+    align-items:center;
+
+    background:#ffffff;
+
+    border:1px solid var(--border-color);
+
+    border-radius:14px;
+
+    padding:0 16px;
+
+}
+
+.search-box input{
+
+    flex:1;
+
+    border:none;
+
+    outline:none;
+
+    background:transparent;
+
+    font-size:14px;
+
+}
+
+.search-box button{
+
+    background:none;
+
+    border:none;
+
+    cursor:pointer;
+
+    color:#777;
+
+}
+
+/*=============================================================================
+  Header Icons
+=============================================================================*/
+
+.header-icon{
+
+    width:46px;
+
+    height:46px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    background:#ffffff;
+
+    border:1px solid var(--border-color);
+
+    border-radius:12px;
+
+    position:relative;
+
+    cursor:pointer;
+
+}
+
+.server-status{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:11px 18px;
+
+    background:#ffffff;
+
+    border:1px solid var(--border-color);
+
+    border-radius:14px;
+
+    font-weight:600;
+
+}
+
+.status-dot{
+
+    width:10px;
+
+    height:10px;
+
+    border-radius:50%;
+
+    background:#22C55E;
+
+}
+
+/*=============================================================================
+  User Profile
+=============================================================================*/
+
+.user-profile{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    padding:8px 14px;
+
+    border-radius:14px;
+
+    background:#ffffff;
+
+    border:1px solid var(--border-color);
+
+    cursor:pointer;
+
+}
+
+.avatar{
+
+    width:40px;
+
+    height:40px;
+
+    border-radius:50%;
+
+    background:linear-gradient(
+        135deg,
+        var(--primary-color),
+        var(--secondary-color)
+    );
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    color:#ffffff;
+
+    font-weight:700;
+
+}
+
+.username{
+
+    font-weight:600;
+
+}
+
+/*=============================================================================
+  Sidebar Collapse
+=============================================================================*/
+
+.sidebar.collapsed{
+
+    width:82px;
+
+    min-width:82px;
+
+}
+
+.sidebar.collapsed .sidebar-logo img{
+
+    width:46px;
+
+}
+
+.sidebar.collapsed .nav-item span{
+
+    display:none;
+
+}
+
+.sidebar.collapsed .status-card{
+
+    display:none;
+
+}
+
+/*=============================================================================
+  Responsive
+=============================================================================*/
+
+@media (max-width:992px){
+
+    .sidebar{
+
+        position:fixed;
+
+        left:-280px;
+
+    }
+
+    .sidebar.open{
+
+        left:0;
+
+    }
+
+    .search-box{
+
+        width:220px;
+
+    }
+
+}
+
+@media (max-width:768px){
+
+    .top-header{
+
+        padding:0 16px;
+
+    }
+
+    .search-box{
+
+        display:none;
+
+    }
+
+    .server-status{
+
+        display:none;
+
+    }
+
+}

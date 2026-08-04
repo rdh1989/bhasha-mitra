@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Users{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h1>Users</h1>
+    <p>Manage application users, roles and permissions.</p>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h3>Coming Soon</h3>
+        <p>User management features will be available here.</p>
+    </div>
+</div>
+
+{% endblock %}
+
+<li class="{% if page == 'users' %}active{% endif %}">
+    <a href="/users">
+        <i class="fa-solid fa-users"></i>
+        <span>Users</span>
+    </a>
+</li>

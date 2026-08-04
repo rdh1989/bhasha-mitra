@@ -1,0 +1,28 @@
+{
+  "asr": {
+    "provider": "faster_whisper",
+    "model": "medium",
+    "path": "../models/asr/faster_whisper/medium",
+    "version": "1.0"
+  },
+"translation": {
+    "provider": "nllb",
+    "model": "NLLB-600M",
+    "path": "../models/translation/NLLB-600M",
+    "version": "1.0"
+},
+"language_detection": {
+    "provider": "lingua",
+    "model": "lingua",
+    "path": "../models/language_detection/lingua",
+    "version": "1.0"
+  },
+  "tts": {
+    "provider": "piper",
+    "voice": "mr_IN-google-medium",
+    "path": "../models/text-to-speech/piper-voices/mr/mr_IN/google/medium"
+  },
+  "ffmpeg": {
+    "path": "../../models/third_party/ffmpeg/ffmpeg-8.1.2/bin"
+  }
+}

@@ -1,0 +1,133 @@
+version: "1.0"
+
+provider_management:
+
+  auto_discovery: true
+  validate_on_startup: true
+  fail_fast: true
+  health_check_on_startup: true
+  cache_singletons: true
+
+providers:
+
+  ###########################################################################
+  # Automatic Speech Recognition (ASR)
+  ###########################################################################
+
+  asr:
+
+    default: faster_whisper
+
+    faster_whisper:
+      enabled: true
+      class: ai.asr.faster_whisper.provider.FasterWhisperProvider
+      lifecycle: singleton
+      priority: 1
+      health_check: true
+      requires_model_directory: true
+
+  ###########################################################################
+  # Translation
+  ###########################################################################
+
+  translation:
+
+    default: marianmt
+
+    marianmt:
+      enabled: true
+      class: ai.translation.marianmt.provider.MarianMTProvider
+      lifecycle: singleton
+      priority: 1
+      health_check: true
+      requires_model_directory: true
+
+    indictrans2:
+      enabled: true
+      class: ai.translation.indictrans2.provider.IndicTrans2Provider
+      lifecycle: singleton
+      priority: 1
+      health_check: true
+      requires_model_directory: true
+    
+    nllb:
+      enabled: true
+      class: ai.translation.nllb.provider.NLLBProvider
+      lifecycle: singleton
+      priority: 2
+      health_check: true
+      requires_model_directory: true
+  ###########################################################################
+  # Text To Speech
+  ###########################################################################
+
+  tts:
+
+    default: piper
+
+    piper:
+      enabled: true
+      class: ai.tts.piper.provider.PiperProvider
+      lifecycle: singleton
+      priority: 1
+      health_check: true
+      requires_model_directory: true
+
+
+  ###########################################################################
+  # Subtitle
+  ###########################################################################
+
+  subtitle:
+
+    default: default
+
+    default:
+      enabled: true
+      class: ai.subtitle.provider.DefaultSubtitleProvider
+      lifecycle: singleton
+      priority: 1
+      health_check: true
+      requires_model_directory: true
+
+
+  ###########################################################################
+  # Language Detection
+  ###########################################################################
+
+  language_detection:
+
+    default: lingua
+
+    lingua:
+      enabled: true
+      class: ai.language_detection.lingua.provider.LinguaProvider
+      lifecycle: singleton
+      priority: 1
+      health_check: true
+      requires_model_directory: false
+
+plugins:
+
+  enabled: true
+  directory: plugins
+  auto_load: true
+  verify_signature: false
+
+dependency_injection:
+
+  default_lifecycle: singleton
+  allow_override: false
+  lazy_loading: true
+  detect_circular_dependency: true
+
+health:
+
+  enabled: true
+  timeout_seconds: 30
+
+logging:
+
+  log_provider_loading: true
+  log_provider_resolution: true
+  log_provider_health: true

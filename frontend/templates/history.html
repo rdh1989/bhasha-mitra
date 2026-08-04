@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}Translation History | Bhasha Mitra{% endblock %}
+
+{% block page_title %}
+Translation History
+{% endblock %}
+
+{% block content %}
+
+<div class="history-page">
+
+    <!-- =========================
+         Toolbar
+    ========================== -->
+
+    <div class="history-toolbar">
+
+        <div class="history-search">
+
+            <i class="fas fa-search"></i>
+
+            <input
+                type="text"
+                id="historySearch"
+                placeholder="Search by filename...">
+
+        </div>
+
+        <div class="history-filters">
+
+            <select id="statusFilter" class="form-control">
+
+                <option value="">All Status</option>
+                <option value="completed">Completed</option>
+                <option value="running">Running</option>
+                <option value="failed">Failed</option>
+                <option value="pending">Pending</option>
+
+            </select>
+
+            <button
+                id="refreshHistory"
+                class="btn btn-primary">
+
+                <i class="fas fa-sync-alt"></i>
+
+                Refresh
+
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- =========================
+         History Table
+    ========================== -->
+
+    <div class="history-card">
+
+        <div class="table-wrapper">
+
+            <table class="history-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>Video</th>
+                        <th>Languages</th>
+                        <th>Date</th>
+                        <th>Duration</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody id="historyTableBody">
+
+                    {% if history %}
+
+                        {% for item in history %}
+
+                        <tr>
+
+                            <td>
+
+                                <div class="video-info">
+
+                                    <div class="video-icon">
+
+                                        <i class="fas fa-video"></i>
+
+                                    </div>
+
+                                    <div>
+
+                                        <div class="video-name">
+
+                                            {{ item.filename }}
+
+                                        </div>
+
+                                        <div class="video-meta">
+
+                                            {{ item.size }}
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </td>
+
+                            <td>
+
+                                <div class="language-pair">
+
+                                    {{ item.source_language }}
+
+                                    <i class="fas fa-arrow-right language-arrow"></i>
+
+                                    {{ item.target_language }}
+
+                                </div>
+
+                            </td>
+
+                            <td>
+
+                                {{ item.created_at }}
+
+                            </td>
+
+                            <td>
+
+                                {{ item.duration }}
+
+                            </td>
+
+                            <td>
+
+                                <span class="status {{ item.status|lower }}">
+
+                                    <span class="status-dot"></span>
+
+                                    {{ item.status }}
+
+                                </span>
+
+                            </td>
+
+                            <td>
+
+                                <div class="action-buttons">
+
+                                    <button
+                                        class="action-btn view"
+                                        title="View">
+
+                                        <i class="fas fa-eye"></i>
+
+                                    </button>
+
+                                    <button
+                                        class="action-btn download"
+                                        title="Download">
+
+                                        <i class="fas fa-download"></i>
+
+                                    </button>
+
+                                    <button
+                                        class="action-btn delete"
+                                        title="Delete">
+
+                                        <i class="fas fa-trash"></i>
+
+                                    </button>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    {% else %}
+
+                    <tr>
+
+                        <td colspan="6">
+
+                            <div class="empty-history">
+
+                                <i class="fas fa-folder-open"></i>
+
+                                <h2>No Translation History</h2>
+
+                                <p>
+
+                                    Your translated videos will appear here after
+                                    successful processing.
+
+                                </p>
+
+                                <a
+                                    href="/upload"
+                                    class="btn btn-primary">
+
+                                    <i class="fas fa-upload"></i>
+
+                                    Upload Video
+
+                                </a>
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+                    {% endif %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <!-- =========================
+             Pagination
+        ========================== -->
+
+        <div class="pagination">
+
+            <div class="pagination-info">
+
+                Showing
+                {{ history|length if history else 0 }}
+                translations
+
+            </div>
+
+            <div class="pagination-buttons">
+
+                <button class="page-btn">
+
+                    <i class="fas fa-angle-left"></i>
+
+                </button>
+
+                <button class="page-btn active">
+
+                    1
+
+                </button>
+
+                <button class="page-btn">
+
+                    2
+
+                </button>
+
+                <button class="page-btn">
+
+                    3
+
+                </button>
+
+                <button class="page-btn">
+
+                    <i class="fas fa-angle-right"></i>
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<script src="{{ url_for('static', path='js/history.js') }}"></script>
+
+{% endblock %}

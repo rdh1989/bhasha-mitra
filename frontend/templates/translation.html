@@ -1,0 +1,541 @@
+{% extends "base.html" %}
+
+{% block title %}Translation Progress | Bhasha Mitra{% endblock %}
+
+{% block page_title %}
+Translation Progress
+{% endblock %}
+
+{% block content %}
+
+<div class="translation-page">
+
+    <!-- ===========================
+         Left Section
+    ============================ -->
+
+    <div class="translation-card">
+
+        <!-- Header -->
+
+        <div class="translation-header">
+
+            <div>
+                <h2>Video Translation</h2>
+                <p>
+                    Your video is currently being processed.
+                    Please wait while our AI completes the translation.
+                </p>
+            </div>
+
+            <div class="translation-status">
+
+                <span class="status-indicator"></span>
+
+                <span id="translationStatus">
+
+                    Processing...
+
+                </span>
+
+            </div>
+
+        </div>
+
+        <!-- Progress -->
+
+        <div class="translation-progress">
+
+            <div class="progress-info">
+
+                <span class="progress-label">
+
+                    Translation Progress
+
+                </span>
+
+                <span
+                    id="translationProgressValue"
+                    class="progress-percent">
+
+                    0%
+
+                </span>
+
+            </div>
+
+            <div class="progress">
+
+                <div
+                    id="translationProgressBar"
+                    class="progress-bar"
+                    style="width:0%;">
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Pipeline -->
+
+        <div class="pipeline">
+
+            <div class="pipeline-step completed">
+
+                <div class="pipeline-icon">
+
+                    <i class="fas fa-video"></i>
+
+                </div>
+
+                <div>
+
+                    <div class="pipeline-title">
+
+                        Video Upload
+
+                    </div>
+
+                    <div class="pipeline-desc">
+
+                        Completed
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="pipeline-step active">
+
+                <div class="pipeline-icon">
+
+                    <i class="fas fa-microphone"></i>
+
+                </div>
+
+                <div>
+
+                    <div class="pipeline-title">
+
+                        Speech Recognition
+
+                    </div>
+
+                    <div class="pipeline-desc">
+
+                        Extracting Speech
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="pipeline-step">
+
+                <div class="pipeline-icon">
+
+                    <i class="fas fa-language"></i>
+
+                </div>
+
+                <div>
+
+                    <div class="pipeline-title">
+
+                        Translation
+
+                    </div>
+
+                    <div class="pipeline-desc">
+
+                        Pending
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="pipeline-step">
+
+                <div class="pipeline-icon">
+
+                    <i class="fas fa-volume-up"></i>
+
+                </div>
+
+                <div>
+
+                    <div class="pipeline-title">
+
+                        Text To Speech
+
+                    </div>
+
+                    <div class="pipeline-desc">
+
+                        Pending
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="pipeline-step">
+
+                <div class="pipeline-icon">
+
+                    <i class="fas fa-film"></i>
+
+                </div>
+
+                <div>
+
+                    <div class="pipeline-title">
+
+                        Video Rendering
+
+                    </div>
+
+                    <div class="pipeline-desc">
+
+                        Pending
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Summary -->
+
+        <div class="summary-card">
+
+            <h3>
+
+                Translation Summary
+
+            </h3>
+
+            <div class="summary-grid">
+
+                <div class="summary-item">
+
+                    <div class="summary-label">
+
+                        Source Language
+
+                    </div>
+
+                    <div class="summary-value">
+
+                        {{ source_language or "English" }}
+
+                    </div>
+
+                </div>
+
+                <div class="summary-item">
+
+                    <div class="summary-label">
+
+                        Target Language
+
+                    </div>
+
+                    <div class="summary-value">
+
+                        {{ target_language or "Marathi" }}
+
+                    </div>
+
+                </div>
+
+                <div class="summary-item">
+
+                    <div class="summary-label">
+
+                        Video Duration
+
+                    </div>
+
+                    <div class="summary-value">
+
+                        {{ duration or "04:36" }}
+
+                    </div>
+
+                </div>
+
+                <div class="summary-item">
+
+                    <div class="summary-label">
+
+                        Current Stage
+
+                    </div>
+
+                    <div
+                        id="currentStage"
+                        class="summary-value">
+
+                        Speech Recognition
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Logs -->
+
+        <div class="stage-log">
+
+            <h3>
+
+                Processing Log
+
+            </h3>
+
+            <div class="log-item">
+
+                <div class="log-time">
+
+                    ✓
+
+                </div>
+
+                <div class="log-message">
+
+                    Audio extracted successfully.
+
+                </div>
+
+            </div>
+
+            <div class="log-item">
+
+                <div class="log-time">
+
+                    ✓
+
+                </div>
+
+                <div class="log-message">
+
+                    Speech Recognition started.
+
+                </div>
+
+            </div>
+
+            <div class="log-item">
+
+                <div class="log-time">
+
+                    ...
+
+                </div>
+
+                <div class="log-message">
+
+                    Waiting for Translation Engine.
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Downloads -->
+
+        <div class="download-section">
+
+            <h3>
+
+                Downloads
+
+            </h3>
+
+            <div class="download-card">
+
+                <div class="download-info">
+
+                    <div class="download-icon">
+
+                        <i class="fas fa-file-video"></i>
+
+                    </div>
+
+                    <div>
+
+                        <strong>
+
+                            Translated Video
+
+                        </strong>
+
+                        <br>
+
+                        MP4 Output
+
+                    </div>
+
+                </div>
+
+                <button
+                    id="downloadVideo"
+                    class="btn btn-primary"
+                    disabled>
+
+                    Download
+
+                </button>
+
+            </div>
+
+            <div class="download-card">
+
+                <div class="download-info">
+
+                    <div class="download-icon">
+
+                        <i class="fas fa-closed-captioning"></i>
+
+                    </div>
+
+                    <div>
+
+                        <strong>
+
+                            Subtitle File
+
+                        </strong>
+
+                        <br>
+
+                        SRT Format
+
+                    </div>
+
+                </div>
+
+                <button
+                    id="downloadSubtitle"
+                    class="btn btn-secondary"
+                    disabled>
+
+                    Download
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ===========================
+         Right Panel
+    ============================ -->
+
+    <div>
+
+        <div class="action-panel">
+
+            <h3>
+
+                Translation Status
+
+            </h3>
+
+            <div class="action-list">
+
+                <div class="eta-card">
+
+                    <h3>
+
+                        Estimated Time
+
+                    </h3>
+
+                    <div class="eta-time">
+
+                        02:15
+
+                    </div>
+
+                </div>
+
+                <div class="summary-item">
+
+                    <div class="summary-label">
+
+                        Job ID
+
+                    </div>
+
+                    <div
+                        id="translationJobId"
+                        class="summary-value">
+
+                        {{ job_id or "BM-000001" }}
+
+                    </div>
+
+                </div>
+
+                <button
+                    id="cancelTranslation"
+                    class="btn btn-danger">
+
+                    <i class="fas fa-times-circle"></i>
+
+                    Cancel Translation
+
+                </button>
+
+                <button
+                    id="retryTranslation"
+                    class="btn btn-secondary"
+                    style="display:none;">
+
+                    <i class="fas fa-redo"></i>
+
+                    Retry
+
+                </button>
+
+                <a
+                    href="/history"
+                    class="btn btn-primary">
+
+                    <i class="fas fa-history"></i>
+
+                    Translation History
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<script src="{{ url_for('static', path='js/translation.js') }}"></script>
+
+{% endblock %}

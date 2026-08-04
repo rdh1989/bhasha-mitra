@@ -1,0 +1,61 @@
+default_source_language: auto
+
+default_target_language: mr
+
+languages:
+
+  en:
+    name: English
+
+  hi:
+    name: Hindi
+
+  mr:
+    name: Marathi
+
+  ta:
+    name: Tamil
+
+  te:
+    name: Telugu
+
+  kn:
+    name: Kannada
+
+  ml:
+    name: Malayalam
+
+  gu:
+    name: Gujarati
+
+  pa:
+    name: Punjabi
+
+  bn:
+    name: Bengali
+
+  or:
+    name: Odia
+
+  as:
+    name: Assamese
+
+  ur:
+    name: Urdu
+
+translation:
+
+  supported:
+    - en
+    - hi
+    - mr
+    - ta
+    - te
+    - kn
+    - ml
+    - gu
+    - pa
+    - bn
+    - or
+    - as
+    - ur

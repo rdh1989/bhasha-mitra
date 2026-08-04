@@ -1,0 +1,418 @@
+/******************************************************************************
+ *
+ * BHASHA MITRA
+ * MAIN GLOBAL STYLESHEET
+ *
+ * Contains ONLY:
+ * - Reset
+ * - Theme Variables
+ * - Global Layout
+ * - Typography
+ * - Watermark
+ * - Utilities
+ *
+ ******************************************************************************/
+
+/*=============================================================================
+RESET
+=============================================================================*/
+
+*,
+*::before,
+*::after{
+
+    margin:0;
+    padding:0;
+
+    box-sizing:border-box;
+
+}
+
+/*=============================================================================
+THEME VARIABLES
+=============================================================================*/
+
+:root{
+
+    /* Brand */
+
+    --primary:#5A2DFF;
+    --primary-dark:#4720E5;
+    --secondary:#7B3CFF;
+
+    /* Status */
+
+    --success:#22C55E;
+    --warning:#F59E0B;
+    --danger:#EF4444;
+    --info:#3B82F6;
+
+    /* Text */
+
+    --text-primary:#1F2A44;
+    --text-secondary:#667085;
+    --text-light:#98A2B3;
+
+    /* Background */
+
+    --page-bg:#F8F4FD;
+    --surface:#FFFFFF;
+
+    /* Borders */
+
+    --border:#E6E8F0;
+    --border-light:rgba(255,255,255,.55);
+
+    /* Glass */
+
+    --glass-bg:rgba(255,255,255,.10);
+    --glass-border:rgba(255,255,255,.40);
+
+    /* Shadows */
+
+    --shadow-sm:
+        0 4px 10px rgba(0,0,0,.04);
+
+    --shadow-md:
+        0 10px 30px rgba(24,33,77,.08);
+
+    --shadow-lg:
+        0 18px 45px rgba(24,33,77,.12);
+
+    /* Radius */
+
+    --radius-sm:12px;
+    --radius-md:18px;
+    --radius-lg:26px;
+
+    /* Animation */
+
+    --transition:.30s ease;
+
+}
+
+/*=============================================================================
+HTML
+=============================================================================*/
+
+html{
+
+    scroll-behavior:smooth;
+
+    font-size:16px;
+
+}
+
+/*=============================================================================
+BODY
+=============================================================================*/
+
+body{
+
+    font-family:"Poppins",sans-serif;
+
+    color:var(--text-primary);
+
+    background:linear-gradient(
+        135deg,
+        #FCFBFF 0%,
+        #F8F4FD 45%,
+        #F3EEFC 100%
+    );
+
+    overflow-x:hidden;
+
+}
+
+/*=============================================================================
+LINKS
+=============================================================================*/
+
+a{
+
+    text-decoration:none;
+
+    color:inherit;
+
+}
+
+/*=============================================================================
+IMAGES
+=============================================================================*/
+
+img{
+
+    display:block;
+
+    max-width:100%;
+
+}
+
+/*=============================================================================
+BUTTONS
+=============================================================================*/
+
+button{
+
+    font-family:inherit;
+
+    border:none;
+
+    outline:none;
+
+    cursor:pointer;
+
+}
+
+/*=============================================================================
+APPLICATION LAYOUT
+=============================================================================*/
+
+.app-container{
+
+    display:flex;
+
+    min-height:100vh;
+
+}
+
+/*=============================================================================
+MAIN WRAPPER
+=============================================================================*/
+
+.main-wrapper{
+
+    flex:1;
+
+    display:flex;
+
+    flex-direction:column;
+
+    min-width:0;
+
+}
+
+/*=============================================================================
+CONTENT
+=============================================================================*/
+
+.content{
+
+    position:relative;
+
+    flex:1;
+
+    padding:30px;
+
+    overflow-y:auto;
+
+    background:linear-gradient(
+        135deg,
+        #FCFBFF 0%,
+        #F8F4FD 45%,
+        #F3EEFC 100%
+    );
+
+}
+
+/*=============================================================================
+GLOBAL WATERMARK
+=============================================================================*/
+
+.watermark{
+
+    position:absolute;
+
+    inset:0;
+
+    background-color:#F8F4FD;
+
+    background-image:url("/static/images/logo-watermark.png");
+
+    background-repeat:no-repeat;
+
+    background-position:center;
+
+    background-size:cover;
+
+    opacity:.38;
+
+    pointer-events:none;
+
+    z-index:0;
+
+}
+
+/* Everything above watermark */
+
+.content > :not(.watermark){
+
+    position:relative;
+
+    z-index:1;
+
+}
+
+/*=============================================================================
+HEADINGS
+=============================================================================*/
+
+h1{
+
+    font-size:2rem;
+
+    font-weight:700;
+
+    color:var(--text-primary);
+
+}
+
+h2{
+
+    font-size:1.5rem;
+
+    font-weight:700;
+
+    color:var(--text-primary);
+
+}
+
+h3{
+
+    font-size:1.2rem;
+
+    font-weight:600;
+
+}
+
+/*=============================================================================
+TEXT
+=============================================================================*/
+
+p{
+
+    color:var(--text-secondary);
+
+    line-height:1.7;
+
+}
+
+/*=============================================================================
+GLOBAL CARD
+=============================================================================*/
+
+.card{
+
+    position:relative;
+
+    overflow:hidden;
+
+    background:var(--glass-bg);
+
+    border:1px solid var(--glass-border);
+
+    border-radius:var(--radius-lg);
+
+    backdrop-filter:blur(12px);
+
+    -webkit-backdrop-filter:blur(12px);
+
+    box-shadow:var(--shadow-sm);
+
+}
+
+/*=============================================================================
+PAGE HEADER
+=============================================================================*/
+
+.page-header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-bottom:24px;
+
+}
+
+/*=============================================================================
+UTILITY
+=============================================================================*/
+
+.text-center{
+
+    text-align:center;
+
+}
+
+.hidden{
+
+    display:none !important;
+
+}
+
+/*=============================================================================
+SCROLLBAR
+=============================================================================*/
+
+::-webkit-scrollbar{
+
+    width:10px;
+
+}
+
+::-webkit-scrollbar-track{
+
+    background:#ECECEC;
+
+}
+
+::-webkit-scrollbar-thumb{
+
+    background:#CCCCCC;
+
+    border-radius:20px;
+
+}
+
+::-webkit-scrollbar-thumb:hover{
+
+    background:#B5B5B5;
+
+}
+
+/*=============================================================================
+RESPONSIVE
+=============================================================================*/
+
+@media(max-width:1200px){
+
+    .content{
+
+        padding:24px;
+
+    }
+
+}
+
+@media(max-width:992px){
+
+    .content{
+
+        padding:20px;
+
+    }
+
+}
+
+@media(max-width:768px){
+
+    .content{
+
+        padding:16px;
+
+    }
+
+}

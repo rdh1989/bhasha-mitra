@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}About - Bhasha Mitra{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1>About Bhasha Mitra</h1>
+        <p>
+            Breaking language barriers through secure, offline AI-powered
+            video translation.
+        </p>
+    </div>
+</div>
+
+<!-- Project Overview -->
+
+<div class="glass-card">
+
+    <div class="card-header">
+        <h2>Our Mission</h2>
+    </div>
+
+    <div class="card-body">
+
+        <p>
+            <strong>Bhasha Mitra</strong> is an AI-powered offline video
+            translation platform designed to make multilingual communication
+            simple, secure, and accessible.
+        </p>
+
+        <p>
+            The application automatically extracts speech from videos,
+            converts it into text, translates it into the selected language,
+            and generates translated subtitles and audio while keeping all
+            processing completely offline.
+        </p>
+
+    </div>
+
+</div>
+
+<!-- Features -->
+
+<div class="glass-card mt-4">
+
+    <div class="card-header">
+        <h2>Key Features</h2>
+    </div>
+
+    <div class="card-body">
+
+        <ul>
+
+            <li>🎥 AI-powered video translation</li>
+
+            <li>🎙 Speech-to-Text (ASR)</li>
+
+            <li>🌐 Multi-language translation</li>
+
+            <li>📝 Subtitle generation</li>
+
+            <li>🔊 AI voice synthesis (future enhancement)</li>
+
+            <li>🔒 100% Offline Processing</li>
+
+            <li>⚡ FastAPI-powered backend</li>
+
+            <li>💻 Modern web-based dashboard</li>
+
+        </ul>
+
+    </div>
+
+</div>
+
+<!-- Translation Pipeline -->
+
+<div class="glass-card mt-4">
+
+    <div class="card-header">
+        <h2>Translation Workflow</h2>
+    </div>
+
+    <div class="card-body">
+
+<pre>
+
+Video Upload
+      │
+      ▼
+Audio Extraction
+      │
+      ▼
+Speech Recognition
+      │
+      ▼
+Language Translation
+      │
+      ▼
+Subtitle Generation
+      │
+      ▼
+Translated Output
+
+</pre>
+
+    </div>
+
+</div>
+
+<!-- Technology Stack -->
+
+<div class="glass-card mt-4">
+
+    <div class="card-header">
+        <h2>Technology Stack</h2>
+    </div>
+
+    <div class="card-body">
+
+        <table class="table">
+
+            <tbody>
+
+                <tr>
+                    <th>Frontend</th>
+                    <td>HTML5, CSS3, JavaScript, Jinja2</td>
+                </tr>
+
+                <tr>
+                    <th>Backend</th>
+                    <td>FastAPI</td>
+                </tr>
+
+                <tr>
+                    <th>Language</th>
+                    <td>Python</td>
+                </tr>
+
+                <tr>
+                    <th>AI Capabilities</th>
+                    <td>Speech Recognition, Translation, Subtitle Generation</td>
+                </tr>
+
+                <tr>
+                    <th>Deployment</th>
+                    <td>Offline Desktop Application</td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+<!-- Version -->
+
+<div class="glass-card mt-4">
+
+    <div class="card-header">
+        <h2>Application Information</h2>
+    </div>
+
+    <div class="card-body">
+
+        <table class="table">
+
+            <tbody>
+
+                <tr>
+                    <th>Application</th>
+                    <td>Bhasha Mitra</td>
+                </tr>
+
+                <tr>
+                    <th>Version</th>
+                    <td>1.0.0</td>
+                </tr>
+
+                <tr>
+                    <th>License</th>
+                    <td>Internal Project</td>
+                </tr>
+
+                <tr>
+                    <th>Status</th>
+                    <td><span class="badge-success">Active Development</span></td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}

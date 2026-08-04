@@ -1,0 +1,886 @@
+{% extends "base.html" %}
+
+{% block title %}
+Dashboard | {{ app_name }}
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/dashboard-layout.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="dashboard">
+
+    <!-- Watermark -->
+
+    <!-- <div class="dashboard-watermark">
+
+        <img
+            src="{{ url_for('static', path='images/logo-watermark.png') }}"
+            alt="Watermark">
+
+    </div> -->
+
+    <!-- ==========================================
+         Welcome
+    =========================================== -->
+
+    <section class="dashboard-header">
+
+        <h1>
+
+            Welcome to
+            <span>Bhasha Mitra!</span>
+
+            <span class="wave">👋</span>
+
+        </h1>
+
+        <p>
+
+            Translate videos into regional languages
+            with high accuracy.
+
+        </p>
+
+    </section>
+
+    <!-- ==========================================
+         Row 1
+    =========================================== -->
+
+    <section class="dashboard-row">
+
+        <!-- Upload Card -->
+        <div class="card upload-card">
+
+            <div class="upload-body">
+
+                <div class="upload-icon">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                </div>
+
+                <h2>Upload Video</h2>
+
+                <p>
+                    Drag &amp; drop your video file here,<br>
+                    or browse your device
+                </p>
+
+                <a href="/upload" class="upload-button">
+
+                    <i class="fa-solid fa-upload"></i>
+
+                    <span>Choose Video File</span>
+
+                </a>
+
+                <small>
+
+                    Supports: MP4, MKV, AVI, MOV
+                    &nbsp;&nbsp;|
+                    &nbsp;&nbsp;
+                    Max Size: 2GB
+
+                </small>
+
+            </div>
+
+        </div>
+        <!-- Platform Insights -->
+
+        <div class="card insight-card">
+
+            <div class="card-header">
+
+                <div class="card-title">
+
+                    <i class="fa-solid fa-chart-column"></i>
+
+                    <span>
+
+                        Platform Insights
+
+                    </span>
+
+                </div>
+
+                <a href="#">
+
+                    View Analytics →
+
+                </a>
+
+            </div>
+
+            <div class="insight-grid">
+
+                <!-- Card -->
+
+                <div class="mini-card">
+
+                    <i class="fa-solid fa-video"></i>
+
+                    <h4>
+
+                        Videos
+
+                    </h4>
+
+                    <h2>
+
+                        {{ dashboard.total_videos }}
+
+                    </h2>
+
+                    <span>
+
+                        Total Videos
+
+                    </span>
+
+                </div>
+
+                <!-- Card -->
+
+                <div class="mini-card">
+
+                    <i class="fa-solid fa-clock"></i>
+
+                    <h4>
+
+                        Hours
+
+                    </h4>
+
+                    <h2>
+
+                        842
+
+                    </h2>
+
+                    <span>
+
+                        Translation Hours
+
+                    </span>
+
+                </div>
+
+                <!-- Card -->
+
+                <div class="mini-card">
+
+                    <i class="fa-solid fa-bullseye"></i>
+
+                    <h4>
+
+                        Completed
+
+                    </h4>
+
+                    <h2>
+
+                        {{ dashboard.completed }}
+
+                    </h2>
+
+                    <span>
+
+                        Completed Jobs
+
+                    </span>
+
+                </div>
+
+                <!-- Card -->
+
+                <div class="mini-card">
+
+                    <i class="fa-solid fa-briefcase"></i>
+
+                    <h4>
+
+                        Active
+
+                    </h4>
+
+                    <h2>
+
+                        {{ dashboard.processing }}
+
+                    </h2>
+
+                    <span>
+
+                        Active Jobs
+
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+    <!-- ==========================================================
+         Row 2
+    =========================================================== -->
+
+    <section class="dashboard-row">
+
+        <!-- ==========================================
+             Recent Activity
+        =========================================== -->
+
+        <div class="card activity-card">
+
+            <div class="card-header">
+
+                <div class="card-title">
+
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+
+                    <span>Recent Activity</span>
+
+                </div>
+
+                <a href="/history">
+
+                    View All →
+
+                </a>
+
+            </div>
+
+            <div class="activity-list">
+
+                <div class="activity-item">
+
+                    <div class="activity-icon completed">
+
+                        <i class="fa-solid fa-circle-check"></i>
+
+                    </div>
+
+                    <div class="activity-details">
+
+                        <h4>AI_Training_Module.mp4</h4>
+
+                        <p>English → Marathi</p>
+
+                    </div>
+
+                    <div class="activity-status">
+
+                        <span class="badge processing">
+
+                            Processing
+
+                        </span>
+
+                        <div class="progress">
+
+                            <div class="progress-bar w45"></div>
+
+                        </div>
+
+                        <small>45%</small>
+
+                    </div>
+
+                    <span class="time">
+
+                        2 min ago
+
+                    </span>
+
+                </div>
+
+                <div class="activity-item">
+
+                    <div class="activity-icon completed">
+
+                        <i class="fa-solid fa-circle-check"></i>
+
+                    </div>
+
+                    <div class="activity-details">
+
+                        <h4>History_of_India.mp4</h4>
+
+                        <p>English → Hindi</p>
+
+                    </div>
+
+                    <div class="activity-status">
+
+                        <span class="badge success">
+
+                            Completed
+
+                        </span>
+
+                        <div class="progress">
+
+                            <div class="progress-bar w100"></div>
+
+                        </div>
+
+                        <small>100%</small>
+
+                    </div>
+
+                    <span class="time">
+
+                        15 min ago
+
+                    </span>
+
+                </div>
+
+                <div class="activity-item">
+
+                    <div class="activity-icon completed">
+
+                        <i class="fa-solid fa-circle-check"></i>
+
+                    </div>
+
+                    <div class="activity-details">
+
+                        <h4>Python_Basics.mp4</h4>
+
+                        <p>English → Marathi</p>
+
+                    </div>
+
+                    <div class="activity-status">
+
+                        <span class="badge success">
+
+                            Completed
+
+                        </span>
+
+                        <div class="progress">
+
+                            <div class="progress-bar w100"></div>
+
+                        </div>
+
+                        <small>100%</small>
+
+                    </div>
+
+                    <span class="time">
+
+                        32 min ago
+
+                    </span>
+
+                </div>
+
+                <div class="activity-item">
+
+                    <div class="activity-icon queue">
+
+                        <i class="fa-solid fa-clock"></i>
+
+                    </div>
+
+                    <div class="activity-details">
+
+                        <h4>News_Today_Clip.mp4</h4>
+
+                        <p>English → Hindi</p>
+
+                    </div>
+
+                    <div class="activity-status">
+
+                        <span class="badge queue">
+
+                            Queue
+
+                        </span>
+
+                        <div class="progress">
+
+                            <div class="progress-bar w0"></div>
+
+                        </div>
+
+                        <small>0%</small>
+
+                    </div>
+
+                    <span class="time">
+
+                        48 min ago
+
+                    </span>
+
+                </div>
+
+                <div class="activity-item">
+
+                    <div class="activity-icon completed">
+
+                        <i class="fa-solid fa-circle-check"></i>
+
+                    </div>
+
+                    <div class="activity-details">
+
+                        <h4>Motivation_Speech.mp4</h4>
+
+                        <p>English → Marathi</p>
+
+                    </div>
+
+                    <div class="activity-status">
+
+                        <span class="badge success">
+
+                            Completed
+
+                        </span>
+
+                        <div class="progress">
+
+                            <div class="progress-bar w100"></div>
+
+                        </div>
+
+                        <small>100%</small>
+
+                    </div>
+
+                    <span class="time">
+
+                        1 hr ago
+
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ==========================================
+             Recent Translations
+        =========================================== -->
+
+        <div class="card translation-card">
+
+            <div class="card-header">
+
+                <div class="card-title">
+
+                    <i class="fa-solid fa-language"></i>
+
+                    <span>
+
+                        Recent Translations
+
+                    </span>
+
+                </div>
+
+                <a href="/history">
+
+                    View All →
+
+                </a>
+
+            </div>
+
+            <table class="translation-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>Video</th>
+
+                        <th>Language</th>
+
+                        <th>Status</th>
+
+                        <th>Date</th>
+
+                        <th></th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    <tr>
+
+                        <td>Introduction_to_AI.mp4</td>
+
+                        <td>English → Marathi</td>
+
+                        <td><span class="badge success">Completed</span></td>
+
+                        <td>Today</td>
+
+                        <td><i class="fa-solid fa-download"></i></td>
+
+                    </tr>
+
+                    <tr>
+
+                        <td>Business_Fundamentals.mp4</td>
+
+                        <td>English → Hindi</td>
+
+                        <td><span class="badge success">Completed</span></td>
+
+                        <td>Yesterday</td>
+
+                        <td><i class="fa-solid fa-download"></i></td>
+
+                    </tr>
+
+                    <tr>
+
+                        <td>Indian_Constitution.mp4</td>
+
+                        <td>English → Marathi</td>
+
+                        <td><span class="badge success">Completed</span></td>
+
+                        <td>Yesterday</td>
+
+                        <td><i class="fa-solid fa-download"></i></td>
+
+                    </tr>
+
+                    <tr>
+
+                        <td>Science_Explained.mp4</td>
+
+                        <td>English → Hindi</td>
+
+                        <td><span class="badge processing">Processing</span></td>
+
+                        <td>17 May</td>
+
+                        <td><i class="fa-solid fa-rotate"></i></td>
+
+                    </tr>
+
+                    <tr>
+
+                        <td>Space_Exploration.mp4</td>
+
+                        <td>English → Marathi</td>
+
+                        <td><span class="badge failed">Failed</span></td>
+
+                        <td>17 May</td>
+
+                        <td><i class="fa-solid fa-arrow-rotate-right"></i></td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+    <!-- ==========================================================
+         Row 3
+    =========================================================== -->
+
+    <section class="dashboard-row">
+
+        <!-- ==========================================
+             Supported Languages
+        =========================================== -->
+
+        <div class="card language-card">
+
+            <div class="card-header">
+
+                <div class="card-title">
+
+                    <i class="fa-solid fa-language"></i>
+
+                    <span>
+
+                        Supported Languages
+
+                    </span>
+
+                </div>
+
+            </div>
+
+            <div class="language-grid">
+
+                <div class="language-item">
+
+                    🇬🇧
+
+                    <span>English</span>
+
+                </div>
+
+                <div class="language-item">
+
+                    🇮🇳
+
+                    <span>Hindi</span>
+
+                </div>
+
+                <div class="language-item">
+
+                    🇮🇳
+
+                    <span>Marathi</span>
+
+                </div>
+
+                <div class="language-item">
+
+                    🇮🇳
+
+                    <span>Gujarati</span>
+
+                </div>
+
+                <div class="language-item">
+
+                    🇮🇳
+
+                    <span>Punjabi</span>
+
+                </div>
+
+                <div class="language-item">
+
+                    🇮🇳
+
+                    <span>Bengali</span>
+
+                </div>
+
+                <div class="language-item">
+
+                    🇮🇳
+
+                    <span>Kannada</span>
+
+                </div>
+
+                <div class="language-item">
+
+                    🇮🇳
+
+                    <span>Telugu</span>
+
+                </div>
+
+                <div class="language-item">
+
+                    🇮🇳
+
+                    <span>Tamil</span>
+
+                </div>
+
+                <div class="language-item">
+
+                    🇮🇳
+
+                    <span>Malayalam</span>
+
+                </div>
+
+                <div class="language-item">
+
+                    🇮🇳
+
+                    <span>Odia</span>
+
+                </div>
+
+                <div class="language-item">
+
+                    🇮🇳
+
+                    <span>Assamese</span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ==========================================
+             System Information
+        =========================================== -->
+
+        <div class="card system-card">
+
+            <div class="card-header">
+
+                <div class="card-title">
+
+                    <i class="fa-solid fa-server"></i>
+
+                    <span>
+
+                        System Information
+
+                    </span>
+
+                </div>
+
+            </div>
+
+            <div class="system-list">
+
+                <div class="system-row">
+
+                    <span>
+
+                        Application
+
+                    </span>
+
+                    <strong>
+
+                        {{ app_name }}
+
+                    </strong>
+
+                </div>
+
+                <div class="system-row">
+
+                    <span>
+
+                        Version
+
+                    </span>
+
+                    <strong>
+
+                        1.0.0
+
+                    </strong>
+
+                </div>
+
+                <div class="system-row">
+
+                    <span>
+
+                        Translation Engine
+
+                    </span>
+
+                    <strong>
+
+                        AI Powered
+
+                    </strong>
+
+                </div>
+
+                <div class="system-row">
+
+                    <span>
+
+                        Backend
+
+                    </span>
+
+                    <strong>
+
+                        FastAPI
+
+                    </strong>
+
+                </div>
+
+                <div class="system-row">
+
+                    <span>
+
+                        Database
+
+                    </span>
+
+                    <strong>
+
+                        SQLite
+
+                    </strong>
+
+                </div>
+
+                <div class="system-row">
+
+                    <span>
+
+                        Queue Status
+
+                    </span>
+
+                    <strong class="status-online">
+
+                        <i class="fa-solid fa-circle"></i>
+
+                        Healthy
+
+                    </strong>
+
+                </div>
+
+                <div class="system-row">
+
+                    <span>
+
+                        Last Backup
+
+                    </span>
+
+                    <strong>
+
+                        Today 08:15 AM
+
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endblock %}
+
+{% block js %}
+
+<script src="{{ url_for('static', path='js/api.js') }}"></script>
+
+<script src="{{ url_for('static', path='js/dashboard.js') }}"></script>
+
+{% endblock %}

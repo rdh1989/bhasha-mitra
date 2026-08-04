@@ -1,0 +1,26 @@
+# =============================================================================
+# Bhasha Mitra
+# AI Runtime Configuration
+# =============================================================================
+
+models:
+
+  asr:
+    provider: faster_whisper
+    model: tiny
+    device: cpu
+    compute_type: int8
+
+  translation:
+    provider: marianmt
+    model: OPUS-MT
+
+  language_detection:
+    provider: lingua
+
+  tts:
+    provider: piper
+    voice: mr_IN-google-medium
+
+ffmpeg:
+  enabled: true

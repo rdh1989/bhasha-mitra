@@ -1,0 +1,493 @@
+/******************************************************************************
+ *
+ * Bhasha Mitra
+ * Components Stylesheet
+ *
+ * Description:
+ * Reusable UI Components
+ *
+ * Author  : Team 4
+ * Version : 1.0.0
+ *
+ *****************************************************************************/
+
+/*=============================================================================
+    Buttons
+=============================================================================*/
+
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.btn-success{
+
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+
+    min-height:46px;
+
+    padding:0 22px;
+
+    border:none;
+
+    border-radius:12px;
+
+    cursor:pointer;
+
+    font-family:inherit;
+    font-size:15px;
+    font-weight:600;
+
+    transition:all .25s ease;
+
+    text-decoration:none;
+
+}
+
+.btn-primary{
+
+    background:linear-gradient(
+        90deg,
+        var(--primary-color),
+        var(--secondary-color)
+    );
+
+    color:#fff;
+
+}
+
+.btn-primary:hover{
+
+    transform:translateY(-2px);
+
+    box-shadow:var(--shadow-medium);
+
+}
+
+.btn-secondary{
+
+    background:#ffffff;
+
+    color:var(--primary-color);
+
+    border:1px solid rgba(90,45,255,.18);
+
+}
+
+.btn-secondary:hover{
+
+    background:#f8f6ff;
+
+}
+
+.btn-success{
+
+    background:var(--success-color);
+
+    color:#fff;
+
+}
+
+.btn-danger{
+
+    background:var(--danger-color);
+
+    color:#fff;
+
+}
+
+.btn:disabled{
+
+    opacity:.5;
+
+    cursor:not-allowed;
+
+}
+
+/*=============================================================================
+    Inputs
+=============================================================================*/
+
+.input,
+select,
+textarea{
+
+    width:100%;
+
+    min-height:46px;
+
+    padding:12px 16px;
+
+    border-radius:12px;
+
+    border:1px solid var(--border-color);
+
+    background:#fff;
+
+    transition:.25s;
+
+}
+
+.input:focus,
+select:focus,
+textarea:focus{
+
+    outline:none;
+
+    border-color:var(--primary-color);
+
+    box-shadow:0 0 0 4px rgba(90,45,255,.10);
+
+}
+
+/*=============================================================================
+    Labels
+=============================================================================*/
+
+.form-group{
+
+    margin-bottom:22px;
+
+}
+
+.form-group label{
+
+    display:block;
+
+    margin-bottom:8px;
+
+    font-weight:600;
+
+    color:var(--text-primary);
+
+}
+
+/*=============================================================================
+    Cards
+=============================================================================*/
+
+.card-title{
+
+    margin-bottom:18px;
+
+    font-size:1.25rem;
+
+    font-weight:600;
+
+}
+
+.card-subtitle{
+
+    color:var(--text-secondary);
+
+    margin-bottom:20px;
+
+}
+
+/*=============================================================================
+    Badges
+=============================================================================*/
+
+.badge{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    min-width:26px;
+
+    min-height:26px;
+
+    padding:0 10px;
+
+    border-radius:30px;
+
+    font-size:12px;
+
+    font-weight:600;
+
+    color:#fff;
+
+}
+
+.badge-success{
+
+    background:var(--success-color);
+
+}
+
+.badge-warning{
+
+    background:var(--warning-color);
+
+}
+
+.badge-danger{
+
+    background:var(--danger-color);
+
+}
+
+.badge-info{
+
+    background:var(--info-color);
+
+}
+
+/*=============================================================================
+    Progress
+=============================================================================*/
+
+.progress{
+
+    width:100%;
+
+    height:12px;
+
+    background:#ececec;
+
+    border-radius:30px;
+
+    overflow:hidden;
+
+}
+
+.progress-bar{
+
+    width:0;
+
+    height:100%;
+
+    border-radius:inherit;
+
+    background:linear-gradient(
+        90deg,
+        var(--primary-color),
+        var(--secondary-color)
+    );
+
+    transition:width .3s ease;
+
+}
+
+/*=============================================================================
+    Alerts
+=============================================================================*/
+
+.alert{
+
+    padding:16px 18px;
+
+    border-radius:12px;
+
+    margin-bottom:20px;
+
+    font-weight:500;
+
+}
+
+.alert-success{
+
+    background:#EAFBF1;
+
+    color:#117A3D;
+
+}
+
+.alert-warning{
+
+    background:#FFF8E6;
+
+    color:#9A6700;
+
+}
+
+.alert-danger{
+
+    background:#FEECEC;
+
+    color:#C53030;
+
+}
+
+.alert-info{
+
+    background:#EAF4FF;
+
+    color:#1D4ED8;
+
+}
+
+/*=============================================================================
+    Tables
+=============================================================================*/
+
+.table{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+}
+
+.table thead{
+
+    background:#f5f7fb;
+
+}
+
+.table th{
+
+    text-align:left;
+
+    padding:16px;
+
+    font-weight:600;
+
+}
+
+.table td{
+
+    padding:16px;
+
+    border-top:1px solid var(--border-color);
+
+}
+
+.table tbody tr:hover{
+
+    background:#fafafa;
+
+}
+
+/*=============================================================================
+    Spinner
+=============================================================================*/
+
+.spinner{
+
+    width:38px;
+
+    height:38px;
+
+    border:4px solid #ececec;
+
+    border-top:4px solid var(--primary-color);
+
+    border-radius:50%;
+
+    animation:spin 1s linear infinite;
+
+}
+
+@keyframes spin{
+
+    from{
+
+        transform:rotate(0);
+
+    }
+
+    to{
+
+        transform:rotate(360deg);
+
+    }
+
+}
+
+/*=============================================================================
+    Empty State
+=============================================================================*/
+
+.empty-state{
+
+    text-align:center;
+
+    padding:60px 30px;
+
+}
+
+.empty-state i{
+
+    font-size:64px;
+
+    color:#d1d5db;
+
+    margin-bottom:18px;
+
+}
+
+.empty-state h3{
+
+    margin-bottom:10px;
+
+}
+
+.empty-state p{
+
+    color:var(--text-secondary);
+
+}
+
+/*=============================================================================
+    Section Title
+=============================================================================*/
+
+.section-title{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    margin-bottom:22px;
+
+}
+
+.section-title h2{
+
+    font-size:1.4rem;
+
+}
+
+.section-title p{
+
+    margin-top:4px;
+
+}
+
+/*=============================================================================
+    Fade Animation
+=============================================================================*/
+
+.fade-in{
+
+    animation:fadeIn .35s ease;
+
+}
+
+@keyframes fadeIn{
+
+    from{
+
+        opacity:0;
+
+        transform:translateY(8px);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:translateY(0);
+
+    }
+
+}

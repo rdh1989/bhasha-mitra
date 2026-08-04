@@ -1,0 +1,409 @@
+/*====================================================================
+    BHASHA MITRA
+    DASHBOARD LAYOUT
+=====================================================================*/
+
+/*=========================================================
+DASHBOARD
+=========================================================*/
+
+.dashboard{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:20px;
+
+    width:100%;
+
+}
+
+/*=========================================================
+HEADER
+=========================================================*/
+
+.dashboard-header{
+
+    margin-bottom:4px;
+
+}
+
+/*=========================================================
+ROWS
+=========================================================*/
+
+.dashboard-row{
+
+    display:flex;
+
+    gap:20px;
+
+    align-items:stretch;
+
+}
+
+/*=========================================================
+COMMON CARD
+=========================================================*/
+
+.card{
+
+    display:flex;
+
+    flex-direction:column;
+
+    min-width:0;
+
+}
+
+/*=========================================================
+FIRST ROW
+=========================================================*/
+
+/*=========================================================
+UPLOAD CARD LAYOUT
+=========================================================*/
+
+.insight-card{
+
+    flex:1;
+
+    min-height:480px;
+
+}
+
+/*=========================================================
+SECOND ROW
+=========================================================*/
+
+.activity-card{
+
+    flex:0 0 38%;
+
+    min-height:390px;
+
+}
+
+.translation-card{
+
+    flex:1;
+
+    min-height:390px;
+
+}
+
+/*=========================================================
+THIRD ROW
+=========================================================*/
+
+.language-card{
+
+    flex:0 0 38%;
+
+    min-height:220px;
+
+}
+
+.system-card{
+
+    flex:1;
+
+    min-height:220px;
+
+}
+
+/*=========================================================
+CARD HEADER
+=========================================================*/
+
+.card-header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    min-height:70px;
+
+    padding:20px 24px;
+
+}
+
+/*=========================================================
+CARD BODY
+=========================================================*/
+
+.card-body{
+
+    flex:1;
+
+    padding:24px;
+
+}
+
+/*=========================================================
+UPLOAD
+=========================================================*/
+
+.upload-body{
+
+    flex:1;
+
+}
+
+/*=========================================================
+PLATFORM INSIGHTS
+=========================================================*/
+
+.insight-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(4,1fr);
+
+    gap:22px;
+
+    padding:24px;
+
+}
+
+.mini-card{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    justify-content:flex-start;
+
+    text-align:center;
+
+    min-height:220px;
+
+}
+
+/*=========================================================
+RECENT ACTIVITY
+=========================================================*/
+
+.activity-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:14px;
+
+    padding:20px;
+
+}
+
+.activity-item{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:16px;
+
+}
+
+.activity-details{
+
+    flex:1;
+
+    min-width:0;
+
+}
+
+.activity-status{
+
+    width:120px;
+
+}
+
+.time{
+
+    width:90px;
+
+    text-align:right;
+
+}
+
+/*=========================================================
+TRANSLATION TABLE
+=========================================================*/
+
+.translation-table{
+
+    width:100%;
+
+    table-layout:fixed;
+
+}
+
+.translation-table th:nth-child(1){
+
+    width:34%;
+
+}
+
+.translation-table th:nth-child(2){
+
+    width:22%;
+
+}
+
+.translation-table th:nth-child(3){
+
+    width:18%;
+
+}
+
+.translation-table th:nth-child(4){
+
+    width:18%;
+
+}
+
+.translation-table th:nth-child(5){
+
+    width:8%;
+
+}
+
+/*=========================================================
+SUPPORTED LANGUAGES
+=========================================================*/
+
+.language-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(4,1fr);
+
+    gap:16px;
+
+    padding:20px;
+
+}
+
+/*=========================================================
+SYSTEM
+=========================================================*/
+
+.system-list{
+
+    display:grid;
+
+    grid-template-columns:repeat(2,1fr);
+
+    gap:16px;
+
+    padding:20px;
+
+}
+
+/*=========================================================
+TABLET
+=========================================================*/
+
+@media (max-width:1400px){
+
+    .insight-grid{
+
+        grid-template-columns:repeat(2,1fr);
+
+    }
+
+    .language-grid{
+
+        grid-template-columns:repeat(3,1fr);
+
+    }
+
+    .system-list{
+
+        grid-template-columns:1fr;
+
+    }
+
+}
+
+/*=========================================================
+LAPTOP
+=========================================================*/
+
+@media (max-width:1200px){
+
+    .dashboard-row{
+
+        flex-direction:column;
+
+    }
+
+    .upload-card,
+    .insight-card,
+    .activity-card,
+    .translation-card,
+    .language-card,
+    .system-card{
+
+        width:100%;
+
+        flex:1;
+
+        min-height:auto;
+
+    }
+
+}
+
+/*=========================================================
+MOBILE
+=========================================================*/
+
+@media (max-width:768px){
+
+    .dashboard{
+
+        gap:18px;
+
+    }
+
+    .dashboard-row{
+
+        gap:18px;
+
+    }
+
+    .insight-grid{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .language-grid{
+
+        grid-template-columns:repeat(2,1fr);
+
+    }
+
+    .system-list{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .translation-table{
+
+        display:block;
+
+        overflow-x:auto;
+
+    }
+
+}

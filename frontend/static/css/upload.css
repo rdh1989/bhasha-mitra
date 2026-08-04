@@ -1,0 +1,488 @@
+/******************************************************************************
+ *
+ * Bhasha Mitra
+ * Upload Page Stylesheet
+ *
+ * Description:
+ * Upload Video Page
+ *
+ * Author  : Team 4
+ * Version : 1.0.0
+ *
+ *****************************************************************************/
+
+/*=============================================================================
+    Page Layout
+=============================================================================*/
+
+.upload-page{
+
+    display:grid;
+
+    grid-template-columns:2fr 1fr;
+
+    gap:30px;
+
+    align-items:start;
+
+}
+
+/*=============================================================================
+    Upload Card
+=============================================================================*/
+
+.upload-card{
+
+    background:rgba(255,255,255,.94);
+
+    backdrop-filter:blur(10px);
+
+    border-radius:22px;
+
+    padding:30px;
+
+    box-shadow:var(--shadow-small);
+
+}
+
+/*=============================================================================
+    Drag & Drop
+=============================================================================*/
+
+.drop-zone{
+
+    border:3px dashed #C7B8FF;
+
+    border-radius:22px;
+
+    min-height:320px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    justify-content:center;
+
+    align-items:center;
+
+    cursor:pointer;
+
+    transition:.30s;
+
+    text-align:center;
+
+    padding:40px;
+
+    background:#FCFBFF;
+
+}
+
+.drop-zone:hover{
+
+    border-color:var(--primary-color);
+
+    background:#F7F4FF;
+
+}
+
+.drop-zone.drag-active{
+
+    background:#F2ECFF;
+
+    border-color:var(--primary-color);
+
+    transform:scale(1.01);
+
+}
+
+.drop-zone i{
+
+    font-size:72px;
+
+    color:var(--primary-color);
+
+    margin-bottom:24px;
+
+}
+
+.drop-zone h2{
+
+    margin-bottom:12px;
+
+}
+
+.drop-zone p{
+
+    margin-bottom:18px;
+
+}
+
+/*=============================================================================
+    Browse Button
+=============================================================================*/
+
+.browse-btn{
+
+    margin-top:18px;
+
+}
+
+/*=============================================================================
+    Selected File
+=============================================================================*/
+
+.selected-file{
+
+    margin-top:24px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    padding:18px;
+
+    border-radius:16px;
+
+    background:#F8FAFC;
+
+    border:1px solid var(--border-color);
+
+}
+
+.file-info{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:16px;
+
+}
+
+.file-icon{
+
+    width:54px;
+
+    height:54px;
+
+    border-radius:14px;
+
+    background:linear-gradient(
+        135deg,
+        var(--primary-color),
+        var(--secondary-color)
+    );
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    color:#ffffff;
+
+    font-size:24px;
+
+}
+
+.file-name{
+
+    font-weight:600;
+
+}
+
+.file-size{
+
+    font-size:13px;
+
+    color:var(--text-secondary);
+
+}
+
+/*=============================================================================
+    Upload Progress
+=============================================================================*/
+
+.upload-progress{
+
+    margin-top:28px;
+
+    display:none;
+
+}
+
+.progress-header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    margin-bottom:12px;
+
+}
+
+.progress-title{
+
+    font-weight:600;
+
+}
+
+.progress-value{
+
+    font-weight:700;
+
+    color:var(--primary-color);
+
+}
+
+/*=============================================================================
+    Configuration Panel
+=============================================================================*/
+
+.config-card{
+
+    background:#ffffff;
+
+    border-radius:22px;
+
+    padding:26px;
+
+    box-shadow:var(--shadow-small);
+
+}
+
+.config-card h3{
+
+    margin-bottom:22px;
+
+}
+
+/*=============================================================================
+    Language Cards
+=============================================================================*/
+
+.language-group{
+
+    margin-bottom:22px;
+
+}
+
+.language-group label{
+
+    display:block;
+
+    margin-bottom:10px;
+
+    font-weight:600;
+
+}
+
+.language-select{
+
+    width:100%;
+
+}
+
+/*=============================================================================
+    Provider
+=============================================================================*/
+
+.provider-card{
+
+    margin-top:20px;
+
+    padding:18px;
+
+    border-radius:16px;
+
+    border:1px solid var(--border-color);
+
+    background:#F9FAFB;
+
+}
+
+.provider-card h4{
+
+    margin-bottom:8px;
+
+}
+
+.provider-card p{
+
+    font-size:13px;
+
+}
+
+/*=============================================================================
+    Translation Options
+=============================================================================*/
+
+.option-list{
+
+    margin-top:22px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:14px;
+
+}
+
+.option-item{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+}
+
+.option-item label{
+
+    font-weight:500;
+
+}
+
+/*=============================================================================
+    Upload Action
+=============================================================================*/
+
+.upload-action{
+
+    margin-top:28px;
+
+}
+
+.upload-action .btn-primary{
+
+    width:100%;
+
+    height:52px;
+
+    font-size:16px;
+
+}
+
+/*=============================================================================
+    Supported Formats
+=============================================================================*/
+
+.supported-formats{
+
+    margin-top:28px;
+
+    padding:18px;
+
+    border-radius:16px;
+
+    background:#F9FAFB;
+
+}
+
+.supported-formats h4{
+
+    margin-bottom:10px;
+
+}
+
+.format-tags{
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:10px;
+
+}
+
+.format-tag{
+
+    padding:8px 14px;
+
+    border-radius:999px;
+
+    background:#ECE8FF;
+
+    color:var(--primary-color);
+
+    font-size:13px;
+
+    font-weight:600;
+
+}
+
+/*=============================================================================
+    Upload Tips
+=============================================================================*/
+
+.upload-tips{
+
+    margin-top:24px;
+
+}
+
+.upload-tips ul{
+
+    padding-left:20px;
+
+}
+
+.upload-tips li{
+
+    margin-bottom:10px;
+
+    color:var(--text-secondary);
+
+}
+
+/*=============================================================================
+    Responsive
+=============================================================================*/
+
+@media(max-width:1100px){
+
+    .upload-page{
+
+        grid-template-columns:1fr;
+
+    }
+
+}
+
+@media(max-width:768px){
+
+    .drop-zone{
+
+        min-height:250px;
+
+        padding:24px;
+
+    }
+
+    .drop-zone i{
+
+        font-size:54px;
+
+    }
+
+    .selected-file{
+
+        flex-direction:column;
+
+        align-items:flex-start;
+
+        gap:18px;
+
+    }
+
+    .config-card{
+
+        margin-top:0;
+
+    }
+
+}

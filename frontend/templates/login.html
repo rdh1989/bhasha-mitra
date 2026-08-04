@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}
+Login | {{ app_name }}
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet"
+      href="{{ url_for('static', path='css/login.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="login-page">
+
+    <!-- ==========================================================
+         Left Branding Panel
+    =========================================================== -->
+
+    <section class="login-banner">
+
+        <div class="banner-content">
+
+            <img
+                src="{{ url_for('static', path='images/logo.png') }}"
+                alt="{{ app_name }}"
+                class="banner-logo">
+
+            <h1 class="banner-title">
+
+                {{ app_name }}
+
+            </h1>
+
+            <p class="banner-text">
+
+                AI powered multilingual video translation platform.
+
+                Translate videos into Indian languages while preserving
+                subtitles, speech and context.
+
+            </p>
+
+            <div class="feature-list">
+
+                <div class="feature-item">
+                    <i class="fas fa-language"></i>
+                    <span>Supports multiple Indian languages</span>
+                </div>
+
+                <div class="feature-item">
+                    <i class="fas fa-video"></i>
+                    <span>Video + Subtitle Translation</span>
+                </div>
+
+                <div class="feature-item">
+                    <i class="fas fa-microphone"></i>
+                    <span>AI Speech Recognition</span>
+                </div>
+
+                <div class="feature-item">
+                    <i class="fas fa-volume-up"></i>
+                    <span>Natural Voice Generation</span>
+                </div>
+
+                <div class="feature-item">
+                    <i class="fas fa-lock"></i>
+                    <span>Secure Local Processing</span>
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- ==========================================================
+         Login Panel
+    =========================================================== -->
+
+    <section class="login-panel">
+
+        <div class="login-card">
+
+            <h1>
+
+                Welcome Back
+
+            </h1>
+
+            <p>
+
+                Sign in to continue using {{ app_name }}.
+
+            </p>
+
+            {% if error %}
+
+            <div class="alert alert-danger">
+
+                {{ error }}
+
+            </div>
+
+            {% endif %}
+
+            <form
+                method="POST"
+                action="/login"
+                class="login-form">
+
+                <div class="input-group">
+
+                    <label>Username</label>
+
+                    <input
+                        type="text"
+                        name="username"
+                        placeholder="Enter username"
+                        required
+                        autofocus>
+
+                    <i class="fas fa-user"></i>
+
+                </div>
+
+                <div class="input-group">
+
+                    <label>Password</label>
+
+                    <input
+                        id="password"
+                        type="password"
+                        name="password"
+                        placeholder="Enter password"
+                        required>
+
+                    <i
+                        id="togglePassword"
+                        class="fas fa-eye"
+                        style="cursor:pointer;"></i>
+
+                </div>
+
+                <div class="login-options">
+
+                    <label class="checkbox">
+
+                        <input
+                            type="checkbox"
+                            name="remember_me">
+
+                        Remember Me
+
+                    </label>
+
+                    <a href="#">
+
+                        Forgot Password?
+
+                    </a>
+
+                </div>
+
+                <button
+                    type="submit"
+                    class="login-button">
+
+                    <i class="fas fa-sign-in-alt"></i>
+
+                    Login
+
+                </button>
+
+            </form>
+
+            <div class="login-divider">
+
+                OR
+
+            </div>
+
+            <a
+                href="/dashboard"
+                class="btn btn-secondary"
+                style="width:100%;">
+
+                <i class="fas fa-home"></i>
+
+                Back to Dashboard
+
+            </a>
+
+            <div class="login-footer">
+
+                © {{ current_year }}
+
+                {{ app_name }}
+
+                <br><br>
+
+                AI Powered Video Translation Platform
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endblock %}
+
+{% block js %}
+
+<script>
+
+const togglePassword = document.getElementById("togglePassword");
+const password = document.getElementById("password");
+
+if (togglePassword) {
+
+    togglePassword.addEventListener("click", () => {
+
+        const type = password.type === "password" ? "text" : "password";
+
+        password.type = type;
+
+        togglePassword.classList.toggle("fa-eye");
+        togglePassword.classList.toggle("fa-eye-slash");
+
+    });
+
+}
+
+</script>
+
+{% endblock %}

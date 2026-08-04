@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <meta name="description"
+          content="Bhasha Mitra - AI Powered Multilingual Video Translation Platform">
+
+    <meta name="author"
+          content="Bhasha Mitra Team">
+
+<title>
+    {% block title %}
+    {{ app_name if app_name is defined else "Bhasha Mitra" }}
+    {% endblock %}
+</title>
+
+    <!-- =======================================================
+         Favicon
+    ======================================================== -->
+
+    <link rel="icon"
+          type="image/x-icon"
+          href="{{ url_for('static', path='images/favicon.ico') }}">
+
+    <!-- =======================================================
+         Google Fonts
+    ======================================================== -->
+
+    <link rel="preconnect"
+          href="https://fonts.googleapis.com">
+
+    <link rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+          rel="stylesheet">
+
+    <!-- =======================================================
+         Font Awesome
+    ======================================================== -->
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+
+    <!-- =======================================================
+         Global Styles
+    ======================================================== -->
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', path='css/main.css') }}">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', path='css/layout.css') }}">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', path='css/components.css') }}">
+
+    <!-- =======================================================
+         Page Specific CSS
+    ======================================================== -->
+
+    {% block css %}
+    {% endblock %}
+
+</head>
+
+<body>
+
+<div class="app-container">
+
+    <!-- ===========================================
+         Sidebar
+    ============================================ -->
+
+    {% include "sidebar.html" %}
+
+    <!-- ===========================================
+         Main Content
+    ============================================ -->
+
+    <div class="main-wrapper">
+
+        <!-- Header -->
+
+        {% include "header.html" %}
+
+        <!-- Page Content -->
+
+        <main class="content">
+
+            <!-- Watermark -->
+
+            <div class="watermark"></div>
+
+            <!-- Dynamic Content -->
+
+            {% block content %}
+            {% endblock %}
+
+        </main>
+
+    </div>
+
+</div>
+
+<!-- =======================================================
+     Global Javascript
+======================================================== -->
+
+<script src="{{ url_for('static', path='js/app.js') }}"></script>
+
+<!-- =======================================================
+     Page Specific Javascript
+======================================================== -->
+
+{% block js %}
+{% endblock %}
+
+</body>
+
+</html>

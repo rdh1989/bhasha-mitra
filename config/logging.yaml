@@ -1,0 +1,33 @@
+logging:
+
+  level: INFO
+
+  console:
+
+    enabled: true
+
+  application:
+
+    enabled: true
+    filename: application.log
+
+  error:
+
+    enabled: true
+    filename: error.log
+
+  jobs:
+
+    enabled: true
+    filename: jobs.log
+
+  rotation:
+
+    max_size_mb: 10
+    backup_count: 5
+
+  directory: storage/logs
+
+  format: "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+
+  date_format: "%Y-%m-%d %H:%M:%S"

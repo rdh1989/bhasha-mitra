@@ -1,0 +1,259 @@
+<div class="dashboard-body">
+
+    <!-- Left Column -->
+
+    <div class="dashboard-left">
+
+        <!-- Upload Card -->
+
+        <div class="card upload-card">
+
+            <div class="card-header">
+
+                <h2>Upload Video</h2>
+
+                <span class="tag">
+                    New
+                </span>
+
+            </div>
+
+            <p>
+
+                Drag & Drop your video here or browse from your computer.
+
+            </p>
+
+            <div class="upload-box">
+
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+
+                <h3>
+
+                    Drop Video Here
+
+                </h3>
+
+                <span>
+
+                    MP4 • AVI • MOV • MKV
+
+                </span>
+
+                <button class="btn-primary">
+
+                    Browse Files
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- Recent Activity -->
+
+        <div class="card">
+
+            <div class="card-header">
+
+                <h2>Recent Activity</h2>
+
+            </div>
+
+            <ul class="activity-list">
+
+                <li>
+
+                    <i class="fa-solid fa-circle-check success"></i>
+
+                    <div>
+
+                        <strong>Interview.mp4</strong>
+
+                        <span>Translation Completed</span>
+
+                    </div>
+
+                    <small>2 min ago</small>
+
+                </li>
+
+                <li>
+
+                    <i class="fa-solid fa-spinner processing"></i>
+
+                    <div>
+
+                        <strong>Training.mov</strong>
+
+                        <span>Generating Subtitle</span>
+
+                    </div>
+
+                    <small>8 min ago</small>
+
+                </li>
+
+                <li>
+
+                    <i class="fa-solid fa-clock waiting"></i>
+
+                    <div>
+
+                        <strong>Lecture.mp4</strong>
+
+                        <span>Waiting in Queue</span>
+
+                    </div>
+
+                    <small>12 min ago</small>
+
+                </li>
+
+            </ul>
+
+        </div>
+
+    </div>
+
+
+    <!-- Right Column -->
+
+    <div class="dashboard-right">
+
+        <!-- Translation -->
+
+        <div class="card">
+
+            <div class="card-header">
+
+                <h2>
+
+                    Latest Translation
+
+                </h2>
+
+            </div>
+
+            <div class="translation-preview">
+
+                <img src="{{ url_for('static', path='images/video-placeholder.png') }}">
+
+                <div>
+
+                    <h3>
+
+                        Product Demo.mp4
+
+                    </h3>
+
+                    <p>
+
+                        English → Marathi
+
+                    </p>
+
+                    <span class="completed">
+
+                        Completed
+
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Languages -->
+
+        <div class="card">
+
+            <div class="card-header">
+
+                <h2>
+
+                    Supported Languages
+
+                </h2>
+
+            </div>
+
+            <div class="language-grid">
+
+                <span>English</span>
+
+                <span>Hindi</span>
+
+                <span>Marathi</span>
+
+                <span>Tamil</span>
+
+                <span>Gujarati</span>
+
+                <span>Kannada</span>
+
+                <span>Bengali</span>
+
+                <span>Punjabi</span>
+
+            </div>
+
+        </div>
+
+        <!-- System -->
+
+        <div class="card">
+
+            <div class="card-header">
+
+                <h2>
+
+                    System Information
+
+                </h2>
+
+            </div>
+
+            <table class="system-table">
+
+                <tr>
+
+                    <td>AI Model</td>
+
+                    <td>Whisper Large</td>
+
+                </tr>
+
+                <tr>
+
+                    <td>Translator</td>
+
+                    <td>NLLB-200</td>
+
+                </tr>
+
+                <tr>
+
+                    <td>GPU</td>
+
+                    <td>Available</td>
+
+                </tr>
+
+                <tr>
+
+                    <td>Version</td>
+
+                    <td>1.0.0</td>
+
+                </tr>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>

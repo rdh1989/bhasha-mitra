@@ -1,0 +1,483 @@
+/******************************************************************************
+ *
+ * Bhasha Mitra
+ * Login Page Stylesheet
+ *
+ * Description:
+ * Professional Login UI
+ *
+ * Author  : Team 4
+ * Version : 1.0.0
+ *
+ *****************************************************************************/
+
+/*=============================================================================
+    Layout
+=============================================================================*/
+
+.login-page{
+
+    min-height:100vh;
+
+    display:grid;
+
+    grid-template-columns:1fr 520px;
+
+    background:#F5F7FB;
+
+}
+
+/*=============================================================================
+    Left Branding
+=============================================================================*/
+
+.login-banner{
+
+    position:relative;
+
+    overflow:hidden;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    padding:60px;
+
+    color:#ffffff;
+
+    background:linear-gradient(
+        135deg,
+        #4F46E5,
+        #6D28D9,
+        #7C3AED
+    );
+
+}
+
+.login-banner::before{
+
+    content:"";
+
+    position:absolute;
+
+    width:600px;
+
+    height:600px;
+
+    border-radius:50%;
+
+    background:rgba(255,255,255,.08);
+
+    top:-250px;
+
+    right:-150px;
+
+}
+
+.login-banner::after{
+
+    content:"";
+
+    position:absolute;
+
+    width:500px;
+
+    height:500px;
+
+    border-radius:50%;
+
+    background:rgba(255,255,255,.05);
+
+    bottom:-220px;
+
+    left:-120px;
+
+}
+
+.banner-content{
+
+    position:relative;
+
+    z-index:2;
+
+    max-width:520px;
+
+}
+
+.banner-logo{
+
+    width:220px;
+
+    margin-bottom:40px;
+
+}
+
+.banner-title{
+
+    font-size:2.8rem;
+
+    font-weight:700;
+
+    margin-bottom:20px;
+
+    line-height:1.2;
+
+    color:#ffffff;
+
+}
+
+.banner-text{
+
+    font-size:17px;
+
+    line-height:1.8;
+
+    opacity:.95;
+
+}
+
+.feature-list{
+
+    margin-top:45px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:18px;
+
+}
+
+.feature-item{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:14px;
+
+    font-size:16px;
+
+}
+
+.feature-item i{
+
+    width:44px;
+
+    height:44px;
+
+    border-radius:50%;
+
+    background:rgba(255,255,255,.18);
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+}
+
+/*=============================================================================
+    Right Panel
+=============================================================================*/
+
+.login-panel{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    padding:40px;
+
+}
+
+.login-card{
+
+    width:100%;
+
+    max-width:420px;
+
+    background:#ffffff;
+
+    border-radius:26px;
+
+    padding:40px;
+
+    box-shadow:var(--shadow-large);
+
+}
+
+.login-card h1{
+
+    margin-bottom:8px;
+
+}
+
+.login-card p{
+
+    margin-bottom:30px;
+
+    color:var(--text-secondary);
+
+}
+
+/*=============================================================================
+    Form
+=============================================================================*/
+
+.login-form{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:22px;
+
+}
+
+.input-group{
+
+    position:relative;
+
+}
+
+.input-group input{
+
+    width:100%;
+
+    height:54px;
+
+    padding:0 48px 0 16px;
+
+    border:1px solid var(--border-color);
+
+    border-radius:14px;
+
+    transition:.25s;
+
+}
+
+.input-group input:focus{
+
+    outline:none;
+
+    border-color:var(--primary-color);
+
+    box-shadow:0 0 0 4px rgba(90,45,255,.12);
+
+}
+
+.input-group i{
+
+    position:absolute;
+
+    top:50%;
+
+    right:16px;
+
+    transform:translateY(-50%);
+
+    color:#9CA3AF;
+
+}
+
+/*=============================================================================
+    Remember
+=============================================================================*/
+
+.login-options{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    font-size:14px;
+
+}
+
+.login-options a{
+
+    color:var(--primary-color);
+
+    font-weight:600;
+
+}
+
+.checkbox{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+}
+
+/*=============================================================================
+    Login Button
+=============================================================================*/
+
+.login-button{
+
+    width:100%;
+
+    height:54px;
+
+    border:none;
+
+    border-radius:14px;
+
+    background:linear-gradient(
+        135deg,
+        var(--primary-color),
+        var(--secondary-color)
+    );
+
+    color:#ffffff;
+
+    font-size:16px;
+
+    font-weight:600;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.login-button:hover{
+
+    transform:translateY(-2px);
+
+    box-shadow:var(--shadow-medium);
+
+}
+
+/*=============================================================================
+    Divider
+=============================================================================*/
+
+.login-divider{
+
+    margin:28px 0;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:16px;
+
+    color:#94A3B8;
+
+}
+
+.login-divider::before,
+
+.login-divider::after{
+
+    content:"";
+
+    flex:1;
+
+    height:1px;
+
+    background:#E5E7EB;
+
+}
+
+/*=============================================================================
+    Footer
+=============================================================================*/
+
+.login-footer{
+
+    margin-top:30px;
+
+    text-align:center;
+
+    font-size:14px;
+
+    color:var(--text-secondary);
+
+}
+
+.login-footer a{
+
+    color:var(--primary-color);
+
+    font-weight:600;
+
+}
+
+/*=============================================================================
+    Animation
+=============================================================================*/
+
+.login-card{
+
+    animation:fadeLogin .6s ease;
+
+}
+
+@keyframes fadeLogin{
+
+    from{
+
+        opacity:0;
+
+        transform:translateY(20px);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:translateY(0);
+
+    }
+
+}
+
+/*=============================================================================
+    Responsive
+=============================================================================*/
+
+@media(max-width:1100px){
+
+    .login-page{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .login-banner{
+
+        display:none;
+
+    }
+
+}
+
+@media(max-width:768px){
+
+    .login-panel{
+
+        padding:20px;
+
+    }
+
+    .login-card{
+
+        padding:30px 24px;
+
+    }
+
+}

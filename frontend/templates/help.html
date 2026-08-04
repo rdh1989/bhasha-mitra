@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Help & Support - Bhasha Mitra{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1>Help & Support</h1>
+        <p>
+            Find answers to common questions, troubleshooting steps,
+            and guidance for using Bhasha Mitra.
+        </p>
+    </div>
+</div>
+
+<!-- Quick Help -->
+
+<div class="dashboard-grid four-columns">
+
+    <div class="stat-card">
+        <i class="fa-solid fa-book fa-2x"></i>
+        <h3>User Guide</h3>
+        <p>Step-by-step instructions for using the application.</p>
+    </div>
+
+    <div class="stat-card">
+        <i class="fa-solid fa-video fa-2x"></i>
+        <h3>Translation Workflow</h3>
+        <p>Understand the complete video translation process.</p>
+    </div>
+
+    <div class="stat-card">
+        <i class="fa-solid fa-wrench fa-2x"></i>
+        <h3>Troubleshooting</h3>
+        <p>Resolve common issues quickly.</p>
+    </div>
+
+    <div class="stat-card">
+        <i class="fa-solid fa-circle-info fa-2x"></i>
+        <h3>System Information</h3>
+        <p>View application version and requirements.</p>
+    </div>
+
+</div>
+
+<!-- FAQ -->
+
+<div class="glass-card mt-4">
+
+    <div class="card-header">
+        <h2>Frequently Asked Questions</h2>
+    </div>
+
+    <div class="card-body">
+
+        <h4>How do I translate a video?</h4>
+
+        <ol>
+            <li>Open the <strong>Upload Video</strong> page.</li>
+            <li>Select your video file.</li>
+            <li>Choose the target language.</li>
+            <li>Click <strong>Translate</strong>.</li>
+            <li>Download the translated video when processing completes.</li>
+        </ol>
+
+        <hr>
+
+        <h4>Which video formats are supported?</h4>
+
+        <p>MP4, AVI, MOV and MKV.</p>
+
+        <hr>
+
+        <h4>Does Bhasha Mitra work offline?</h4>
+
+        <p>
+            Yes. Bhasha Mitra is designed to run completely offline
+            once all required AI models are installed.
+        </p>
+
+        <hr>
+
+        <h4>Where are translated files stored?</h4>
+
+        <p>
+            Completed translations are available in the
+            <strong>My Translations</strong> page.
+        </p>
+
+    </div>
+
+</div>
+
+<!-- Troubleshooting -->
+
+<div class="glass-card mt-4">
+
+    <div class="card-header">
+        <h2>Troubleshooting</h2>
+    </div>
+
+    <div class="card-body">
+
+        <table class="table">
+
+            <thead>
+
+                <tr>
+                    <th>Problem</th>
+                    <th>Suggested Solution</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                <tr>
+                    <td>Video upload failed</td>
+                    <td>Verify the video format and file size.</td>
+                </tr>
+
+                <tr>
+                    <td>No audio detected</td>
+                    <td>Ensure the uploaded video contains an audio track.</td>
+                </tr>
+
+                <tr>
+                    <td>Translation is taking longer than expected</td>
+                    <td>Large videos require additional processing time.</td>
+                </tr>
+
+                <tr>
+                    <td>Translation quality is poor</td>
+                    <td>Use videos with clear speech and minimal background noise.</td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+<!-- System Information -->
+
+<div class="glass-card mt-4">
+
+    <div class="card-header">
+        <h2>System Information</h2>
+    </div>
+
+    <div class="card-body">
+
+        <table class="table">
+
+            <tbody>
+
+                <tr>
+                    <th>Application</th>
+                    <td>Bhasha Mitra</td>
+                </tr>
+
+                <tr>
+                    <th>Version</th>
+                    <td>1.0.0</td>
+                </tr>
+
+                <tr>
+                    <th>Mode</th>
+                    <td>Offline AI Translation Platform</td>
+                </tr>
+
+                <tr>
+                    <th>Status</th>
+                    <td><span class="badge-success">Operational</span></td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,600 @@
+/******************************************************************************
+ *
+ * Bhasha Mitra
+ * Translation Page Stylesheet
+ *
+ * Description:
+ * Translation Progress & Results
+ *
+ * Author  : Team 4
+ * Version : 1.0.0
+ *
+ *****************************************************************************/
+
+/*=============================================================================
+    Layout
+=============================================================================*/
+
+.translation-page{
+
+    display:grid;
+
+    grid-template-columns:2fr 1fr;
+
+    gap:30px;
+
+    align-items:start;
+
+}
+
+/*=============================================================================
+    Main Card
+=============================================================================*/
+
+.translation-card{
+
+    background:rgba(255,255,255,.95);
+
+    backdrop-filter:blur(12px);
+
+    border-radius:22px;
+
+    padding:30px;
+
+    box-shadow:var(--shadow-small);
+
+}
+
+/*=============================================================================
+    Header
+=============================================================================*/
+
+.translation-header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-bottom:28px;
+
+}
+
+.translation-header h2{
+
+    margin-bottom:6px;
+
+}
+
+.translation-header p{
+
+    color:var(--text-secondary);
+
+}
+
+/*=============================================================================
+    Status
+=============================================================================*/
+
+.translation-status{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    padding:12px 18px;
+
+    border-radius:14px;
+
+    background:#F4F7FF;
+
+}
+
+.status-indicator{
+
+    width:12px;
+
+    height:12px;
+
+    border-radius:50%;
+
+    background:#22C55E;
+
+    animation:pulse 1.6s infinite;
+
+}
+
+@keyframes pulse{
+
+    0%{
+
+        box-shadow:0 0 0 0 rgba(34,197,94,.6);
+
+    }
+
+    70%{
+
+        box-shadow:0 0 0 10px rgba(34,197,94,0);
+
+    }
+
+    100%{
+
+        box-shadow:0 0 0 0 rgba(34,197,94,0);
+
+    }
+
+}
+
+/*=============================================================================
+    Progress
+=============================================================================*/
+
+.translation-progress{
+
+    margin-top:30px;
+
+}
+
+.progress-info{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    margin-bottom:12px;
+
+}
+
+.progress-label{
+
+    font-weight:600;
+
+}
+
+.progress-percent{
+
+    color:var(--primary-color);
+
+    font-weight:700;
+
+}
+
+/*=============================================================================
+    AI Pipeline
+=============================================================================*/
+
+.pipeline{
+
+    margin-top:40px;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:flex-start;
+
+    position:relative;
+
+}
+
+.pipeline::before{
+
+    content:"";
+
+    position:absolute;
+
+    top:26px;
+
+    left:8%;
+
+    width:84%;
+
+    height:3px;
+
+    background:#E5E7EB;
+
+    z-index:0;
+
+}
+
+.pipeline-step{
+
+    position:relative;
+
+    z-index:2;
+
+    flex:1;
+
+    text-align:center;
+
+}
+
+.pipeline-icon{
+
+    width:56px;
+
+    height:56px;
+
+    margin:auto;
+
+    border-radius:50%;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    background:#E5E7EB;
+
+    color:#666;
+
+    font-size:22px;
+
+    margin-bottom:12px;
+
+    transition:.3s;
+
+}
+
+.pipeline-step.active .pipeline-icon{
+
+    background:linear-gradient(
+        135deg,
+        var(--primary-color),
+        var(--secondary-color)
+    );
+
+    color:#ffffff;
+
+}
+
+.pipeline-step.completed .pipeline-icon{
+
+    background:#22C55E;
+
+    color:#ffffff;
+
+}
+
+.pipeline-title{
+
+    font-size:14px;
+
+    font-weight:600;
+
+}
+
+.pipeline-desc{
+
+    margin-top:6px;
+
+    font-size:12px;
+
+    color:var(--text-secondary);
+
+}
+
+/*=============================================================================
+    Translation Summary
+=============================================================================*/
+
+.summary-card{
+
+    margin-top:40px;
+
+    border-radius:18px;
+
+    padding:24px;
+
+    background:#F8FAFC;
+
+}
+
+.summary-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(2,1fr);
+
+    gap:18px;
+
+    margin-top:20px;
+
+}
+
+.summary-item{
+
+    padding:18px;
+
+    background:#ffffff;
+
+    border-radius:16px;
+
+}
+
+.summary-label{
+
+    color:var(--text-secondary);
+
+    font-size:13px;
+
+}
+
+.summary-value{
+
+    margin-top:8px;
+
+    font-size:18px;
+
+    font-weight:700;
+
+}
+
+/*=============================================================================
+    Action Panel
+=============================================================================*/
+
+.action-panel{
+
+    background:#ffffff;
+
+    border-radius:22px;
+
+    padding:24px;
+
+    box-shadow:var(--shadow-small);
+
+}
+
+.action-panel h3{
+
+    margin-bottom:22px;
+
+}
+
+.action-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:14px;
+
+}
+
+.action-list .btn{
+
+    width:100%;
+
+}
+
+/*=============================================================================
+    Stage Logs
+=============================================================================*/
+
+.stage-log{
+
+    margin-top:30px;
+
+}
+
+.log-item{
+
+    display:flex;
+
+    gap:14px;
+
+    padding:16px;
+
+    border-left:3px solid var(--primary-color);
+
+    background:#F9FAFB;
+
+    border-radius:0 14px 14px 0;
+
+    margin-bottom:14px;
+
+}
+
+.log-time{
+
+    font-weight:600;
+
+    min-width:80px;
+
+}
+
+.log-message{
+
+    color:var(--text-secondary);
+
+}
+
+/*=============================================================================
+    ETA Card
+=============================================================================*/
+
+.eta-card{
+
+    margin-top:24px;
+
+    padding:22px;
+
+    border-radius:18px;
+
+    background:linear-gradient(
+        135deg,
+        var(--primary-color),
+        var(--secondary-color)
+    );
+
+    color:#ffffff;
+
+    text-align:center;
+
+}
+
+.eta-card h3{
+
+    margin-bottom:10px;
+
+    color:#ffffff;
+
+}
+
+.eta-time{
+
+    font-size:2rem;
+
+    font-weight:700;
+
+}
+
+/*=============================================================================
+    Download Section
+=============================================================================*/
+
+.download-section{
+
+    margin-top:28px;
+
+}
+
+.download-card{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:18px;
+
+    border:1px solid var(--border-color);
+
+    border-radius:16px;
+
+    margin-bottom:14px;
+
+    transition:.25s;
+
+}
+
+.download-card:hover{
+
+    box-shadow:var(--shadow-small);
+
+    transform:translateY(-2px);
+
+}
+
+.download-info{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:14px;
+
+}
+
+.download-icon{
+
+    width:48px;
+
+    height:48px;
+
+    border-radius:14px;
+
+    background:#ECE8FF;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    color:var(--primary-color);
+
+    font-size:22px;
+
+}
+
+/*=============================================================================
+    Responsive
+=============================================================================*/
+
+@media(max-width:1100px){
+
+    .translation-page{
+
+        grid-template-columns:1fr;
+
+    }
+
+}
+
+@media(max-width:900px){
+
+    .pipeline{
+
+        flex-direction:column;
+
+        gap:24px;
+
+    }
+
+    .pipeline::before{
+
+        display:none;
+
+    }
+
+    .pipeline-step{
+
+        display:flex;
+
+        align-items:center;
+
+        text-align:left;
+
+        gap:18px;
+
+    }
+
+    .summary-grid{
+
+        grid-template-columns:1fr;
+
+    }
+
+}
+
+@media(max-width:768px){
+
+    .translation-header{
+
+        flex-direction:column;
+
+        align-items:flex-start;
+
+        gap:16px;
+
+    }
+
+    .download-card{
+
+        flex-direction:column;
+
+        align-items:flex-start;
+
+        gap:16px;
+
+    }
+
+}

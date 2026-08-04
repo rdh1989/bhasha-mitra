@@ -1,0 +1,36 @@
+security:
+
+  authentication:
+    enabled: false
+
+  authorization:
+    enabled: false
+
+  cors:
+
+    enabled: true
+
+    allow_origins:
+      - "*"
+
+    allow_methods:
+      - "*"
+
+    allow_headers:
+      - "*"
+
+  rate_limit:
+
+    enabled: false
+
+  api_keys:
+
+    enabled: false
+
+  encryption:
+
+    enabled: false
+
+  csrf:
+
+    enabled: false
