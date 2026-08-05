@@ -8,10 +8,6 @@ Purpose     : Subtitle Generation Service
 Description:
     Generates subtitle files from transcription results.
 
-Design Pattern:
-    • Strategy
-    • Dependency Injection
-
 Author:
     Bhasha Mitra AI Team
 
@@ -22,8 +18,7 @@ Version:
 
 from __future__ import annotations
 
-from app.ai.base.subtitle_provider import SubtitleProvider
-from app.ai.subtitle.models import (
+from ai.subtitle.models import (
     SubtitleRequest,
     SubtitleResult,
 )
@@ -36,15 +31,16 @@ class SubtitleService:
     Responsibilities
     ----------------
     • Generate subtitle files.
-    • Delegate subtitle generation to the configured provider.
     • Return framework models.
+
+    Notes
+    -----
+    Subtitle generation does not require an AI model.
+    It simply converts an ASRResult into a subtitle file.
     """
 
-    def __init__(
-        self,
-        provider: SubtitleProvider,
-    ) -> None:
-        self._provider = provider
+    def __init__(self) -> None:
+        pass
 
     def generate(
         self,
@@ -52,25 +48,21 @@ class SubtitleService:
     ) -> SubtitleResult:
         """
         Generate subtitle file.
-
-        Parameters
-        ----------
-        request : SubtitleRequest
-
-        Returns
-        -------
-        SubtitleResult
         """
 
-        return self._provider.generate(
-            transcription=request.transcription,
-            output_path=request.output_path,
-            subtitle_format=request.subtitle_format,
+        #
+        # TODO
+        # Move the working subtitle generation
+        # implementation here.
+        #
+
+        raise NotImplementedError(
+            "Move subtitle generation implementation here."
         )
 
     def health_check(self) -> bool:
         """
-        Verify provider health.
+        Subtitle service is always available.
         """
 
-        return self._provider.health_check()
+        return True

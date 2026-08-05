@@ -28,6 +28,8 @@ from ai.translation.models import (
     TranslationRequest,
     TranslationResult,
 )
+from ai.model_manager.manager import ModelManager
+from ai.core.language_mapper import LANGUAGE_CODES as NLLB_LANGUAGE_MAP
 
 
 class TranslationService:
@@ -44,41 +46,109 @@ class TranslationService:
 
     def __init__(
         self,
-        provider: TranslationProvider,
         adapter: TranslationAdapter,
     ) -> None:
-        self._provider = provider
+
         self._adapter = adapter
+        self._model_manager = ModelManager()
 
     def translate(
         self,
         request: TranslationRequest,
     ) -> TranslationResult:
         """
-        Translate text.
-
-        Parameters
-        ----------
-        request : TranslationRequest
-
-        Returns
-        -------
-        TranslationResult
+        Translate text using the already loaded translation model.
         """
 
-        provider_result = self._provider.translate(
-            text=request.text,
+        #
+        # Get loaded model bundle
+        #
+        model_bundle = self._model_manager.get_default_model(
+            "translation"
+        )
+
+        model = model_bundle["model"]
+        tokenizer = model_bundle["tokenizer"]
+
+        #
+        # Resolve NLLB language codes
+        #
+        try:
+
+            source_lang = NLLB_LANGUAGE_MAP[
+                request.source_language.lower()
+            ]
+
+            target_lang = NLLB_LANGUAGE_MAP[
+                request.target_language.lower()
+            ]
+
+        except KeyError as exc:
+
+            raise ValueError(
+                f"Unsupported language: {exc.args[0]}"
+            )
+
+        #
+        # Configure tokenizer
+        #
+        tokenizer.src_lang = source_lang
+
+        #
+        # Tokenize input
+        #
+        inputs = tokenizer(
+            request.text,
+            return_tensors="pt",
+            padding=True,
+        )
+
+        #
+        # Generate translation
+        #
+        # translated = model.generate(
+        #     **inputs,
+        #     forced_bos_token_id=tokenizer.convert_tokens_to_ids(
+        #         target_lang
+        #     ),
+        # )
+
+        translated = model.generate(
+            **inputs,
+            forced_bos_token_id=tokenizer.convert_tokens_to_ids(
+                target_lang
+            ),
+            max_new_tokens=256,
+            num_beams=4,
+            early_stopping=True,
+        )
+
+        #
+        # Decode output
+        #
+        translated_text = tokenizer.batch_decode(
+            translated,
+            skip_special_tokens=True,
+        )[0]
+
+        #
+        # Framework response
+        #
+        return TranslationResult(
+            original_text=request.text,
+            translated_text=translated_text,
             source_language=request.source_language,
             target_language=request.target_language,
         )
 
-        return self._adapter.to_framework_result(
-            provider_result
-        )
 
     def health_check(self) -> bool:
         """
-        Check provider health.
+        Check whether the translation model is loaded.
         """
 
-        return self._provider.health_check()
+        try:
+            self._model_manager.get_default_model("translation")
+            return True
+        except Exception:
+            return False

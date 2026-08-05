@@ -30,8 +30,8 @@ from __future__ import annotations
 
 from abc import abstractmethod
 
-from app.ai.base.provider import Provider
-from app.ai.asr.models import (
+from ai.base.provider import Provider
+from ai.asr.models import (
     TranscriptionRequest,
     TranscriptionResult,
 )

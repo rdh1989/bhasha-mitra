@@ -29,8 +29,8 @@ from __future__ import annotations
 
 from abc import abstractmethod
 
-from app.ai.base.provider import Provider
-from app.ai.subtitle.models import (
+from ai.base.provider import Provider
+from ai.subtitle.models import (
     SubtitleRequest,
     SubtitleResult,
 )

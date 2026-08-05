@@ -18,7 +18,7 @@ Version:
 
 from __future__ import annotations
 
-from app.ai.core.exceptions import AIFrameworkError
+from ai.core.exceptions import AIFrameworkError
 
 
 class ASRError(AIFrameworkError):

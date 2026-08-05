@@ -8,10 +8,6 @@ Purpose     : Text-to-Speech Service
 Description:
     Provides speech synthesis using the configured TTS provider.
 
-Design Patterns:
-    • Strategy
-    • Dependency Injection
-
 Author:
     Bhasha Mitra AI Team
 
@@ -22,9 +18,9 @@ Version:
 
 from __future__ import annotations
 
-from app.ai.base.tts_provider import TTSProvider
-from app.ai.tts.adapter import TTSAdapter
-from app.ai.tts.models import (
+from ai.model_manager.manager import ModelManager
+from ai.tts.adapter import TTSAdapter
+from ai.tts.models import (
     SpeechRequest,
     SpeechResult,
 )
@@ -37,18 +33,18 @@ class TTSService:
     Responsibilities
     ----------------
     • Accept speech synthesis requests.
-    • Delegate synthesis to the configured provider.
+    • Read TTS configuration from ModelManager.
+    • Initialize TTS engine on demand.
     • Normalize provider output.
-    • Return framework models.
     """
 
     def __init__(
         self,
-        provider: TTSProvider,
         adapter: TTSAdapter,
     ) -> None:
-        self._provider = provider
+
         self._adapter = adapter
+        self._model_manager = ModelManager()
 
     def synthesize(
         self,
@@ -56,30 +52,53 @@ class TTSService:
     ) -> SpeechResult:
         """
         Convert text into speech.
-
-        Parameters
-        ----------
-        request : SpeechRequest
-
-        Returns
-        -------
-        SpeechResult
         """
 
-        provider_result = self._provider.synthesize(
-            text=request.text,
-            language=request.language,
-            voice=request.voice,
-            output_path=request.output_path,
+        #
+        # TTS is NOT preloaded.
+        # Read provider configuration only.
+        #
+        metadata = self._model_manager.get_default_metadata(
+            "tts"
         )
 
-        return self._adapter.to_framework_result(
-            provider_result
+        #
+        # TODO
+        #
+        # Initialize Piper (or configured provider)
+        # using metadata.
+        #
+        # Example:
+        #
+        # provider = metadata["provider"]
+        # voice_path = metadata["path"]
+        #
+        # provider_result = ...
+        #
+        # return self._adapter.to_framework_result(
+        #     provider_result
+        # )
+        #
+
+        raise NotImplementedError(
+            "Move TTS inference from the working implementation."
         )
 
-    def health_check(self) -> bool:
+    def health_check(
+        self,
+    ) -> bool:
         """
-        Check provider health.
+        Verify TTS configuration exists.
         """
 
-        return self._provider.health_check()
+        try:
+
+            self._model_manager.get_default_metadata(
+                "tts"
+            )
+
+            return True
+
+        except Exception:
+
+            return False

@@ -84,3 +84,20 @@ class ASRResult:
 
     # Future extension
     warnings: list[str] = field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Request
+# ---------------------------------------------------------------------------
+
+@dataclass(slots=True)
+class ASRRequest:
+    """
+    Framework request passed to every ASR provider.
+    """
+
+    audio_path: str
+
+    language: str | None = None
+
+    metadata: dict[str, Any] = field(default_factory=dict)

@@ -22,8 +22,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.ai.asr.models import TranscriptionResult
-
+from ai.asr.models import ASRResult
 
 # ============================================================================
 # Request Models
@@ -35,7 +34,7 @@ class SubtitleRequest:
     Subtitle generation request.
     """
 
-    transcription: TranscriptionResult
+    transcription: ASRResult
 
     output_path: Path
 

@@ -6,11 +6,7 @@ Module      : service.py
 Purpose     : Automatic Speech Recognition Service
 
 Description:
-    Provides speech-to-text functionality using the configured ASR provider.
-
-Design Patterns:
-    • Strategy
-    • Dependency Injection
+    Provides speech-to-text functionality using loaded ASR models.
 
 Author:
     Bhasha Mitra AI Team
@@ -22,8 +18,8 @@ Version:
 
 from __future__ import annotations
 
-from app.ai.base.asr_provider import ASRProvider
-from app.ai.asr.adapter import ASRAdapter
+from ai.asr.adapter import ASRAdapter
+from ai.model_manager.manager import ModelManager
 
 
 class ASRService:
@@ -33,34 +29,17 @@ class ASRService:
     Responsibilities
     ----------------
     • Accept transcription requests.
-    • Delegate inference to the configured provider.
-    • Normalize provider output.
-    • Return framework response objects.
-
-    Notes
-    -----
-    This class contains no provider-specific logic.
+    • Use already loaded ASR model.
+    • Normalize framework response.
     """
 
     def __init__(
         self,
-        provider: ASRProvider,
         adapter: ASRAdapter,
     ) -> None:
-        """
-        Initialize ASR service.
 
-        Parameters
-        ----------
-        provider : ASRProvider
-            Configured ASR provider implementation.
-
-        adapter : ASRAdapter
-            Converts provider-specific output into framework models.
-        """
-
-        self._provider = provider
         self._adapter = adapter
+        self._model_manager = ModelManager()
 
     def transcribe(
         self,
@@ -68,33 +47,52 @@ class ASRService:
         language: str | None = None,
     ):
         """
-        Transcribe an audio file.
+        Transcribe audio.
 
         Parameters
         ----------
         audio_path : str
-            Audio file path.
 
         language : str | None
-            Optional language hint.
 
         Returns
         -------
-        Framework transcription result.
+        Framework ASRResult
         """
 
-        provider_result = self._provider.transcribe(
-            audio_path=audio_path,
-            language=language,
+        #
+        # Get loaded ASR model
+        #
+        model = self._model_manager.get_default_model(
+            "asr"
         )
 
-        return self._adapter.to_framework_result(
-            provider_result
+        metadata = self._model_manager.get_default_metadata(
+            "asr"
+        )
+
+        #
+        # Move inference from your working
+        # test_asr.py here.
+        #
+
+        raise NotImplementedError(
+            "Move ASR inference from test_asr.py here."
         )
 
     def health_check(self) -> bool:
         """
-        Verify provider health.
+        Verify ASR model is loaded.
         """
 
-        return self._provider.health_check()
+        try:
+
+            self._model_manager.get_default_model(
+                "asr"
+            )
+
+            return True
+
+        except Exception:
+
+            return False

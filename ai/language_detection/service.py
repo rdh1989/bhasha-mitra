@@ -6,12 +6,7 @@ Module      : service.py
 Purpose     : Language Detection Service
 
 Description:
-    Detects the spoken or written language using the configured
-    language detection provider.
-
-Design Patterns:
-    • Strategy
-    • Dependency Injection
+    Detects language using the configured language detection provider.
 
 Author:
     Bhasha Mitra AI Team
@@ -23,12 +18,12 @@ Version:
 
 from __future__ import annotations
 
-from ai.base.language_provider import LanguageProvider
-# from ai.language_detection.adapter import LanguageAdapter
+from ai.language_detection.adapter import LanguageDetectionAdapter
 from ai.language_detection.models import (
     LanguageDetectionRequest,
     LanguageDetectionResult,
 )
+from ai.model_manager.manager import ModelManager
 
 
 class LanguageDetectionService:
@@ -38,18 +33,18 @@ class LanguageDetectionService:
     Responsibilities
     ----------------
     • Accept language detection requests.
-    • Delegate detection to the configured provider.
+    • Read provider metadata from ModelManager.
+    • Initialize detector on demand.
     • Normalize provider output.
-    • Return framework models.
     """
 
     def __init__(
         self,
-        provider: LanguageProvider,
-        # adapter: LanguageAdapter,
+        adapter: LanguageDetectionAdapter,
     ) -> None:
-        self._provider = provider
-        # self._adapter = adapter
+
+        self._adapter = adapter
+        self._model_manager = ModelManager()
 
     def detect(
         self,
@@ -57,28 +52,51 @@ class LanguageDetectionService:
     ) -> LanguageDetectionResult:
         """
         Detect language.
-
-        Parameters
-        ----------
-        request : LanguageDetectionRequest
-
-        Returns
-        -------
-        LanguageDetectionResult
         """
 
-        # provider_result = self._provider.detect(
-        #     text=request.text,
-        # )
+        #
+        # Language Detection is NOT preloaded.
+        # Read provider configuration only.
+        #
+        metadata = self._model_manager.get_default_metadata(
+            "language_detection"
+        )
 
-        # return self._adapter.to_framework_result(
-        #     provider_result
-        # )
-        return self._provider.detect(text=request.text,)
+        #
+        # TODO
+        #
+        # Initialize the detector using metadata.
+        #
+        # Example:
+        #
+        # provider = metadata["provider"]
+        #
+        # detector = ...
+        #
+        # provider_result = detector.detect(request.text)
+        #
+        # return self._adapter.to_framework_result(provider_result)
+        #
 
-    def health_check(self) -> bool:
+        raise NotImplementedError(
+            "Move language detection implementation here."
+        )
+
+    def health_check(
+        self,
+    ) -> bool:
         """
-        Verify provider health.
+        Verify Language Detection configuration exists.
         """
 
-        return self._provider.health_check()
+        try:
+
+            self._model_manager.get_default_metadata(
+                "language_detection"
+            )
+
+            return True
+
+        except Exception:
+
+            return False

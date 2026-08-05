@@ -254,6 +254,78 @@ class ModelManager:
 
         return loaded_model    
 
+        # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # Default Model
+    # -------------------------------------------------------------------------
+
+    def get_default_model(
+        self,
+        category: str,
+    ):
+        """
+        Return the default loaded model for a category.
+
+        Parameters
+        ----------
+        category : str
+            AI category (translation, asr, tts, ...)
+
+        Returns
+        -------
+        Any
+            Loaded model instance.
+
+        Raises
+        ------
+        RuntimeError
+            If no model is registered or loaded.
+        """
+
+        for key in self._registry.list():
+
+            registered_category, model_name = key.split(":", 1)
+
+            if registered_category != category:
+                continue
+
+            if not self.is_loaded(category, model_name):
+                raise RuntimeError(
+                    f"Model '{category}:{model_name}' is not loaded."
+                )
+
+            return self.get_model(
+                category=category,
+                model=model_name,
+            )
+
+        raise RuntimeError(
+            f"No model registered for '{category}'."
+        )
+
+
+    def get_default_metadata(
+        self,
+        category: str,
+    ) -> dict:
+        """
+        Return metadata for the default model of a category.
+        """
+
+        for key in self._registry.list():
+
+            registered_category, model_name = key.split(":", 1)
+
+            if registered_category == category:
+                return self._registry.get(
+                    category,
+                    model_name,
+                )
+
+        raise RuntimeError(
+            f"No model registered for '{category}'."
+        )
+
     def get_model(
         self,
         category: str,

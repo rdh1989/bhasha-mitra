@@ -6,6 +6,7 @@ from app.middleware import register_middlewares
 from app.api.openapi.tags import tags_metadata
 from app.api.routes import router as api_router
 from frontend.pages.routes import router as frontend_router
+from ai.api.router import router as api_router
 from infrastructure.configuration import configuration
 from fastapi.staticfiles import StaticFiles
 from infrastructure.initialization.ai_framework import ai_framework

@@ -23,10 +23,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.ai.asr.models import (
-    LanguageInfo,
-    Segment,
-    TranscriptionResult,
+from ai.asr.models import (
+    ASRResult,
+    ASRSegment,
 )
 
 
@@ -34,37 +33,17 @@ class ASRAdapter:
     """
     Adapter responsible for converting provider-specific transcription
     results into framework models.
-
-    Notes
-    -----
-    This class isolates the framework from provider-specific SDKs.
-    Every ASR provider must return a TranscriptionResult before the
-    response leaves the AI layer.
     """
 
     def to_framework_result(
         self,
         provider_result: Any,
-    ) -> TranscriptionResult:
+    ) -> ASRResult:
         """
-        Convert a provider-specific result into a framework result.
-
-        Parameters
-        ----------
-        provider_result : Any
-            Raw object returned by the configured provider.
-
-        Returns
-        -------
-        TranscriptionResult
-
-        Raises
-        ------
-        NotImplementedError
-            Raised until a provider-specific mapper is implemented.
+        Convert provider-specific result into framework result.
         """
 
-        if isinstance(provider_result, TranscriptionResult):
+        if isinstance(provider_result, ASRResult):
             return provider_result
 
         raise NotImplementedError(
@@ -79,30 +58,15 @@ class ASRAdapter:
         end: float,
         text: str,
         confidence: float | None = None,
-    ) -> Segment:
+    ) -> ASRSegment:
         """
-        Create a framework Segment object.
+        Create framework ASR segment.
         """
 
-        return Segment(
+        return ASRSegment(
             id=segment_id,
             start=start,
             end=end,
             text=text,
             confidence=confidence,
-        )
-
-    @staticmethod
-    def create_language(
-        *,
-        language: str,
-        probability: float,
-    ) -> LanguageInfo:
-        """
-        Create a framework LanguageInfo object.
-        """
-
-        return LanguageInfo(
-            language=language,
-            probability=probability,
         )
