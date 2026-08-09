@@ -21,8 +21,12 @@ async def lifespan(app: FastAPI):
 
     configuration.initialize()
 
+    # Initialize local authentication database and default accounts.
+    from infrastructure.security import UserRepository
+    UserRepository().initialize()
+
     # Initialize AI Framework
-    ai_framework.initialize()
+    # ai_framework.initialize()
 
     print("Application Ready")
 
@@ -30,7 +34,7 @@ async def lifespan(app: FastAPI):
 
     print("Shutdown Started")
 
-    ai_framework.shutdown()
+    # ai_framework.shutdown()
 
     print("Shutdown Completed")
 

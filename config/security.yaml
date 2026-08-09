@@ -1,7 +1,10 @@
 security:
 
   authentication:
-    enabled: false
+    enabled: true
+    session_timeout_hours: 8
+    remember_me_days: 30
+    database: data/bhasha_mitra.db
 
   authorization:
     enabled: false

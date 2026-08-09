@@ -1,238 +1,183 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
 
-{% block title %}
-Login | {{ app_name }}
-{% endblock %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-{% block css %}
-<link rel="stylesheet"
-      href="{{ url_for('static', path='css/login.css') }}">
-{% endblock %}
+    <title>Login | {{ app_name }}</title>
 
-{% block content %}
+    <link rel="icon"
+          type="image/x-icon"
+          href="{{ url_for('static', path='images/favicon.ico') }}">
 
-<div class="login-page">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <!-- ==========================================================
-         Left Branding Panel
-    =========================================================== -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet">
 
-    <section class="login-banner">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 
-        <div class="banner-content">
+    <link rel="stylesheet"
+          href="{{ url_for('static', path='css/login.css') }}">
+</head>
 
-            <img
-                src="{{ url_for('static', path='images/logo.png') }}"
-                alt="{{ app_name }}"
-                class="banner-logo">
+<body class="login-body">
 
-            <h1 class="banner-title">
+    <main class="login-page">
 
-                {{ app_name }}
+        <!-- Bhasha Mitra watermark -->
+        <div class="login-watermark" aria-hidden="true"></div>
 
-            </h1>
+        <section class="login-panel" aria-label="Login">
 
-            <p class="banner-text">
+            <div class="login-card">
 
-                AI powered multilingual video translation platform.
-
-                Translate videos into Indian languages while preserving
-                subtitles, speech and context.
-
-            </p>
-
-            <div class="feature-list">
-
-                <div class="feature-item">
-                    <i class="fas fa-language"></i>
-                    <span>Supports multiple Indian languages</span>
+                <div class="login-brand">
+                    <img
+                        src="{{ url_for('static', path='images/logo.png') }}"
+                        alt="{{ app_name }}"
+                        class="login-logo">
                 </div>
 
-                <div class="feature-item">
-                    <i class="fas fa-video"></i>
-                    <span>Video + Subtitle Translation</span>
-                </div>
+                <h2>Welcome Back</h2>
 
-                <div class="feature-item">
-                    <i class="fas fa-microphone"></i>
-                    <span>AI Speech Recognition</span>
-                </div>
+                <p class="login-subtitle">
+                    Please login to your account
+                </p>
 
-                <div class="feature-item">
-                    <i class="fas fa-volume-up"></i>
-                    <span>Natural Voice Generation</span>
+                {% if error %}
+                <div class="alert alert-danger">
+                    {{ error }}
                 </div>
+                {% endif %}
 
-                <div class="feature-item">
-                    <i class="fas fa-lock"></i>
-                    <span>Secure Local Processing</span>
-                </div>
+                <form method="POST"
+                      action="/login"
+                      class="login-form">
+
+                    <div class="input-group">
+
+                        <label for="username">Username</label>
+
+                        <div class="input-control">
+                            <i class="fas fa-user input-icon" aria-hidden="true"></i>
+                            <input
+                                id="username"
+                                type="text"
+                                name="username"
+                                value="{{ username | default('') }}"
+                                placeholder="Enter your username"
+                                autocomplete="username"
+                                required
+                                autofocus>
+                        </div>
+
+                    </div>
+
+                    <div class="input-group">
+
+                        <label for="password">Password</label>
+
+                        <div class="input-control">
+                            <i class="fas fa-lock input-icon" aria-hidden="true"></i>
+                            <input
+                                id="password"
+                                type="password"
+                                name="password"
+                                placeholder="Enter your password"
+                                autocomplete="current-password"
+                                required>
+
+                            <i
+                                id="togglePassword"
+                                class="fas fa-eye password-toggle"
+                                role="button"
+                                tabindex="0"
+                                aria-label="Show password"></i>
+                        </div>
+
+                    </div>
+
+                    <div class="login-options">
+
+                        <label class="checkbox">
+                            <input
+                                type="checkbox"
+                                name="remember_me">
+                            <span>Remember Me</span>
+                        </label>
+
+                        <a href="#" class="forgot-password">
+                            Forgot Password?
+                        </a>
+
+                    </div>
+
+                    <button
+                        id="loginSubmit"
+                        type="submit"
+                        name="submit"
+                        value="login"
+                        class="login-button">
+
+                        <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+                        <span>Login</span>
+
+                    </button>
+
+                </form>
+
 
             </div>
 
-        </div>
-
-    </section>
-
-    <!-- ==========================================================
-         Login Panel
-    =========================================================== -->
-
-    <section class="login-panel">
-
-        <div class="login-card">
-
-            <h1>
-
-                Welcome Back
-
-            </h1>
-
-            <p>
-
-                Sign in to continue using {{ app_name }}.
-
-            </p>
-
-            {% if error %}
-
-            <div class="alert alert-danger">
-
-                {{ error }}
-
-            </div>
-
-            {% endif %}
-
-            <form
-                method="POST"
-                action="/login"
-                class="login-form">
-
-                <div class="input-group">
-
-                    <label>Username</label>
-
-                    <input
-                        type="text"
-                        name="username"
-                        placeholder="Enter username"
-                        required
-                        autofocus>
-
-                    <i class="fas fa-user"></i>
-
-                </div>
-
-                <div class="input-group">
-
-                    <label>Password</label>
-
-                    <input
-                        id="password"
-                        type="password"
-                        name="password"
-                        placeholder="Enter password"
-                        required>
-
-                    <i
-                        id="togglePassword"
-                        class="fas fa-eye"
-                        style="cursor:pointer;"></i>
-
-                </div>
-
-                <div class="login-options">
-
-                    <label class="checkbox">
-
-                        <input
-                            type="checkbox"
-                            name="remember_me">
-
-                        Remember Me
-
-                    </label>
-
-                    <a href="#">
-
-                        Forgot Password?
-
-                    </a>
-
-                </div>
-
-                <button
-                    type="submit"
-                    class="login-button">
-
-                    <i class="fas fa-sign-in-alt"></i>
-
-                    Login
-
-                </button>
-
-            </form>
-
-            <div class="login-divider">
-
-                OR
-
-            </div>
-
-            <a
-                href="/dashboard"
-                class="btn btn-secondary"
-                style="width:100%;">
-
-                <i class="fas fa-home"></i>
-
-                Back to Dashboard
-
-            </a>
-
-            <div class="login-footer">
-
-                © {{ current_year }}
-
-                {{ app_name }}
-
-                <br><br>
-
-                AI Powered Video Translation Platform
-
-            </div>
-
-        </div>
-
-    </section>
-
-</div>
-
-{% endblock %}
-
-{% block js %}
-
-<script>
-
-const togglePassword = document.getElementById("togglePassword");
-const password = document.getElementById("password");
-
-if (togglePassword) {
-
-    togglePassword.addEventListener("click", () => {
-
-        const type = password.type === "password" ? "text" : "password";
-
-        password.type = type;
-
-        togglePassword.classList.toggle("fa-eye");
-        togglePassword.classList.toggle("fa-eye-slash");
-
-    });
-
-}
-
-</script>
-
-{% endblock %}
+        </section>
+
+    </main>
+
+    <script>
+        const togglePassword = document.getElementById("togglePassword");
+        const password = document.getElementById("password");
+        const loginForm = document.querySelector(".login-form");
+        const loginSubmit = document.getElementById("loginSubmit");
+
+        function togglePasswordVisibility() {
+            if (!password || !togglePassword) {
+                return;
+            }
+
+            const isPassword = password.type === "password";
+            password.type = isPassword ? "text" : "password";
+
+            togglePassword.classList.toggle("fa-eye", !isPassword);
+            togglePassword.classList.toggle("fa-eye-slash", isPassword);
+            togglePassword.setAttribute(
+                "aria-label",
+                isPassword ? "Hide password" : "Show password"
+            );
+        }
+
+        if (togglePassword) {
+            togglePassword.addEventListener("click", togglePasswordVisibility);
+
+            togglePassword.addEventListener("keydown", (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    togglePasswordVisibility();
+                }
+            });
+        }
+
+        if (loginForm && loginSubmit) {
+            loginForm.addEventListener("submit", () => {
+                loginSubmit.disabled = true;
+                loginSubmit.innerHTML =
+                    '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i><span>Signing in...</span>';
+            });
+        }
+    </script>
+
+</body>
+</html>

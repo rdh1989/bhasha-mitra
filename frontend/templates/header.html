@@ -62,13 +62,15 @@
 
                 <span class="username">
 
-                    Admin
+                    {{ current_user or "User" }}
 
                 </span>
 
             </div>
 
-            <i class="fa-solid fa-chevron-down"></i>
+            <a href="/logout" title="Logout" aria-label="Logout">
+                <i class="fa-solid fa-right-from-bracket"></i>
+            </a>
 
         </div>
 

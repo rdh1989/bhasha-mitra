@@ -63,3 +63,7 @@ ruff
 # ============================
 
 pyinstaller
+# ============================
+# Authentication / Sessions
+# ============================
+itsdangerous

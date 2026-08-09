@@ -11,12 +11,14 @@ Version : 1.0.0
 ===============================================================================
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Request, status
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+
+from infrastructure.security import UserRepository
 
 # =============================================================================
 # Templates
@@ -36,6 +38,8 @@ router = APIRouter(
     tags=["Frontend"]
 )
 
+user_repository = UserRepository()
+
 # =============================================================================
 # Helper Functions
 # =============================================================================
@@ -50,6 +54,8 @@ def template_context(request: Request, **kwargs):
         "request": request,
         "app_name": "Bhasha Mitra",
         "current_year": datetime.now().year,
+        "current_user": request.session.get("username"),
+        "current_role": request.session.get("role"),
     }
 
     context.update(kwargs)
@@ -210,8 +216,46 @@ async def login(request: Request):
 
 @router.post("/login", response_class=HTMLResponse)
 async def login_submit(request: Request):
+    form = await request.form()
+    username = str(form.get("username", "")).strip()
+    password = str(form.get("password", ""))
+    remember_me = form.get("remember_me") is not None
 
-    return render_dashboard(request)
+    user = user_repository.authenticate(username, password)
+    if user is None:
+        return templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context=template_context(
+                request,
+                page="login",
+                error="Invalid username or password.",
+                username=username,
+            ),
+            status_code=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    request.session.clear()
+    request.session.update(
+        {
+            "user_id": user.id,
+            "username": user.username,
+            "role": user.role,
+            "remember_me": remember_me,
+            "expires_at": (
+                datetime.now(timezone.utc)
+                + timedelta(days=30 if remember_me else 1 / 3)
+            ).timestamp(),
+        }
+    )
+
+    return RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.get("/logout")
+async def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
 
 
 # =============================================================================
