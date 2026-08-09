@@ -61,6 +61,18 @@
 
     <link rel="stylesheet"
           href="{{ url_for('static', path='css/components.css') }}">
+    {% if request.url.path == '/settings' %}
+          <link rel="stylesheet" href="{{ url_for('static', path='css/settings.css') }}">
+    {% endif %}
+    {% if request.url.path == '/help' %}
+          <link rel="stylesheet" href="{{ url_for('static', path='css/help.css') }}">
+    {% endif %}
+    {% if request.url.path == '/history' %}
+          <link rel="stylesheet" href="{{ url_for('static', path='css/history.css') }}">
+    {% endif %}
+    {% if request.url.path == '/subtitles' %}
+          <link rel="stylesheet" href="{{ url_for('static', path='css/subtitles.css') }}">
+    {% endif %}
 
     <!-- =======================================================
          Page Specific CSS

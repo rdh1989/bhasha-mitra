@@ -1,0 +1,169 @@
+/* ==========================================================================
+   BHASHA MITRA - SETTINGS PAGE PROFESSIONAL VISUAL POLISH
+   Cosmetic styling only. Existing functionality and page layout preserved.
+   ========================================================================== */
+
+.content:has(.settings-page-header) {
+    background:
+        radial-gradient(circle at 18% 8%, rgba(90,45,255,.05), transparent 28%),
+        radial-gradient(circle at 86% 18%, rgba(123,60,255,.04), transparent 30%),
+        linear-gradient(135deg, #fbfaff 0%, #f7f4fc 48%, #f3effa 100%);
+}
+
+.content:has(.settings-page-header) .watermark {
+    opacity: .065;
+    background-size: 560px auto;
+    background-position: center center;
+    background-color: transparent;
+}
+
+.content:has(.settings-page-header) .settings-page-header {
+    margin-bottom: 22px;
+}
+
+.content:has(.settings-page-header) .settings-page-header h1 {
+    color: #16264d;
+    font-size: clamp(28px, 2.15vw, 38px);
+    line-height: 1.2;
+    letter-spacing: -.6px;
+}
+
+.content:has(.settings-page-header) .settings-page-header p {
+    margin-top: 7px;
+    color: #667085;
+    font-size: 15px;
+}
+
+/* Settings cards */
+.content:has(.settings-page-header) .settings-page-card,
+.content:has(.settings-page-header) .card,
+.content:has(.settings-page-header) .settings-card,
+.content:has(.settings-page-header) .panel {
+    background: rgba(255,255,255,.88);
+    border: 1px solid rgba(224,226,236,.94);
+    border-radius: 20px;
+    box-shadow:
+        0 8px 28px rgba(31,42,68,.055),
+        0 1px 2px rgba(31,42,68,.035);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.content:has(.settings-page-header) .card-header {
+    padding: 19px 22px;
+    border-bottom: 1px solid #eef0f5;
+}
+
+.content:has(.settings-page-header) .card-title,
+.content:has(.settings-page-header) h2,
+.content:has(.settings-page-header) h3 {
+    color: #24345f;
+    font-weight: 700;
+}
+
+/* Labels */
+.content:has(.settings-page-header) label {
+    margin-bottom: 7px;
+    color: #344054;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Inputs and selects */
+.content:has(.settings-page-header) input,
+.content:has(.settings-page-header) select,
+.content:has(.settings-page-header) textarea {
+    min-height: 44px;
+    border: 1px solid #e2e5ec;
+    border-radius: 10px;
+    background: #fff;
+    color: #344054;
+    box-shadow: 0 2px 7px rgba(31,42,68,.025);
+    transition: border-color .18s ease, box-shadow .18s ease;
+}
+
+.content:has(.settings-page-header) input:focus,
+.content:has(.settings-page-header) select:focus,
+.content:has(.settings-page-header) textarea:focus {
+    border-color: #5a2dff;
+    box-shadow: 0 0 0 4px rgba(90,45,255,.09);
+    outline: none;
+}
+
+/* Toggle / checkbox areas */
+.content:has(.settings-page-header) .form-group,
+.content:has(.settings-page-header) .setting-item,
+.content:has(.settings-page-header) .option-row {
+    padding: 14px 0;
+}
+
+.content:has(.settings-page-header) .checkbox-group,
+.content:has(.settings-page-header) .switch-group {
+    padding: 13px 14px;
+    border: 1px solid #edf0f5;
+    border-radius: 13px;
+    background: #fff;
+}
+
+.content:has(.settings-page-header) input[type="checkbox"],
+.content:has(.settings-page-header) input[type="radio"] {
+    accent-color: #5a2dff;
+}
+
+/* Primary buttons */
+.content:has(.settings-page-header) .btn-primary,
+.content:has(.settings-page-header) button[type="submit"] {
+    border-radius: 11px;
+    background: linear-gradient(135deg, #5a2dff, #7045ff);
+    box-shadow: 0 7px 17px rgba(90,45,255,.16);
+}
+
+.content:has(.settings-page-header) .btn-primary:hover,
+.content:has(.settings-page-header) button[type="submit"]:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 9px 20px rgba(90,45,255,.22);
+}
+
+/* Secondary buttons */
+.content:has(.settings-page-header) .btn-secondary {
+    border: 1px solid #e0e3ea;
+    border-radius: 10px;
+    background: #fff;
+    color: #475467;
+}
+
+.content:has(.settings-page-header) .btn-secondary:hover {
+    background: #f8f7fc;
+    border-color: #d6d1eb;
+}
+
+/* Informational sections */
+.content:has(.settings-page-header) .info-box,
+.content:has(.settings-page-header) .notice {
+    border: 1px solid #e1dbfb;
+    border-radius: 15px;
+    background: #f8f6ff;
+    color: #596780;
+}
+
+.content:has(.settings-page-header) .info-box i,
+.content:has(.settings-page-header) .notice i {
+    color: #5a2dff;
+}
+
+/* Dividers */
+.content:has(.settings-page-header) hr {
+    border: 0;
+    border-top: 1px solid #edf0f4;
+    margin: 18px 0;
+}
+
+@media (max-width: 768px) {
+    .content:has(.settings-page-header) .settings-page-header h1 {
+        font-size: 28px;
+    }
+
+    .content:has(.settings-page-header) .watermark {
+        background-size: 420px auto;
+    }
+}

@@ -598,3 +598,250 @@
     }
 
 }
+
+
+/* ==========================================================================
+   BHASHA MITRA - TRANSLATIONS PAGE PROFESSIONAL VISUAL POLISH
+   Cosmetic only. Existing HTML, JS, routes, APIs and functionality unchanged.
+   ========================================================================== */
+
+.content:has(.translations-page) {
+    background:
+        radial-gradient(circle at 18% 8%, rgba(90,45,255,.05), transparent 28%),
+        radial-gradient(circle at 86% 18%, rgba(123,60,255,.04), transparent 30%),
+        linear-gradient(135deg, #fbfaff 0%, #f7f4fc 48%, #f3effa 100%);
+}
+
+.content:has(.translations-page) .watermark {
+    opacity: .065;
+    background-size: 560px auto;
+    background-position: center center;
+    background-color: transparent;
+}
+
+/* Page heading */
+.content:has(.translations-page) .page-header {
+    margin-bottom: 22px;
+}
+
+.content:has(.translations-page) .page-header h1 {
+    color: #16264d;
+    font-size: clamp(28px, 2.15vw, 38px);
+    line-height: 1.2;
+    letter-spacing: -.6px;
+}
+
+.content:has(.translations-page) .page-header p {
+    margin-top: 7px;
+    color: #667085;
+    font-size: 15px;
+}
+
+/* Main content containers */
+.content:has(.translations-page) .translations-page .card,
+.content:has(.translations-page) .translations-page .panel,
+.content:has(.translations-page) .translations-page .translation-card,
+.content:has(.translations-page) .translations-page .filter-card {
+    background: rgba(255,255,255,.86);
+    border: 1px solid rgba(224,226,236,.92);
+    border-radius: 20px;
+    box-shadow:
+        0 8px 28px rgba(31,42,68,.055),
+        0 1px 2px rgba(31,42,68,.035);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* Search/filter area */
+.content:has(.translations-page) .filters,
+.content:has(.translations-page) .filter-section,
+.content:has(.translations-page) .translation-filters {
+    padding: 18px;
+    margin-bottom: 18px;
+    border: 1px solid #e8eaf0;
+    border-radius: 17px;
+    background: rgba(255,255,255,.82);
+    box-shadow: 0 5px 18px rgba(31,42,68,.035);
+}
+
+.content:has(.translations-page) input,
+.content:has(.translations-page) select {
+    min-height: 44px;
+    border: 1px solid #e2e5ec;
+    border-radius: 10px;
+    background: #fff;
+    color: #344054;
+    box-shadow: 0 2px 7px rgba(31,42,68,.025);
+}
+
+.content:has(.translations-page) input:focus,
+.content:has(.translations-page) select:focus {
+    border-color: #5a2dff;
+    box-shadow: 0 0 0 4px rgba(90,45,255,.09);
+    outline: none;
+}
+
+/* Translation table */
+.content:has(.translations-page) table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    background: rgba(255,255,255,.9);
+    border: 1px solid #e7e9ef;
+    border-radius: 18px;
+    box-shadow: 0 7px 24px rgba(31,42,68,.045);
+}
+
+.content:has(.translations-page) thead th {
+    padding: 16px 18px;
+    background: #f8f7fc;
+    color: #475467;
+    border-bottom: 1px solid #e8eaf0;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .45px;
+}
+
+.content:has(.translations-page) tbody td {
+    padding: 16px 18px;
+    color: #344054;
+    border-bottom: 1px solid #eef0f4;
+    font-size: 13px;
+    vertical-align: middle;
+}
+
+.content:has(.translations-page) tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.content:has(.translations-page) tbody tr {
+    transition: background .18s ease;
+}
+
+.content:has(.translations-page) tbody tr:hover {
+    background: #faf9ff;
+}
+
+/* Video/file names */
+.content:has(.translations-page) td:first-child {
+    color: #26355d;
+    font-weight: 600;
+}
+
+/* Status badges */
+.content:has(.translations-page) .status,
+.content:has(.translations-page) .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    border: 1px solid transparent;
+}
+
+/* Common semantic states */
+.content:has(.translations-page) .status.completed,
+.content:has(.translations-page) .badge.completed {
+    color: #087443;
+    background: #ecfdf3;
+    border-color: #c6f0d8;
+}
+
+.content:has(.translations-page) .status.processing,
+.content:has(.translations-page) .badge.processing {
+    color: #6941c6;
+    background: #f4f0ff;
+    border-color: #ded4ff;
+}
+
+.content:has(.translations-page) .status.failed,
+.content:has(.translations-page) .badge.failed {
+    color: #b42318;
+    background: #fef3f2;
+    border-color: #f9d1ce;
+}
+
+.content:has(.translations-page) .status.pending,
+.content:has(.translations-page) .badge.pending {
+    color: #9a6700;
+    background: #fffaeb;
+    border-color: #f6e4aa;
+}
+
+/* Action buttons/icons */
+.content:has(.translations-page) .btn,
+.content:has(.translations-page) button {
+    border-radius: 10px;
+    transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+.content:has(.translations-page) .btn-primary {
+    background: linear-gradient(135deg, #5a2dff, #7045ff);
+    box-shadow: 0 7px 17px rgba(90,45,255,.16);
+}
+
+.content:has(.translations-page) .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 9px 20px rgba(90,45,255,.22);
+}
+
+/* Empty state */
+.content:has(.translations-page) .empty-state {
+    padding: 48px 24px;
+    border: 1px dashed #d8d4e8;
+    border-radius: 18px;
+    background: rgba(255,255,255,.72);
+    color: #667085;
+}
+
+.content:has(.translations-page) .empty-state i {
+    color: #7250ff;
+    opacity: .85;
+}
+
+/* Pagination */
+.content:has(.translations-page) .pagination {
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+}
+
+.content:has(.translations-page) .pagination button,
+.content:has(.translations-page) .pagination a {
+    min-width: 36px;
+    height: 36px;
+    border: 1px solid #e2e5ec;
+    border-radius: 9px;
+    background: #fff;
+    color: #475467;
+}
+
+.content:has(.translations-page) .pagination .active {
+    border-color: #5a2dff;
+    background: #5a2dff;
+    color: #fff;
+}
+
+/* Responsive polish only */
+@media (max-width: 768px) {
+    .content:has(.translations-page) .page-header h1 {
+        font-size: 28px;
+    }
+
+    .content:has(.translations-page) table {
+        display: block;
+        overflow-x: auto;
+    }
+
+    .content:has(.translations-page) .watermark {
+        background-size: 420px auto;
+    }
+}
+

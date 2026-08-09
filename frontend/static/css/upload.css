@@ -486,3 +486,318 @@
     }
 
 }
+
+
+/* ==========================================================================
+   BHASHA MITRA - UPLOAD PAGE PROFESSIONAL VISUAL POLISH
+   Cosmetic only. Existing HTML, JS, routes, APIs and functionality unchanged.
+   ========================================================================== */
+
+/* Keep the same page layout, but give the upload page the same clean visual
+   language as the professionally polished dashboard. */
+.content:has(.upload-page) {
+    background:
+        radial-gradient(circle at 18% 8%, rgba(90,45,255,.055), transparent 28%),
+        radial-gradient(circle at 86% 18%, rgba(123,60,255,.045), transparent 30%),
+        linear-gradient(135deg, #fbfaff 0%, #f7f4fc 48%, #f3effa 100%);
+}
+
+.content:has(.upload-page) .watermark {
+    opacity: .075;
+    background-size: 560px auto;
+    background-position: center center;
+    background-color: transparent;
+}
+
+/* Page heading */
+.content:has(.upload-page) .page-header {
+    margin-bottom: 22px;
+}
+
+.content:has(.upload-page) .page-header h1 {
+    font-size: clamp(28px, 2.15vw, 38px);
+    line-height: 1.2;
+    letter-spacing: -.6px;
+    color: #16264d;
+}
+
+.content:has(.upload-page) .page-header p {
+    margin-top: 7px;
+    color: #667085;
+    font-size: 15px;
+}
+
+/* Preserve the existing two-column layout and improve only its appearance. */
+.content:has(.upload-page) .upload-page {
+    gap: 22px;
+}
+
+/* Actual classes used by upload.html */
+.content:has(.upload-page) .upload-panel,
+.content:has(.upload-page) .translation-panel {
+    position: relative;
+    overflow: hidden;
+    background: rgba(255,255,255,.84);
+    border: 1px solid rgba(224,226,236,.92);
+    border-radius: 22px;
+    box-shadow:
+        0 8px 28px rgba(31,42,68,.055),
+        0 1px 2px rgba(31,42,68,.035);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.content:has(.upload-page) .upload-panel {
+    padding: 26px;
+}
+
+.content:has(.upload-page) .translation-panel {
+    padding: 24px;
+}
+
+.content:has(.upload-page) .upload-panel h2,
+.content:has(.upload-page) .translation-panel h2 {
+    margin-bottom: 20px;
+    color: #24345f;
+    font-size: 19px;
+    font-weight: 700;
+}
+
+/* Drag/drop area: clean, clear and consistent with dashboard cards. */
+.content:has(.upload-page) .upload-area {
+    min-height: 330px;
+    padding: 36px 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+
+    border: 2px dashed #c9bdf8;
+    border-radius: 20px;
+    background: linear-gradient(
+        145deg,
+        rgba(250,248,255,.98),
+        rgba(245,242,253,.90)
+    );
+
+    transition:
+        border-color .22s ease,
+        background .22s ease,
+        box-shadow .22s ease,
+        transform .22s ease;
+}
+
+.content:has(.upload-page) .upload-area:hover,
+.content:has(.upload-page) .upload-area.drag-active {
+    border-color: #5a2dff;
+    background: #f7f4ff;
+    box-shadow: 0 10px 24px rgba(90,45,255,.09);
+}
+
+.content:has(.upload-page) .upload-area.drag-active {
+    transform: scale(1.005);
+}
+
+.content:has(.upload-page) .upload-area > i {
+    width: 82px;
+    height: 82px;
+    margin-bottom: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 22px;
+    background: rgba(90,45,255,.09);
+    color: #5a2dff;
+    font-size: 42px;
+}
+
+.content:has(.upload-page) .upload-area h3 {
+    margin: 0 0 7px;
+    color: #26355d;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.content:has(.upload-page) .upload-area > span {
+    margin-bottom: 18px;
+    color: #7b87a6;
+    font-size: 13px;
+}
+
+/* Browse button */
+.content:has(.upload-page) .upload-area .btn-primary {
+    min-width: 180px;
+    height: 44px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, #5a2dff, #7045ff);
+    box-shadow: 0 8px 18px rgba(90,45,255,.17);
+}
+
+.content:has(.upload-page) .upload-area .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px rgba(90,45,255,.23);
+}
+
+/* Video preview */
+.content:has(.upload-page) .video-preview {
+    margin-top: 18px;
+    padding: 10px;
+    border: 1px solid #e8eaf0;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 5px 18px rgba(31,42,68,.04);
+    overflow: hidden;
+}
+
+.content:has(.upload-page) .video-preview video {
+    display: block;
+    width: 100%;
+    max-height: 360px;
+    border-radius: 10px;
+    background: #10131b;
+}
+
+/* Upload progress */
+.content:has(.upload-page) .upload-progress {
+    margin-top: 18px;
+    padding: 17px 18px;
+    background: #fff;
+    border: 1px solid #edf0f5;
+    border-radius: 15px;
+    box-shadow: 0 4px 14px rgba(31,42,68,.035);
+}
+
+.content:has(.upload-page) .upload-progress h4 {
+    margin-bottom: 11px;
+    color: #344054;
+    font-size: 14px;
+}
+
+.content:has(.upload-page) .upload-progress .progress {
+    height: 7px;
+    background: #ece9fb;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.content:has(.upload-page) .upload-progress .progress-bar {
+    background: linear-gradient(90deg, #5a2dff, #7b3cff);
+}
+
+.content:has(.upload-page) #uploadProgressText {
+    margin-top: 7px;
+    color: #5a2dff;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* Translation settings */
+.content:has(.upload-page) .translation-panel .form-group {
+    margin-bottom: 18px;
+}
+
+.content:has(.upload-page) .translation-panel .form-group > label {
+    margin-bottom: 7px;
+    color: #344054;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.content:has(.upload-page) .translation-panel select.input {
+    min-height: 46px;
+    padding: 11px 14px;
+    border: 1px solid #e3e6ed;
+    border-radius: 11px;
+    background: #fff;
+    color: #344054;
+    font-size: 13px;
+    box-shadow: 0 2px 7px rgba(31,42,68,.025);
+}
+
+.content:has(.upload-page) .translation-panel select.input:hover {
+    border-color: #d4cff2;
+}
+
+.content:has(.upload-page) .translation-panel select.input:focus {
+    border-color: #5a2dff;
+    box-shadow: 0 0 0 4px rgba(90,45,255,.09);
+}
+
+/* Output options */
+.content:has(.upload-page) .checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 13px 14px;
+    border: 1px solid #edf0f5;
+    border-radius: 13px;
+    background: #fff;
+}
+
+.content:has(.upload-page) .checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 0;
+    color: #475467;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.content:has(.upload-page) .checkbox-group input {
+    width: 17px;
+    height: 17px;
+    accent-color: #5a2dff;
+}
+
+/* Start Translation */
+.content:has(.upload-page) #startTranslation {
+    min-height: 48px;
+    margin-top: 4px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, #5a2dff, #7045ff);
+    box-shadow: 0 8px 18px rgba(90,45,255,.17);
+}
+
+.content:has(.upload-page) #startTranslation:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px rgba(90,45,255,.23);
+}
+
+/* Keep the existing responsive layout, just refine spacing. */
+@media (max-width: 1100px) {
+    .content:has(.upload-page) .upload-page {
+        gap: 18px;
+    }
+}
+
+@media (max-width: 768px) {
+    .content:has(.upload-page) .upload-panel,
+    .content:has(.upload-page) .translation-panel {
+        padding: 20px;
+    }
+
+    .content:has(.upload-page) .upload-area {
+        min-height: 270px;
+        padding: 28px 20px;
+    }
+
+    .content:has(.upload-page) .upload-area > i {
+        width: 70px;
+        height: 70px;
+        font-size: 36px;
+    }
+
+    .content:has(.upload-page) .page-header h1 {
+        font-size: 28px;
+    }
+
+    .content:has(.upload-page) .watermark {
+        background-size: 420px auto;
+    }
+}
+

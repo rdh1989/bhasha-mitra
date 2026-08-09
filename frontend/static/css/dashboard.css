@@ -1545,3 +1545,402 @@ ONLINE STATUS
     }
 
 }
+
+
+
+/* ==========================================================================
+   BHASHA MITRA - DASHBOARD PROFESSIONAL VISUAL POLISH
+   Cosmetic only: no layout structure, routes, JS, API or functionality changes.
+   ========================================================================== */
+
+/* Keep the existing dashboard structure, but make the page easier to read. */
+.content:has(.dashboard) .watermark {
+    opacity: .075;
+    background-size: 560px auto;
+    background-position: center center;
+    background-color: transparent;
+}
+
+/* Page background */
+.content:has(.dashboard) {
+    background:
+        radial-gradient(circle at 18% 8%, rgba(90,45,255,.055), transparent 28%),
+        radial-gradient(circle at 86% 18%, rgba(123,60,255,.045), transparent 30%),
+        linear-gradient(135deg, #fbfaff 0%, #f7f4fc 48%, #f3effa 100%);
+}
+
+/* Dashboard heading */
+.dashboard-header h1 {
+    font-size: clamp(28px, 2.15vw, 40px);
+    line-height: 1.2;
+    letter-spacing: -.7px;
+    color: #16264d;
+}
+
+.dashboard-header h1 span:first-of-type {
+    color: #16264d;
+}
+
+.dashboard-header .wave {
+    display: inline-block;
+    margin-left: 5px;
+}
+
+.dashboard-header p {
+    margin-top: 8px;
+    font-size: 16px;
+    color: #667085;
+}
+
+/* Main cards: clean white/glass finish rather than translucent content. */
+.dashboard .card {
+    background: rgba(255,255,255,.82);
+    border: 1px solid rgba(224,226,236,.90);
+    border-radius: 22px;
+    box-shadow:
+        0 8px 28px rgba(31,42,68,.055),
+        0 1px 2px rgba(31,42,68,.035);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.dashboard .card:hover {
+    border-color: rgba(90,45,255,.16);
+    box-shadow:
+        0 12px 32px rgba(31,42,68,.075),
+        0 1px 2px rgba(31,42,68,.04);
+}
+
+/* Card headers */
+.dashboard .card-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid #eef0f5;
+}
+
+.dashboard .card-title {
+    gap: 10px;
+}
+
+.dashboard .card-title i {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: rgba(90,45,255,.08);
+    color: #5a2dff;
+    font-size: 16px;
+}
+
+.dashboard .card-title span {
+    font-size: 17px;
+    font-weight: 700;
+    color: #24345f;
+}
+
+.dashboard .card-header a {
+    font-size: 13px;
+    font-weight: 600;
+    color: #5a2dff;
+}
+
+/* Upload panel */
+.dashboard .upload-card {
+    background: rgba(255,255,255,.88);
+}
+
+.dashboard .upload-body {
+    padding: 28px;
+}
+
+.dashboard .upload-icon {
+    width: 86px;
+    height: 86px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 22px;
+    background: rgba(90,45,255,.075);
+}
+
+.dashboard .upload-icon i {
+    font-size: 48px;
+    color: #5a2dff;
+}
+
+.dashboard .upload-body h2 {
+    font-size: 19px;
+    color: #1e2b50;
+}
+
+.dashboard .upload-body p {
+    margin-top: 9px;
+    margin-bottom: 20px;
+    color: #69758f;
+    font-size: 14px;
+}
+
+.dashboard .upload-button {
+    width: 218px;
+    height: 46px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, #5a2dff, #7045ff);
+    box-shadow: 0 8px 18px rgba(90,45,255,.18);
+}
+
+.dashboard .upload-button:hover {
+    background: linear-gradient(135deg, #4f24ed, #6336f2);
+    box-shadow: 0 10px 22px rgba(90,45,255,.24);
+}
+
+.dashboard .upload-body small {
+    margin-top: 10px;
+    color: #74809a;
+    font-size: 12px;
+}
+
+/* Insight cards */
+.dashboard .insight-grid {
+    gap: 16px;
+    padding: 20px 24px 24px;
+}
+
+.dashboard .mini-card {
+    min-height: 205px;
+    padding: 24px 18px;
+    background: #fff;
+    border: 1px solid #edf0f5;
+    border-radius: 18px;
+    box-shadow: 0 5px 18px rgba(31,42,68,.035);
+}
+
+.dashboard .mini-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(90,45,255,.15);
+    box-shadow: 0 10px 24px rgba(31,42,68,.07);
+}
+
+.dashboard .mini-card h4 {
+    margin-top: 8px;
+    font-size: 16px;
+    color: #53617e;
+}
+
+.dashboard .mini-card h2 {
+    margin-top: 8px;
+    font-size: 29px;
+    line-height: 1.1;
+    color: #172554;
+}
+
+.dashboard .mini-card > span {
+    margin-top: 7px;
+    color: #7b87a6;
+    font-size: 13px;
+}
+
+/* Recent activity */
+.dashboard .activity-list {
+    gap: 10px;
+    padding: 18px 20px 20px;
+}
+
+.dashboard .activity-item {
+    gap: 14px;
+    padding: 14px 16px;
+    background: #fff;
+    border: 1px solid #edf0f5;
+    border-radius: 15px;
+    box-shadow: 0 3px 12px rgba(31,42,68,.028);
+}
+
+.dashboard .activity-item:hover {
+    transform: translateY(-2px);
+    background: #fff;
+    box-shadow: 0 8px 20px rgba(31,42,68,.065);
+}
+
+.dashboard .activity-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: rgba(90,45,255,.08);
+    font-size: 17px;
+}
+
+.dashboard .activity-details h4 {
+    font-size: 14px;
+    color: #26355d;
+}
+
+.dashboard .activity-details p {
+    font-size: 12px;
+    color: #7b87a6;
+}
+
+.dashboard .activity-status {
+    min-width: 108px;
+}
+
+/* The HTML uses .badge.success/.processing/.queue/.failed,
+   while the global stylesheet uses badge-success etc. Fix that
+   mismatch at dashboard scope without changing the markup. */
+.dashboard .badge.success {
+    background: rgba(34,197,94,.11);
+    color: #15803d;
+}
+
+.dashboard .badge.processing {
+    background: rgba(245,158,11,.12);
+    color: #b45309;
+}
+
+.dashboard .badge.queue {
+    background: rgba(59,130,246,.11);
+    color: #1d4ed8;
+}
+
+.dashboard .badge.failed {
+    background: rgba(239,68,68,.11);
+    color: #b91c1c;
+}
+
+.dashboard .badge {
+    min-height: 24px;
+    padding: 4px 9px;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+/* Progress */
+.dashboard .progress {
+    height: 6px;
+    margin-top: 6px;
+    background: #ece9fb;
+}
+
+.dashboard .progress-bar {
+    background: linear-gradient(90deg, #5a2dff, #7b3cff);
+}
+
+/* Recent translations table */
+.dashboard .translation-table {
+    border-spacing: 0 6px;
+}
+
+.dashboard .translation-table thead th {
+    padding: 13px 14px 10px;
+    color: #667085;
+    font-size: 12px;
+    font-weight: 600;
+    border-bottom: 1px solid #eef0f5;
+}
+
+.dashboard .translation-table tbody tr {
+    background: #fff;
+    border: 1px solid #edf0f5;
+}
+
+.dashboard .translation-table tbody tr:hover {
+    transform: none;
+    background: #fafaff;
+}
+
+.dashboard .translation-table td {
+    padding: 13px 14px;
+    color: #344054;
+    font-size: 13px;
+    vertical-align: middle;
+}
+
+/* Languages */
+.dashboard .language-grid {
+    gap: 12px;
+    padding: 18px 20px 22px;
+}
+
+.dashboard .language-item {
+    min-height: 82px;
+    padding: 14px;
+    background: #fff;
+    border: 1px solid #edf0f5;
+    border-radius: 15px;
+    box-shadow: 0 3px 12px rgba(31,42,68,.025);
+}
+
+.dashboard .language-item:hover {
+    transform: translateY(-2px);
+    background: #fff;
+    box-shadow: 0 8px 20px rgba(31,42,68,.06);
+}
+
+.dashboard .language-item span {
+    margin-top: 5px;
+    color: #344054;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* System information */
+.dashboard .system-list {
+    gap: 10px;
+    padding: 18px 20px 22px;
+}
+
+.dashboard .system-row {
+    min-height: 52px;
+    padding: 13px 16px;
+    background: #fff;
+    border: 1px solid #edf0f5;
+    border-radius: 14px;
+}
+
+.dashboard .system-row:hover {
+    transform: none;
+    background: #fafaff;
+}
+
+.dashboard .system-row span {
+    color: #69758f;
+    font-size: 13px;
+}
+
+.dashboard .system-row strong {
+    color: #26355d;
+    font-size: 14px;
+}
+
+.dashboard .status-online {
+    color: #15803d;
+}
+
+/* Small-screen visual cleanup; structure/breakpoints remain intact. */
+@media (max-width: 1400px) {
+    .dashboard .mini-card {
+        min-height: 190px;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-header h1 {
+        font-size: 28px;
+    }
+
+    .dashboard .card-header {
+        padding: 17px 18px 14px;
+    }
+
+    .dashboard .upload-body {
+        padding: 22px;
+    }
+
+    .dashboard .mini-card {
+        min-height: 170px;
+    }
+
+    .content:has(.dashboard) .watermark {
+        background-size: 420px auto;
+    }
+}

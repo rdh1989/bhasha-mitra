@@ -1,0 +1,167 @@
+/* ==========================================================================
+   BHASHA MITRA - HELP PAGE PROFESSIONAL VISUAL POLISH
+   Cosmetic styling only. Existing functionality and page layout preserved.
+   ========================================================================== */
+
+.content:has(.help-page-header) {
+    background:
+        radial-gradient(circle at 18% 8%, rgba(90,45,255,.05), transparent 28%),
+        radial-gradient(circle at 86% 18%, rgba(123,60,255,.04), transparent 30%),
+        linear-gradient(135deg, #fbfaff 0%, #f7f4fc 48%, #f3effa 100%);
+}
+
+.content:has(.help-page-header) .watermark {
+    opacity: .065;
+    background-size: 560px auto;
+    background-position: center center;
+    background-color: transparent;
+}
+
+.content:has(.help-page-header) .help-page-header {
+    margin-bottom: 22px;
+}
+
+.content:has(.help-page-header) .help-page-header h1 {
+    color: #16264d;
+    font-size: clamp(28px, 2.15vw, 38px);
+    line-height: 1.2;
+    letter-spacing: -.6px;
+}
+
+.content:has(.help-page-header) .help-page-header p {
+    margin-top: 7px;
+    color: #667085;
+    font-size: 15px;
+}
+
+/* FAQ/help cards */
+.content:has(.help-page-header) .card,
+.content:has(.help-page-header) .help-card,
+.content:has(.help-page-header) .faq-card,
+.content:has(.help-page-header) .panel {
+    background: rgba(255,255,255,.88);
+    border: 1px solid rgba(224,226,236,.94);
+    border-radius: 20px;
+    box-shadow:
+        0 8px 28px rgba(31,42,68,.055),
+        0 1px 2px rgba(31,42,68,.035);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.content:has(.help-page-header) .card-header {
+    padding: 19px 22px;
+    border-bottom: 1px solid #eef0f5;
+}
+
+.content:has(.help-page-header) .card-title,
+.content:has(.help-page-header) h2,
+.content:has(.help-page-header) h3 {
+    color: #24345f;
+    font-weight: 700;
+}
+
+/* FAQ rows */
+.content:has(.help-page-header) .faq-item,
+.content:has(.help-page-header) .help-item,
+.content:has(.help-page-header) details {
+    background: #fff;
+    border: 1px solid #e9ebf0;
+    border-radius: 15px;
+    box-shadow: 0 3px 12px rgba(31,42,68,.025);
+    transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+.content:has(.help-page-header) .faq-item:hover,
+.content:has(.help-page-header) .help-item:hover,
+.content:has(.help-page-header) details:hover {
+    border-color: rgba(90,45,255,.18);
+    background: #fcfbff;
+    box-shadow: 0 8px 20px rgba(31,42,68,.055);
+}
+
+.content:has(.help-page-header) summary {
+    padding: 16px 18px;
+    color: #344054;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.content:has(.help-page-header) summary::marker {
+    color: #5a2dff;
+}
+
+.content:has(.help-page-header) .faq-answer,
+.content:has(.help-page-header) .help-answer {
+    padding: 0 18px 17px;
+    color: #667085;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+/* Search/help controls */
+.content:has(.help-page-header) input,
+.content:has(.help-page-header) select {
+    min-height: 44px;
+    border: 1px solid #e2e5ec;
+    border-radius: 10px;
+    background: #fff;
+    color: #344054;
+    box-shadow: 0 2px 7px rgba(31,42,68,.025);
+}
+
+.content:has(.help-page-header) input:focus,
+.content:has(.help-page-header) select:focus {
+    border-color: #5a2dff;
+    box-shadow: 0 0 0 4px rgba(90,45,255,.09);
+    outline: none;
+}
+
+/* Help links/buttons */
+.content:has(.help-page-header) .btn {
+    border-radius: 10px;
+}
+
+.content:has(.help-page-header) .btn-primary {
+    background: linear-gradient(135deg, #5a2dff, #7045ff);
+    box-shadow: 0 7px 17px rgba(90,45,255,.16);
+}
+
+.content:has(.help-page-header) .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 9px 20px rgba(90,45,255,.22);
+}
+
+/* Informational callouts */
+.content:has(.help-page-header) .info-box,
+.content:has(.help-page-header) .notice {
+    border: 1px solid #e1dbfb;
+    border-radius: 15px;
+    background: #f8f6ff;
+    color: #596780;
+}
+
+.content:has(.help-page-header) .info-box i,
+.content:has(.help-page-header) .notice i {
+    color: #5a2dff;
+}
+
+/* Empty/helpful state */
+.content:has(.help-page-header) .empty-state {
+    padding: 44px 24px;
+    border: 1px dashed #d8d4e8;
+    border-radius: 17px;
+    background: rgba(255,255,255,.72);
+    color: #667085;
+}
+
+@media (max-width: 768px) {
+    .content:has(.help-page-header) .help-page-header h1 {
+        font-size: 28px;
+    }
+
+    .content:has(.help-page-header) .watermark {
+        background-size: 420px auto;
+    }
+}

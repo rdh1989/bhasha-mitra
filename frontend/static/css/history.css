@@ -1,574 +1,220 @@
-/******************************************************************************
- *
- * Bhasha Mitra
- * History Page Stylesheet
- *
- * Description:
- * Translation History UI
- *
- * Author  : Team 4
- * Version : 1.0.0
- *
- *****************************************************************************/
+/* ==========================================================================
+   BHASHA MITRA - HISTORY PAGE PROFESSIONAL VISUAL POLISH
+   Cosmetic styling only. Existing functionality and page layout preserved.
+   ========================================================================== */
 
-/*=============================================================================
-    Layout
-=============================================================================*/
-
-.history-page{
-
-    display:flex;
-
-    flex-direction:column;
-
-    gap:30px;
-
+.content:has(.history-page-header) {
+    background:
+        radial-gradient(circle at 18% 8%, rgba(90,45,255,.05), transparent 28%),
+        radial-gradient(circle at 86% 18%, rgba(123,60,255,.04), transparent 30%),
+        linear-gradient(135deg, #fbfaff 0%, #f7f4fc 48%, #f3effa 100%);
 }
 
-/*=============================================================================
-    Toolbar
-=============================================================================*/
-
-.history-toolbar{
-
-    display:flex;
-
-    justify-content:space-between;
-
-    align-items:center;
-
-    gap:20px;
-
-    flex-wrap:wrap;
-
+.content:has(.history-page-header) .watermark {
+    opacity: .065;
+    background-size: 560px auto;
+    background-position: center center;
+    background-color: transparent;
 }
 
-.history-search{
-
-    flex:1;
-
-    min-width:300px;
-
-    position:relative;
-
+.content:has(.history-page-header) .history-page-header {
+    margin-bottom: 22px;
 }
 
-.history-search input{
-
-    width:100%;
-
-    height:48px;
-
-    padding:0 18px 0 50px;
-
-    border:1px solid var(--border-color);
-
-    border-radius:14px;
-
-    background:#ffffff;
-
+.content:has(.history-page-header) .history-page-header h1 {
+    color: #16264d;
+    font-size: clamp(28px, 2.15vw, 38px);
+    line-height: 1.2;
+    letter-spacing: -.6px;
 }
 
-.history-search i{
-
-    position:absolute;
-
-    left:18px;
-
-    top:50%;
-
-    transform:translateY(-50%);
-
-    color:#9CA3AF;
-
+.content:has(.history-page-header) .history-page-header p {
+    margin-top: 7px;
+    color: #667085;
+    font-size: 15px;
 }
 
-.history-filters{
-
-    display:flex;
-
-    gap:12px;
-
-    flex-wrap:wrap;
-
+.content:has(.history-page-header) .history-page-card {
+    background: rgba(255,255,255,.88);
+    border: 1px solid rgba(224,226,236,.94);
+    border-radius: 22px;
+    box-shadow:
+        0 8px 28px rgba(31,42,68,.055),
+        0 1px 2px rgba(31,42,68,.035);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    overflow: hidden;
 }
 
-.history-filters select{
-
-    min-width:170px;
-
+.content:has(.history-page-header) .history-page-card .card-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #eef0f5;
 }
 
-/*=============================================================================
-    History Card
-=============================================================================*/
-
-.history-card{
-
-    background:#ffffff;
-
-    border-radius:22px;
-
-    padding:24px;
-
-    box-shadow:var(--shadow-small);
-
-    overflow:hidden;
-
+.content:has(.history-page-header) .history-page-card .card-title {
+    color: #24345f;
+    font-size: 17px;
+    font-weight: 700;
 }
 
-/*=============================================================================
-    Table
-=============================================================================*/
-
-.table-wrapper{
-
-    overflow-x:auto;
-
+.content:has(.history-page-header) .history-page-card .card-body {
+    padding: 20px 24px 24px;
 }
 
-.history-table{
-
-    width:100%;
-
-    border-collapse:collapse;
-
+/* History table */
+.content:has(.history-page-header) table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    border: 1px solid #e7e9ef;
+    border-radius: 16px;
+    background: #fff;
 }
 
-.history-table thead{
-
-    background:#F8FAFC;
-
+.content:has(.history-page-header) thead th {
+    padding: 14px 16px;
+    background: #f8f7fc;
+    color: #475467;
+    border-bottom: 1px solid #e8eaf0;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .4px;
 }
 
-.history-table th{
-
-    padding:18px;
-
-    text-align:left;
-
-    font-size:14px;
-
-    font-weight:600;
-
-    color:var(--text-primary);
-
-    border-bottom:1px solid var(--border-color);
-
+.content:has(.history-page-header) tbody td {
+    padding: 14px 16px;
+    color: #344054;
+    border-bottom: 1px solid #eef0f4;
+    font-size: 13px;
+    vertical-align: middle;
 }
 
-.history-table td{
-
-    padding:18px;
-
-    border-bottom:1px solid #EEF2F7;
-
-    vertical-align:middle;
-
+.content:has(.history-page-header) tbody tr:last-child td {
+    border-bottom: 0;
 }
 
-.history-table tbody tr{
-
-    transition:.25s;
-
+.content:has(.history-page-header) tbody tr {
+    transition: background .18s ease;
 }
 
-.history-table tbody tr:hover{
-
-    background:#FAFBFF;
-
+.content:has(.history-page-header) tbody tr:hover {
+    background: #faf9ff;
 }
 
-/*=============================================================================
-    Video Info
-=============================================================================*/
-
-.video-info{
-
-    display:flex;
-
-    align-items:center;
-
-    gap:14px;
-
+/* Search/filter controls */
+.content:has(.history-page-header) input,
+.content:has(.history-page-header) select {
+    min-height: 44px;
+    border: 1px solid #e2e5ec;
+    border-radius: 10px;
+    background: #fff;
+    color: #344054;
+    box-shadow: 0 2px 7px rgba(31,42,68,.025);
 }
 
-.video-icon{
-
-    width:48px;
-
-    height:48px;
-
-    border-radius:14px;
-
-    background:#ECE8FF;
-
-    color:var(--primary-color);
-
-    display:flex;
-
-    align-items:center;
-
-    justify-content:center;
-
-    font-size:22px;
-
+.content:has(.history-page-header) input:focus,
+.content:has(.history-page-header) select:focus {
+    border-color: #5a2dff;
+    box-shadow: 0 0 0 4px rgba(90,45,255,.09);
+    outline: none;
 }
 
-.video-name{
-
-    font-weight:600;
-
+/* Status badges */
+.content:has(.history-page-header) .badge,
+.content:has(.history-page-header) .status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 26px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
 }
 
-.video-meta{
-
-    font-size:13px;
-
-    color:var(--text-secondary);
-
+.content:has(.history-page-header) .badge.success,
+.content:has(.history-page-header) .status.completed {
+    color: #087443;
+    background: #ecfdf3;
+    border: 1px solid #c6f0d8;
 }
 
-/*=============================================================================
-    Language Badge
-=============================================================================*/
-
-.language-pair{
-
-    display:flex;
-
-    align-items:center;
-
-    gap:10px;
-
-    font-weight:600;
-
+.content:has(.history-page-header) .badge.processing,
+.content:has(.history-page-header) .status.processing {
+    color: #6941c6;
+    background: #f4f0ff;
+    border: 1px solid #ded4ff;
 }
 
-.language-arrow{
-
-    color:var(--primary-color);
-
+.content:has(.history-page-header) .badge.failed,
+.content:has(.history-page-header) .status.failed {
+    color: #b42318;
+    background: #fef3f2;
+    border: 1px solid #f9d1ce;
 }
 
-/*=============================================================================
-    Status
-=============================================================================*/
-
-.status{
-
-    display:inline-flex;
-
-    align-items:center;
-
-    gap:8px;
-
-    padding:8px 14px;
-
-    border-radius:999px;
-
-    font-size:13px;
-
-    font-weight:600;
-
+/* Action buttons */
+.content:has(.history-page-header) .btn {
+    border-radius: 10px;
 }
 
-.status.completed{
-
-    background:#EAFBF1;
-
-    color:#16A34A;
-
+.content:has(.history-page-header) .btn-primary {
+    background: linear-gradient(135deg, #5a2dff, #7045ff);
+    box-shadow: 0 7px 17px rgba(90,45,255,.16);
 }
 
-.status.running{
-
-    background:#EFF6FF;
-
-    color:#2563EB;
-
+.content:has(.history-page-header) .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 9px 20px rgba(90,45,255,.22);
 }
 
-.status.failed{
-
-    background:#FEF2F2;
-
-    color:#DC2626;
-
+/* Empty state */
+.content:has(.history-page-header) .empty-state {
+    padding: 48px 24px;
+    border: 1px dashed #d8d4e8;
+    border-radius: 17px;
+    background: rgba(255,255,255,.72);
+    color: #667085;
 }
 
-.status.pending{
-
-    background:#FFF8E6;
-
-    color:#D97706;
-
+/* Pagination */
+.content:has(.history-page-header) .pagination {
+    margin-top: 18px;
 }
 
-.status-dot{
-
-    width:8px;
-
-    height:8px;
-
-    border-radius:50%;
-
-    background:currentColor;
-
+.content:has(.history-page-header) .pagination button,
+.content:has(.history-page-header) .pagination a {
+    min-width: 36px;
+    height: 36px;
+    border: 1px solid #e2e5ec;
+    border-radius: 9px;
+    background: #fff;
+    color: #475467;
 }
 
-/*=============================================================================
-    Actions
-=============================================================================*/
-
-.action-buttons{
-
-    display:flex;
-
-    gap:10px;
-
+.content:has(.history-page-header) .pagination .active {
+    border-color: #5a2dff;
+    background: #5a2dff;
+    color: #fff;
 }
 
-.action-btn{
-
-    width:40px;
-
-    height:40px;
-
-    border:none;
-
-    border-radius:12px;
-
-    cursor:pointer;
-
-    display:flex;
-
-    align-items:center;
-
-    justify-content:center;
-
-    transition:.25s;
-
-}
-
-.action-btn.download{
-
-    background:#EEF4FF;
-
-    color:#2563EB;
-
-}
-
-.action-btn.view{
-
-    background:#ECE8FF;
-
-    color:var(--primary-color);
-
-}
-
-.action-btn.delete{
-
-    background:#FEF2F2;
-
-    color:#DC2626;
-
-}
-
-.action-btn:hover{
-
-    transform:translateY(-2px);
-
-    box-shadow:var(--shadow-small);
-
-}
-
-/*=============================================================================
-    Pagination
-=============================================================================*/
-
-.pagination{
-
-    margin-top:24px;
-
-    display:flex;
-
-    justify-content:space-between;
-
-    align-items:center;
-
-    flex-wrap:wrap;
-
-    gap:16px;
-
-}
-
-.pagination-info{
-
-    color:var(--text-secondary);
-
-    font-size:14px;
-
-}
-
-.pagination-buttons{
-
-    display:flex;
-
-    gap:8px;
-
-}
-
-.page-btn{
-
-    width:42px;
-
-    height:42px;
-
-    border:none;
-
-    border-radius:12px;
-
-    background:#ffffff;
-
-    border:1px solid var(--border-color);
-
-    cursor:pointer;
-
-    transition:.25s;
-
-}
-
-.page-btn:hover{
-
-    background:#F3F0FF;
-
-}
-
-.page-btn.active{
-
-    background:linear-gradient(
-        135deg,
-        var(--primary-color),
-        var(--secondary-color)
-    );
-
-    color:#ffffff;
-
-}
-
-/*=============================================================================
-    Empty State
-=============================================================================*/
-
-.empty-history{
-
-    padding:80px 30px;
-
-    text-align:center;
-
-}
-
-.empty-history i{
-
-    font-size:70px;
-
-    color:#CBD5E1;
-
-    margin-bottom:24px;
-
-}
-
-.empty-history h2{
-
-    margin-bottom:12px;
-
-}
-
-.empty-history p{
-
-    max-width:420px;
-
-    margin:auto;
-
-}
-
-/*=============================================================================
-    Responsive
-=============================================================================*/
-
-@media(max-width:992px){
-
-    .history-toolbar{
-
-        flex-direction:column;
-
-        align-items:stretch;
-
+@media (max-width: 768px) {
+    .content:has(.history-page-header) .history-page-header h1 {
+        font-size: 28px;
     }
 
-    .history-search{
-
-        min-width:100%;
-
+    .content:has(.history-page-header) table {
+        display: block;
+        overflow-x: auto;
     }
 
-}
-
-@media(max-width:768px){
-
-    .history-table thead{
-
-        display:none;
-
+    .content:has(.history-page-header) .history-page-card .card-body {
+        padding: 16px;
     }
 
-    .history-table,
-
-    .history-table tbody,
-
-    .history-table tr,
-
-    .history-table td{
-
-        display:block;
-
-        width:100%;
-
+    .content:has(.history-page-header) .watermark {
+        background-size: 420px auto;
     }
-
-    .history-table tr{
-
-        background:#ffffff;
-
-        border-radius:18px;
-
-        margin-bottom:18px;
-
-        box-shadow:var(--shadow-small);
-
-        overflow:hidden;
-
-    }
-
-    .history-table td{
-
-        border:none;
-
-        display:flex;
-
-        justify-content:space-between;
-
-        align-items:center;
-
-        padding:14px 18px;
-
-    }
-
-    .action-buttons{
-
-        justify-content:flex-end;
-
-    }
-
 }

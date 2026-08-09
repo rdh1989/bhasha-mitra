@@ -407,3 +407,46 @@ MOBILE
     }
 
 }
+
+
+/* ==========================================================================
+   Dashboard visual spacing refinement
+   ========================================================================== */
+
+.dashboard {
+    gap: 18px;
+}
+
+.dashboard-row {
+    gap: 18px;
+}
+
+.dashboard .insight-card {
+    min-height: 440px;
+}
+
+.dashboard .activity-card,
+.dashboard .translation-card {
+    min-height: 370px;
+}
+
+.dashboard .language-card,
+.dashboard .system-card {
+    min-height: 210px;
+}
+
+@media (max-width: 1400px) {
+    .dashboard .insight-grid {
+        gap: 14px;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard {
+        gap: 16px;
+    }
+
+    .dashboard-row {
+        gap: 16px;
+    }
+}
