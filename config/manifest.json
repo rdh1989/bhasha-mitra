@@ -1,8 +1,8 @@
 {
   "asr": {
     "provider": "faster_whisper",
-    "model": "medium",
-    "path": "../models/asr/faster_whisper/medium",
+    "model": "small",
+    "path": "../models/asr/faster_whisper/small",
     "version": "1.0"
   },
 "translation": {
@@ -23,6 +23,6 @@
     "path": "../models/text-to-speech/piper-voices/mr/mr_IN/google/medium"
   },
   "ffmpeg": {
-    "path": "../../models/third_party/ffmpeg/ffmpeg-8.1.2/bin"
+    "path": "../models/third_party/ffmpeg/ffmpeg-8.1.2/bin"
   }
 }

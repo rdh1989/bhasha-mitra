@@ -3,55 +3,50 @@
 Bhasha Mitra - AI Framework
 -------------------------------------------------------------------------------
 Module      : adapter.py
-Purpose     : Subtitle Adapter
+Purpose     : Subtitle Provider Adapter
 
 Description:
-    Converts provider-specific subtitle results into framework
-    SubtitleResult objects.
-
-Design Pattern:
-    Adapter
+    Converts provider-specific subtitle results into the framework-standard
+    SubtitleResult model.
 
 Author:
     Bhasha Mitra AI Team
-
-Version:
-    1.0
 ===============================================================================
 """
 
 from __future__ import annotations
-
-from typing import Any
 
 from ai.subtitle.models import SubtitleResult
 
 
 class SubtitleAdapter:
     """
-    Converts provider-specific subtitle output into framework models.
+    Adapter for normalizing provider subtitle results.
+
+    The adapter keeps provider-specific response structures isolated from
+    the rest of the AI framework.
     """
 
     def to_framework_result(
         self,
-        provider_result: Any,
+        provider_result: SubtitleResult,
     ) -> SubtitleResult:
         """
-        Convert provider output into framework result.
+        Convert provider result into framework result.
 
         Parameters
         ----------
-        provider_result : Any
-            Raw provider response.
+        provider_result : SubtitleResult
+            Result returned by the configured provider.
 
         Returns
         -------
         SubtitleResult
+            Framework-standard result.
         """
 
-        if isinstance(provider_result, SubtitleResult):
-            return provider_result
-
-        raise NotImplementedError(
-            "Provider result mapping has not been implemented."
+        return SubtitleResult(
+            subtitle_path=provider_result.subtitle_path,
+            subtitle_format=provider_result.subtitle_format,
+            segment_count=provider_result.segment_count,
         )

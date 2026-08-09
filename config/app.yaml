@@ -11,6 +11,9 @@ server:
   workers: 1
   reload: true
 
+
+ai_base_url: "http://localhost:8000"
+
 api:
   prefix: /api/v1
   title: Bhasha Mitra API

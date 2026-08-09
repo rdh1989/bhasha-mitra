@@ -21,6 +21,7 @@ Version:
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -125,10 +126,17 @@ class ModelLoader:
 
             from faster_whisper import WhisperModel
 
+            # return WhisperModel(
+            #     str(model_path),
+            #     device="cpu",
+            #     compute_type="int8",
+            # )
+
             return WhisperModel(
                 str(model_path),
                 device="cpu",
                 compute_type="int8",
+                cpu_threads=os.cpu_count(),
             )
 
         #
@@ -208,8 +216,23 @@ class ModelLoader:
         # Piper
         #
         if provider == "piper":
-            raise NotImplementedError(
-                "Piper loader not implemented."
+
+            from piper import PiperVoice
+
+            #
+            # Manifest path points to the Piper voice directory.
+            #
+            onnx_models = list(
+                model_path.glob("*.onnx")
+            )
+
+            if not onnx_models:
+                raise ModelLoadError(
+                    f"No Piper ONNX model found in: {model_path}"
+                )
+
+            return PiperVoice.load(
+                str(onnx_models[0])
             )
 
         #

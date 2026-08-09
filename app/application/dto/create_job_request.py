@@ -5,7 +5,7 @@ Data Transfer Object for creating a translation job.
 from dataclasses import dataclass
 from pathlib import Path
 
-from domain.enums import JobPriority
+from domain.enums.job_priority import JobPriority
 
 
 @dataclass(slots=True, frozen=True)

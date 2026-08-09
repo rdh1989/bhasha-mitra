@@ -4,19 +4,12 @@ Bhasha Mitra - AI Framework
 -------------------------------------------------------------------------------
 Module      : service.py
 Purpose     : Text-to-Speech Service
-
-Description:
-    Provides speech synthesis using the configured TTS provider.
-
-Author:
-    Bhasha Mitra AI Team
-
-Version:
-    1.0
 ===============================================================================
 """
 
 from __future__ import annotations
+
+import wave
 
 from ai.model_manager.manager import ModelManager
 from ai.tts.adapter import TTSAdapter
@@ -33,9 +26,9 @@ class TTSService:
     Responsibilities
     ----------------
     • Accept speech synthesis requests.
-    • Read TTS configuration from ModelManager.
-    • Initialize TTS engine on demand.
-    • Normalize provider output.
+    • Use already loaded TTS model.
+    • Generate audio.
+    • Return framework SpeechResult.
     """
 
     def __init__(
@@ -46,54 +39,86 @@ class TTSService:
         self._adapter = adapter
         self._model_manager = ModelManager()
 
+    # ------------------------------------------------------------------
+    # Synthesize
+    # ------------------------------------------------------------------
+
     def synthesize(
         self,
         request: SpeechRequest,
     ) -> SpeechResult:
         """
-        Convert text into speech.
+        Generate speech using the already loaded TTS model.
         """
 
-        #
-        # TTS is NOT preloaded.
-        # Read provider configuration only.
-        #
-        metadata = self._model_manager.get_default_metadata(
-            "tts"
+        if not request.text.strip():
+            raise ValueError(
+                "Text cannot be empty."
+            )
+
+        # Get already loaded TTS model
+        tts_model = (
+            self._model_manager.get_default_model(
+                "tts"
+            )
+        )
+
+        # Ensure output directory exists
+        request.output_path.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        # Create WAV with required audio parameters
+        with wave.open(
+            str(request.output_path),
+            "wb",
+        ) as wav_file:
+
+            tts_model.synthesize_wav(
+                request.text,
+                wav_file,
+            )
+
+        # Read generated WAV metadata
+        with wave.open(
+            str(request.output_path),
+            "rb",
+        ) as wav_file:
+
+            sample_rate = wav_file.getframerate()
+            frame_count = wav_file.getnframes()
+
+        duration = (
+            frame_count / sample_rate
+            if sample_rate
+            else None
         )
 
         #
-        # TODO
+        # Framework response
         #
-        # Initialize Piper (or configured provider)
-        # using metadata.
-        #
-        # Example:
-        #
-        # provider = metadata["provider"]
-        # voice_path = metadata["path"]
-        #
-        # provider_result = ...
-        #
-        # return self._adapter.to_framework_result(
-        #     provider_result
-        # )
-        #
-
-        raise NotImplementedError(
-            "Move TTS inference from the working implementation."
+        
+        return SpeechResult(
+            audio_path=request.output_path,
+            language=request.language,
+            voice=request.voice,
+            sample_rate=sample_rate,
+            duration=duration,
         )
+
+
+    # ------------------------------------------------------------------
+    # Health Check
+    # ------------------------------------------------------------------
 
     def health_check(
         self,
     ) -> bool:
-        """
-        Verify TTS configuration exists.
-        """
 
         try:
 
-            self._model_manager.get_default_metadata(
+            self._model_manager.get_default_model(
                 "tts"
             )
 
@@ -102,3 +127,16 @@ class TTSService:
         except Exception:
 
             return False
+
+    # ------------------------------------------------------------------
+    # Shutdown
+    # ------------------------------------------------------------------
+
+    def shutdown(
+        self,
+    ) -> None:
+        """
+        Model lifecycle is handled by ModelManager.
+        """
+
+        pass

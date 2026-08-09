@@ -1,368 +1,1120 @@
-/******************************************************************************
- *
- * Bhasha Mitra
- * Upload Controller
- *
- * Description:
- * Handles video upload workflow
- *
- * Author  : Team 4
- * Version : 1.0.0
- *
- *****************************************************************************/
+/*
+===============================================================================
+BHASHA MITRA
+
+Module:
+    upload.js
+
+Layer:
+    Frontend
+
+Description:
+    Controls local video selection and translation job creation.
+
+IMPORTANT:
+    - Video is NOT uploaded.
+    - No FormData is used.
+    - No video bytes are sent to the backend.
+    - Browse Files calls the local Bhasha Mitra backend.
+    - The backend opens the native Windows file picker.
+    - Only file_path and file_name are returned to the browser.
+    - /api/v1/upload receives JSON containing the local path.
+===============================================================================
+*/
 
 class UploadController {
 
     constructor() {
 
-        this.fileInput = document.getElementById("videoFile");
-        this.dropZone = document.getElementById("dropZone");
-        this.uploadButton = document.getElementById("uploadButton");
+        // =====================================================================
+        // Elements
+        // =====================================================================
 
-        this.progressContainer = document.getElementById("uploadProgress");
-        this.progressBar = document.getElementById("progressBar");
-        this.progressText = document.getElementById("progressText");
+        this.browseButton =
+            document.getElementById("browseVideo");
 
-        this.selectedFile = null;
+        this.pathInput =
+            document.getElementById("videoPath");
+
+        this.startButton =
+            document.getElementById("startTranslation");
+
+        this.removeButton =
+            document.getElementById("removeFile");
+
+        this.selectedFilePanel =
+            document.getElementById("selectedFile");
+
+        this.selectedFileNameElement =
+            document.getElementById("selectedFileName");
+
+        this.selectedFileMeta =
+            document.getElementById("selectedFileMeta");
+
+        this.sourceLanguage =
+            document.getElementById("sourceLanguage");
+
+        this.targetLanguage =
+            document.getElementById("targetLanguage");
+
+        this.message =
+            document.getElementById("formMessage");
+
+        this.progressContainer =
+            document.getElementById("uploadProgress");
+
+        this.progressBar =
+            document.getElementById("progressBar");
+
+        this.progressText =
+            document.getElementById("progressText");
+
+        this.progressLabel =
+            document.getElementById("progressLabel");
+
+        // =====================================================================
+        // State
+        // =====================================================================
+
+        this.selectedPath = null;
+
+        this.selectedFileName = null;
+
+        // =====================================================================
+        // Initialize
+        // =====================================================================
 
         this.initialize();
-
     }
 
-    /*=========================================================================
-        Initialize
-    =========================================================================*/
+
+    // =========================================================================
+    // Initialization
+    // =========================================================================
 
     initialize() {
 
-        this.registerFileInput();
-        this.registerDragDrop();
-        this.registerUploadButton();
+        // ---------------------------------------------------------------------
+        // Browse Files
+        // ---------------------------------------------------------------------
 
+        if (this.browseButton) {
+
+            this.browseButton.addEventListener(
+                "click",
+                () => this.browseForVideo()
+            );
+        }
+
+        // ---------------------------------------------------------------------
+        // Manual path
+        // ---------------------------------------------------------------------
+
+        if (this.pathInput) {
+
+            this.pathInput.addEventListener(
+                "input",
+                () => this.handleManualPath()
+            );
+        }
+
+        // ---------------------------------------------------------------------
+        // Remove selected file
+        // ---------------------------------------------------------------------
+
+        if (this.removeButton) {
+
+            this.removeButton.addEventListener(
+                "click",
+                () => this.clearFile()
+            );
+        }
+
+        // ---------------------------------------------------------------------
+        // Start translation
+        // ---------------------------------------------------------------------
+
+        if (this.startButton) {
+
+            this.startButton.addEventListener(
+                "click",
+                () => this.startTranslation()
+            );
+        }
+
+        // ---------------------------------------------------------------------
+        // Target language
+        // ---------------------------------------------------------------------
+
+        if (this.targetLanguage) {
+
+            this.targetLanguage.addEventListener(
+                "change",
+                () => this.updateStartButton()
+            );
+        }
+
+        // ---------------------------------------------------------------------
+        // Source language
+        // ---------------------------------------------------------------------
+
+        if (this.sourceLanguage) {
+
+            this.sourceLanguage.addEventListener(
+                "change",
+                () => this.updateStartButton()
+            );
+        }
+
+        // ---------------------------------------------------------------------
+        // Initial state
+        // ---------------------------------------------------------------------
+
+        this.updateStartButton();
     }
 
-    /*=========================================================================
-        File Input
-    =========================================================================*/
 
-    registerFileInput() {
+    // =========================================================================
+    // Browse for local video
+    // =========================================================================
 
-        if (!this.fileInput)
+    async browseForVideo() {
+
+        if (!this.browseButton) {
             return;
+        }
 
-        this.fileInput.addEventListener("change", (event) => {
+        this.browseButton.disabled = true;
 
-            const file = event.target.files[0];
-
-            if (file) {
-
-                this.handleFile(file);
-
-            }
-
-        });
-
-    }
-
-    /*=========================================================================
-        Drag Drop
-    =========================================================================*/
-
-    registerDragDrop() {
-
-        if (!this.dropZone)
-            return;
-
-        ["dragenter", "dragover"].forEach(eventName => {
-
-            this.dropZone.addEventListener(eventName, (event) => {
-
-                event.preventDefault();
-
-                this.dropZone.classList.add("drag-active");
-
-            });
-
-        });
-
-        ["dragleave", "drop"].forEach(eventName => {
-
-            this.dropZone.addEventListener(eventName, () => {
-
-                this.dropZone.classList.remove("drag-active");
-
-            });
-
-        });
-
-        this.dropZone.addEventListener("drop", (event) => {
-
-            event.preventDefault();
-
-            if (event.dataTransfer.files.length > 0) {
-
-                this.handleFile(event.dataTransfer.files[0]);
-
-            }
-
-        });
-
-    }
-
-    /*=========================================================================
-        Upload Button
-    =========================================================================*/
-
-    registerUploadButton() {
-
-        if (!this.uploadButton)
-            return;
-
-        this.uploadButton.addEventListener("click", () => {
-
-            this.upload();
-
-        });
-
-    }
-
-    /*=========================================================================
-        Handle File
-    =========================================================================*/
-
-    handleFile(file) {
-
-        if (!this.validateFile(file))
-            return;
-
-        this.selectedFile = file;
-
-        App.showToast(
-
-            `${file.name} selected`
-
+        this.setMessage(
+            "Opening file browser..."
         );
-
-        const fileName = document.getElementById("selectedFileName");
-
-        if (fileName) {
-
-            fileName.textContent = file.name;
-
-        }
-
-    }
-
-    /*=========================================================================
-        Validation
-    =========================================================================*/
-
-    validateFile(file) {
-
-        const allowedTypes = [
-
-            "video/mp4",
-
-            "video/x-matroska",
-
-            "video/quicktime",
-
-            "video/x-msvideo"
-
-        ];
-
-        if (!allowedTypes.includes(file.type)) {
-
-            App.showToast(
-
-                "Unsupported video format",
-
-                "error"
-
-            );
-
-            return false;
-
-        }
-
-        const maxSize = 5 * 1024 * 1024 * 1024;
-
-        if (file.size > maxSize) {
-
-            App.showToast(
-
-                "Maximum file size is 5 GB",
-
-                "error"
-
-            );
-
-            return false;
-
-        }
-
-        return true;
-
-    }
-
-    /*=========================================================================
-        Upload
-    =========================================================================*/
-
-    async upload() {
-
-        if (!this.selectedFile) {
-
-            App.showToast(
-
-                "Please select a video",
-
-                "error"
-
-            );
-
-            return;
-
-        }
 
         try {
 
-            this.showProgress();
-
-            const formData = new FormData();
-
-            formData.append(
-
-                "video",
-
-                this.selectedFile
-
+            const response = await fetch(
+                "/api/v1/upload/browse",
+                {
+                    method: "GET",
+                    headers: {
+                        "Accept": "application/json"
+                    }
+                }
             );
 
-            /*
-             * Future Backend Integration
-             *
-             * const response =
-             *      await Api.upload(
-             *          "/api/videos/upload",
-             *          formData
-             *      );
-             */
 
-            await this.simulateUpload();
+            // -----------------------------------------------------------------
+            // HTTP error
+            // -----------------------------------------------------------------
 
-            App.showToast(
+            if (!response.ok) {
 
-                "Video uploaded successfully."
+                let message =
+                    "Unable to open the file browser.";
 
+                try {
+
+                    const error =
+                        await response.json();
+
+                    if (
+                        typeof error.detail ===
+                        "string"
+                    ) {
+
+                        message =
+                            error.detail;
+                    }
+
+                } catch {
+                    // Response was not JSON.
+                }
+
+                throw new Error(
+                    message
+                );
+            }
+
+
+            // -----------------------------------------------------------------
+            // Parse response
+            // -----------------------------------------------------------------
+
+            const result =
+                await response.json();
+
+
+            // -----------------------------------------------------------------
+            // User cancelled
+            // -----------------------------------------------------------------
+
+            if (
+                result.cancelled === true
+            ) {
+
+                this.setMessage(
+                    "No video selected."
+                );
+
+                return;
+            }
+
+
+            // -----------------------------------------------------------------
+            // Validate response
+            // -----------------------------------------------------------------
+
+            if (
+                !result.file_path
+            ) {
+
+                throw new Error(
+                    "The selected video path was not returned."
+                );
+            }
+
+
+            // -----------------------------------------------------------------
+            // Set selected file
+            // -----------------------------------------------------------------
+
+            this.setSelectedFile(
+                result.file_path,
+                result.file_name
             );
 
-        }
-        catch (error) {
 
-            console.error(error);
+            this.setMessage(
+                "Video selected. Your video will remain on this device.",
+                "success"
+            );
 
-            App.showToast(
+        } catch (error) {
 
-                "Upload Failed",
+            console.error(
+                "Local video selection failed:",
+                error
+            );
 
+            this.setMessage(
+                error.message ||
+                "Unable to select the video.",
                 "error"
-
             );
 
+        } finally {
+
+            this.browseButton.disabled =
+                false;
         }
-        finally {
-
-            this.hideProgress();
-
-        }
-
     }
 
-    /*=========================================================================
-        Progress
-    =========================================================================*/
 
-    showProgress() {
+    // =========================================================================
+    // Manual path input
+    // =========================================================================
+
+    handleManualPath() {
+
+        if (!this.pathInput) {
+            return;
+        }
+
+        const path =
+            this.pathInput.value.trim();
+
+
+        // ---------------------------------------------------------------------
+        // Empty path
+        // ---------------------------------------------------------------------
+
+        if (!path) {
+
+            this.clearSelection(
+                false
+            );
+
+            return;
+        }
+
+
+        // ---------------------------------------------------------------------
+        // Extract filename
+        // ---------------------------------------------------------------------
+
+        const fileName =
+            this.extractFileName(
+                path
+            );
+
+
+        if (!fileName) {
+
+            this.setMessage(
+                "Enter a valid local video path.",
+                "error"
+            );
+
+            this.clearSelection(
+                false
+            );
+
+            return;
+        }
+
+
+        // ---------------------------------------------------------------------
+        // Validate extension
+        // ---------------------------------------------------------------------
+
+        if (
+            !this.validateExtension(
+                fileName
+            )
+        ) {
+
+            this.setMessage(
+                "Supported formats are MP4, MOV, AVI, MKV and WEBM.",
+                "error"
+            );
+
+            this.clearSelection(
+                false
+            );
+
+            return;
+        }
+
+
+        // ---------------------------------------------------------------------
+        // Set selected file
+        // ---------------------------------------------------------------------
+
+        this.setSelectedFile(
+            path,
+            fileName
+        );
+
+
+        this.setMessage(
+            "Local video selected.",
+            "success"
+        );
+    }
+
+
+    // =========================================================================
+    // Set selected file
+    // =========================================================================
+
+    setSelectedFile(
+        filePath,
+        fileName
+    ) {
+
+        if (!filePath) {
+            return;
+        }
+
+
+        this.selectedPath =
+            filePath;
+
+
+        this.selectedFileName =
+            fileName ||
+            this.extractFileName(
+                filePath
+            );
+
+
+        // ---------------------------------------------------------------------
+        // Display path
+        // ---------------------------------------------------------------------
+
+        if (this.pathInput) {
+
+            this.pathInput.value =
+                this.selectedPath;
+        }
+
+
+        // ---------------------------------------------------------------------
+        // Display filename
+        // ---------------------------------------------------------------------
+
+        if (
+            this.selectedFileNameElement
+        ) {
+
+            this.selectedFileNameElement.textContent =
+                this.selectedFileName;
+        }
+
+
+        // ---------------------------------------------------------------------
+        // Display metadata
+        // ---------------------------------------------------------------------
+
+        if (this.selectedFileMeta) {
+
+            this.selectedFileMeta.textContent =
+                "Local file · Ready for translation";
+        }
+
+
+        // ---------------------------------------------------------------------
+        // Show selected file panel
+        // ---------------------------------------------------------------------
+
+        if (this.selectedFilePanel) {
+
+            this.selectedFilePanel.hidden =
+                false;
+        }
+
+
+        // ---------------------------------------------------------------------
+        // Enable start button
+        // ---------------------------------------------------------------------
+
+        this.updateStartButton();
+    }
+
+
+    // =========================================================================
+    // Extract filename from Windows path
+    // =========================================================================
+
+    extractFileName(
+        filePath
+    ) {
+
+        if (!filePath) {
+            return "";
+        }
+
+
+        const normalizedPath =
+            filePath.replaceAll(
+                "\\",
+                "/"
+            );
+
+
+        const parts =
+            normalizedPath.split(
+                "/"
+            );
+
+
+        return (
+            parts[
+                parts.length - 1
+            ] || ""
+        );
+    }
+
+
+    // =========================================================================
+    // Validate video extension
+    // =========================================================================
+
+    validateExtension(
+        fileName
+    ) {
+
+        if (!fileName) {
+            return false;
+        }
+
+
+        const allowedExtensions = [
+            ".mp4",
+            ".mov",
+            ".avi",
+            ".mkv",
+            ".webm"
+        ];
+
+
+        const lastDot =
+            fileName.lastIndexOf(
+                "."
+            );
+
+
+        if (lastDot === -1) {
+            return false;
+        }
+
+
+        const extension =
+            fileName
+                .substring(
+                    lastDot
+                )
+                .toLowerCase();
+
+
+        return allowedExtensions.includes(
+            extension
+        );
+    }
+
+
+    // =========================================================================
+    // Update Start Translation button
+    // =========================================================================
+
+    updateStartButton() {
+
+        if (!this.startButton) {
+            return;
+        }
+
+
+        const hasVideo =
+            Boolean(
+                this.selectedPath
+            );
+
+
+        const hasTargetLanguage =
+            Boolean(
+                this.targetLanguage &&
+                this.targetLanguage.value
+            );
+
+
+        this.startButton.disabled =
+            !hasVideo ||
+            !hasTargetLanguage;
+    }
+
+
+    // =========================================================================
+    // Start translation
+    // =========================================================================
+
+    async startTranslation() {
+
+        // ---------------------------------------------------------------------
+        // Validate video
+        // ---------------------------------------------------------------------
+
+        if (!this.selectedPath) {
+
+            this.setMessage(
+                "Select a video before starting translation.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        // ---------------------------------------------------------------------
+        // Validate target language
+        // ---------------------------------------------------------------------
+
+        const targetLanguage =
+            this.targetLanguage
+                ?.value;
+
+
+        if (!targetLanguage) {
+
+            this.setMessage(
+                "Select a target language.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        // ---------------------------------------------------------------------
+        // Source language
+        // ---------------------------------------------------------------------
+
+        const sourceLanguage =
+            this.sourceLanguage
+                ?.value ||
+            "auto";
+
+
+        // ---------------------------------------------------------------------
+        // Disable button
+        // ---------------------------------------------------------------------
+
+        if (this.startButton) {
+
+            this.startButton.disabled =
+                true;
+        }
+
+
+        // ---------------------------------------------------------------------
+        // Show progress
+        // ---------------------------------------------------------------------
 
         if (this.progressContainer) {
 
-            this.progressContainer.style.display = "block";
-
+            this.progressContainer.hidden =
+                false;
         }
 
+
+        this.setProgressLabel(
+            "Creating translation job"
+        );
+
+
+        this.updateProgress(
+            10
+        );
+
+
+        this.setMessage(
+            "Creating translation job. The video is not being uploaded."
+        );
+
+
+        try {
+
+            // =================================================================
+            // Request payload
+            //
+            // IMPORTANT:
+            // Only metadata/path is sent.
+            // No video bytes.
+            // No FormData.
+            // =================================================================
+
+            const payload = {
+
+                file_path:
+                    this.selectedPath,
+
+                file_name:
+                    this.selectedFileName,
+
+                source_language:
+                    sourceLanguage,
+
+                target_language:
+                    targetLanguage
+            };
+
+
+            console.info(
+                "Creating translation job:",
+                {
+                    file_path:
+                        payload.file_path,
+
+                    file_name:
+                        payload.file_name,
+
+                    source_language:
+                        payload.source_language,
+
+                    target_language:
+                        payload.target_language
+                }
+            );
+
+
+            // =================================================================
+            // Call backend
+            // =================================================================
+
+            const response =
+                await fetch(
+                    "/api/v1/upload",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+
+                            "Accept":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify(
+                                payload
+                            )
+                    }
+                );
+
+
+            // =================================================================
+            // Parse response
+            // =================================================================
+
+            const result =
+                await this.parseResponse(
+                    response
+                );
+
+
+            // =================================================================
+            // Success
+            // =================================================================
+
+            this.updateProgress(
+                100
+            );
+
+
+            this.setProgressLabel(
+                "Translation job created"
+            );
+
+
+            this.setMessage(
+                `Translation job created successfully. Job ID: ${result.job_id}`,
+                "success"
+            );
+
+
+            console.info(
+                "Translation job created:",
+                result
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Translation job creation failed:",
+                error
+            );
+
+
+            this.updateProgress(
+                0
+            );
+
+
+            this.setProgressLabel(
+                "Unable to create translation job"
+            );
+
+
+            this.setMessage(
+                error.message ||
+                "Unable to create translation job.",
+                "error"
+            );
+
+        } finally {
+
+            this.updateStartButton();
+        }
     }
 
-    hideProgress() {
 
-        if (this.progressContainer) {
+    // =========================================================================
+    // Parse backend response
+    // =========================================================================
 
-            this.progressContainer.style.display = "none";
+    async parseResponse(
+        response
+    ) {
 
+        let data;
+
+
+        // ---------------------------------------------------------------------
+        // Parse JSON
+        // ---------------------------------------------------------------------
+
+        try {
+
+            data =
+                await response.json();
+
+        } catch {
+
+            throw new Error(
+                `Server returned HTTP ${response.status}.`
+            );
         }
 
+
+        // ---------------------------------------------------------------------
+        // HTTP error
+        // ---------------------------------------------------------------------
+
+        if (!response.ok) {
+
+            if (
+                typeof data.detail ===
+                "string"
+            ) {
+
+                throw new Error(
+                    data.detail
+                );
+            }
+
+
+            if (
+                Array.isArray(
+                    data.detail
+                )
+            ) {
+
+                const messages =
+                    data.detail
+                        .map(
+                            item =>
+                                item.msg ||
+                                "Invalid request."
+                        )
+                        .join(
+                            ", "
+                        );
+
+
+                throw new Error(
+                    messages
+                );
+            }
+
+
+            throw new Error(
+                `Request failed with HTTP ${response.status}.`
+            );
+        }
+
+
+        // ---------------------------------------------------------------------
+        // Validate successful response
+        // ---------------------------------------------------------------------
+
+        if (
+            !data ||
+            typeof data !== "object"
+        ) {
+
+            throw new Error(
+                "Server returned an invalid response."
+            );
+        }
+
+
+        return data;
     }
 
-    updateProgress(value) {
+
+    // =========================================================================
+    // Remove selected file
+    // =========================================================================
+
+    clearFile() {
+
+        this.clearSelection(
+            true
+        );
+
+
+        this.setMessage(
+            "Select a video to continue."
+        );
+    }
+
+
+    // =========================================================================
+    // Clear selection
+    // =========================================================================
+
+    clearSelection(
+        clearPath = true
+    ) {
+
+        this.selectedPath =
+            null;
+
+        this.selectedFileName =
+            null;
+
+
+        // ---------------------------------------------------------------------
+        // Clear input
+        // ---------------------------------------------------------------------
+
+        if (
+            clearPath &&
+            this.pathInput
+        ) {
+
+            this.pathInput.value =
+                "";
+        }
+
+
+        // ---------------------------------------------------------------------
+        // Hide selected file
+        // ---------------------------------------------------------------------
+
+        if (
+            this.selectedFilePanel
+        ) {
+
+            this.selectedFilePanel.hidden =
+                true;
+        }
+
+
+        // ---------------------------------------------------------------------
+        // Reset progress
+        // ---------------------------------------------------------------------
+
+        this.updateProgress(
+            0
+        );
+
+
+        // ---------------------------------------------------------------------
+        // Update button
+        // ---------------------------------------------------------------------
+
+        this.updateStartButton();
+    }
+
+
+    // =========================================================================
+    // Progress
+    // =========================================================================
+
+    updateProgress(
+        value
+    ) {
+
+        const numericValue =
+            Number(
+                value
+            );
+
+
+        const safeValue =
+            Math.max(
+                0,
+                Math.min(
+                    100,
+                    Number.isFinite(
+                        numericValue
+                    )
+                        ? numericValue
+                        : 0
+                )
+            );
+
+
+        // ---------------------------------------------------------------------
+        // Progress bar
+        // ---------------------------------------------------------------------
 
         if (this.progressBar) {
 
-            this.progressBar.style.width = value + "%";
-
+            this.progressBar.style.width =
+                `${safeValue}%`;
         }
+
+
+        // ---------------------------------------------------------------------
+        // Percentage text
+        // ---------------------------------------------------------------------
 
         if (this.progressText) {
 
-            this.progressText.textContent = value + "%";
-
+            this.progressText.textContent =
+                `${safeValue}%`;
         }
 
+
+        // ---------------------------------------------------------------------
+        // Accessibility
+        // ---------------------------------------------------------------------
+
+        const progressElement =
+            this.progressBar
+                ?.parentElement;
+
+
+        if (progressElement) {
+
+            progressElement.setAttribute(
+                "aria-valuenow",
+                String(
+                    safeValue
+                )
+            );
+        }
     }
 
-    /*=========================================================================
-        Demo Upload
-    =========================================================================*/
 
-    async simulateUpload() {
+    // =========================================================================
+    // Progress label
+    // =========================================================================
 
-        return new Promise(resolve => {
+    setProgressLabel(
+        message
+    ) {
 
-            let progress = 0;
+        if (
+            this.progressLabel
+        ) {
 
-            const timer = setInterval(() => {
-
-                progress += 2;
-
-                this.updateProgress(progress);
-
-                if (progress >= 100) {
-
-                    clearInterval(timer);
-
-                    resolve();
-
-                }
-
-            }, 50);
-
-        });
-
+            this.progressLabel.textContent =
+                message;
+        }
     }
 
+
+    // =========================================================================
+    // Message
+    // =========================================================================
+
+    setMessage(
+        message,
+        type = ""
+    ) {
+
+        if (!this.message) {
+            return;
+        }
+
+
+        this.message.textContent =
+            message;
+
+
+        this.message.className =
+            `form-message${
+                type
+                    ? ` is-${type}`
+                    : ""
+            }`;
+    }
 }
 
-/*=============================================================================
-    Initialize
-=============================================================================*/
+
+// =============================================================================
+// Initialize
+// =============================================================================
 
 document.addEventListener(
-
     "DOMContentLoaded",
-
     () => {
 
-        window.Upload = new UploadController();
+        window.Upload =
+            new UploadController();
 
     }
-
 );

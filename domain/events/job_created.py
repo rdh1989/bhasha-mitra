@@ -1,10 +1,4 @@
 """
-===============================================================================
-Module: Job Created Event
-Project: Bhasha Mitra
-Layer: Domain
-===============================================================================
-
 Domain event raised whenever a new TranslationJob is created.
 
 This event can be consumed by:
@@ -16,11 +10,7 @@ This event can be consumed by:
 - Event bus
 """
 
-"""
-===============================================================================
-Module: Job Created Event
-===============================================================================
-"""
+from __future__ import annotations
 
 from dataclasses import dataclass
 

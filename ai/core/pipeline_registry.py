@@ -7,7 +7,7 @@ Purpose     : AI Pipeline Registry
 
 Description
 -----------
-Constructs AI pipelines with all required dependencies.
+Constructs AI pipelines with their required dependencies.
 
 Responsibilities
 ----------------
@@ -18,7 +18,7 @@ Responsibilities
 Notes
 -----
 Pipelines are orchestrators.
-Services are obtained from ServiceRegistry.
+AI services are obtained from ServiceRegistry.
 
 Author:
     Bhasha Mitra AI Team
@@ -32,13 +32,23 @@ from __future__ import annotations
 
 from ai.core.service_registry import ServiceRegistry
 
-from ai.pipeline.transcript_pipeline import TranscriptPipeline
-from ai.pipeline.subtitle_pipeline import SubtitlePipeline
-from ai.pipeline.dubbing_pipeline import DubbingPipeline
+from ai.pipeline.transcript_pipeline import (
+    TranscriptPipeline,
+)
+
+from ai.pipeline.subtitle_pipeline import (
+    SubtitlePipeline,
+)
+
+from ai.pipeline.dubbing_pipeline import (
+    DubbingPipeline,
+)
+
 from ai.pipeline.video_translation_pipeline import (
     VideoTranslationPipeline,
 )
 
+from ai.pipeline.tts_pipeline import TTSPipeline
 
 class PipelineRegistry:
     """
@@ -51,10 +61,21 @@ class PipelineRegistry:
 
     @staticmethod
     def transcript_pipeline() -> TranscriptPipeline:
+        """
+        Create Transcript Pipeline.
 
-        return TranscriptPipeline(
-            asr_service=ServiceRegistry.asr_service(),
-        )
+        Flow
+        ----
+        Audio
+            ↓
+        ASR
+            ↓
+        Translation
+            ↓
+        Translated Text
+        """
+
+        return TranscriptPipeline()
 
     # -------------------------------------------------------------------------
     # Subtitle Pipeline
@@ -62,10 +83,17 @@ class PipelineRegistry:
 
     @staticmethod
     def subtitle_pipeline() -> SubtitlePipeline:
+        """
+        Create Subtitle Pipeline.
+        """
 
         return SubtitlePipeline(
-            transcript_pipeline=PipelineRegistry.transcript_pipeline(),
-            subtitle_service=ServiceRegistry.subtitle_service(),
+            transcript_pipeline=(
+                PipelineRegistry.transcript_pipeline()
+            ),
+            subtitle_service=(
+                ServiceRegistry.subtitle_service()
+            ),
         )
 
     # -------------------------------------------------------------------------
@@ -76,9 +104,9 @@ class PipelineRegistry:
     def dubbing_pipeline() -> DubbingPipeline:
 
         return DubbingPipeline(
-            transcript_pipeline=PipelineRegistry.transcript_pipeline(),
-            translation_service=ServiceRegistry.translation_service(),
-            tts_service=ServiceRegistry.tts_service(),
+            tts_service=(
+                ServiceRegistry.tts_service()
+            ),
         )
 
     # -------------------------------------------------------------------------
@@ -87,11 +115,38 @@ class PipelineRegistry:
 
     @staticmethod
     def video_translation_pipeline() -> VideoTranslationPipeline:
+        """
+        Create Video Translation Pipeline.
+
+        This pipeline orchestrates the AI-side workflow.
+        """
 
         return VideoTranslationPipeline(
-            transcript_pipeline=PipelineRegistry.transcript_pipeline(),
-            subtitle_pipeline=PipelineRegistry.subtitle_pipeline(),
-            dubbing_pipeline=PipelineRegistry.dubbing_pipeline(),
-            language_service=ServiceRegistry.language_detection_service(),
-            translation_service=ServiceRegistry.translation_service(),
+            transcript_pipeline=(
+                PipelineRegistry.transcript_pipeline()
+            ),
+            subtitle_pipeline=(
+                PipelineRegistry.subtitle_pipeline()
+            ),
+            dubbing_pipeline=(
+                PipelineRegistry.dubbing_pipeline()
+            ),
+            language_service=(
+                ServiceRegistry.language_detection_service()
+            ),
+            translation_service=(
+                ServiceRegistry.translation_service()
+            ),
         )
+
+    # -------------------------------------------------------------------------
+    # TTS Pipeline
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def tts_pipeline() -> TTSPipeline:
+        """
+        Create TTS Pipeline.
+        """
+
+        return TTSPipeline()

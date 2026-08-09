@@ -1,212 +1,220 @@
 """
-Application-level validator for translation job requests.
+===============================================================================
+BHASHA MITRA
+
+Module:
+    job_validator.py
+
+Layer:
+    Application / Validation
+
+Description:
+    Validates Translation Job creation requests.
+
+Language handling:
+    source_language = "auto"
+        Means the source language must be detected from the video.
+
+    target_language
+        Must be an explicitly supported language.
+
+Responsibilities:
+    - Validate input video
+    - Validate source language
+    - Validate target language
+    - Validate job creation request
+
+No new external dependencies are introduced.
+===============================================================================
 """
+
+from __future__ import annotations
 
 from pathlib import Path
 
-from app.application.dto.create_job_request import CreateJobRequest
-from app.application.exceptions import (
-    DuplicateJobError,
-    FileTooLargeError,
-    InputFileNotFoundError,
-    InvalidFileExtensionError,
-    InvalidLanguagePairError,
+from app.application.dto.create_job_request import (
+    CreateJobRequest,
+)
+
+from app.application.exceptions.unsupported_language_error import (
     UnsupportedLanguageError,
 )
-from app.application.interfaces.job_repository import JobRepository
-from infrastructure.configuration.configuration_manager import ConfigurationManager
 
 
 class JobValidator:
     """
-    Validates CreateJobRequest before creating a TranslationJob.
-
-    This validator performs only application-level validation.
-    Business rules belong in the Domain layer.
+    Validates Translation Job requests.
     """
+
+    # =========================================================================
+    # Constants
+    # =========================================================================
+
+    AUTO_LANGUAGE = "auto"
+
+    SUPPORTED_LANGUAGES = {
+        "en",
+        "hi",
+        "mr",
+        "ta",
+        "te",
+        "kn",
+        "gu",
+        "bn",
+    }
+
+    # =========================================================================
+    # Initialization
+    # =========================================================================
 
     def __init__(
         self,
-        job_repository: JobRepository,
-        configuration_manager: ConfigurationManager,
+        job_repository=None,
+        configuration_manager=None,
     ) -> None:
+        """
+        Initialize the validator.
+
+        The dependencies are accepted for compatibility with the existing
+        ApplicationContainer wiring.
+
+        Validation itself does not require either dependency.
+        """
+
         self._job_repository = job_repository
-        self._configuration = configuration_manager
+        self._configuration_manager = (
+            configuration_manager
+        )
+
+    # =========================================================================
+    # Create Job
+    # =========================================================================
 
     def validate_create_request(
         self,
         request: CreateJobRequest,
     ) -> None:
         """
-        Validate an incoming translation request.
-
-        Raises:
-            InputFileNotFoundError
-            InvalidFileExtensionError
-            FileTooLargeError
-            UnsupportedLanguageError
-            InvalidLanguagePairError
-            DuplicateJobError
+        Validate a Create Translation Job request.
         """
 
-        self._validate_file(request.input_file)
-        self._validate_extension(request.input_file)
-        self._validate_file_size(request.input_file)
+        self._validate_input_file(
+            request.input_file
+        )
+
         self._validate_languages(
             request.source_language,
             request.target_language,
         )
-        self._validate_duplicate_job(request.input_file)
 
-    # ---------------------------------------------------------
-    # File Validation
-    # ---------------------------------------------------------
+    # =========================================================================
+    # Input File
+    # =========================================================================
 
-    def _validate_file(
+    def _validate_input_file(
         self,
-        file_path: Path,
+        input_file: Path,
     ) -> None:
+        """
+        Validate the source video file.
+        """
 
-        if not file_path.exists():
-            raise InputFileNotFoundError(
-                f"Input file '{file_path}' does not exist."
+        if input_file is None:
+
+            raise ValueError(
+                "Input video file is required."
             )
 
-        if not file_path.is_file():
-            raise InputFileNotFoundError(
-                f"'{file_path}' is not a valid file."
+        if not isinstance(
+            input_file,
+            Path,
+        ):
+
+            input_file = Path(
+                input_file
             )
 
-    # ---------------------------------------------------------
-    # Extension Validation
-    # ---------------------------------------------------------
+        if not input_file.is_file():
 
-    def _validate_extension(
-        self,
-        file_path: Path,
-    ) -> None:
-
-        upload_config = self._configuration.get("app").get(
-            "upload",
-            {}
-        )
-
-        allowed_extensions = {
-            extension.lower()
-            for extension in upload_config.get(
-                "allowed_extensions",
-                [],
-            )
-        }
-
-        extension = file_path.suffix.lower().removeprefix(".")
-
-        if extension not in allowed_extensions:
-            raise InvalidFileExtensionError(
-                f"Unsupported file extension '{extension}'. "
-                f"Allowed extensions: "
-                f"{', '.join(sorted(allowed_extensions))}"
+            raise FileNotFoundError(
+                f"Input video file not found: "
+                f"{input_file}"
             )
 
-    # ---------------------------------------------------------
-    # File Size Validation
-    # ---------------------------------------------------------
-
-    def _validate_file_size(
-        self,
-        file_path: Path,
-    ) -> None:
-
-        upload_config = self._configuration.get("app").get(
-            "upload",
-            {}
-        )
-
-        max_size_mb = upload_config.get(
-            "max_file_size_mb",
-            2048,
-        )
-
-        max_size_bytes = max_size_mb * 1024 * 1024
-
-        actual_size = file_path.stat().st_size
-
-        if actual_size > max_size_bytes:
-            raise FileTooLargeError(
-                f"File size exceeds "
-                f"{max_size_mb} MB."
-            )
-
-    # ---------------------------------------------------------
-    # Language Validation
-    # ---------------------------------------------------------
+    # =========================================================================
+    # Languages
+    # =========================================================================
 
     def _validate_languages(
         self,
         source_language: str,
         target_language: str,
     ) -> None:
+        """
+        Validate source and target languages.
 
-        source_language = source_language.strip().lower()
-        target_language = target_language.strip().lower()
+        "auto" is a valid source-language value and means:
+
+            Detect the source language from the video.
+
+        The target language must always be explicit.
+        """
+
+        # ---------------------------------------------------------------------
+        # Source language
+        # ---------------------------------------------------------------------
 
         if not source_language:
+
             raise UnsupportedLanguageError(
                 "Source language is required."
             )
 
+        if source_language != self.AUTO_LANGUAGE:
+
+            if (
+                source_language
+                not in self.SUPPORTED_LANGUAGES
+            ):
+
+                raise UnsupportedLanguageError(
+                    "Unsupported source language "
+                    f"'{source_language}'."
+                )
+
+        # ---------------------------------------------------------------------
+        # Target language
+        # ---------------------------------------------------------------------
+
         if not target_language:
+
             raise UnsupportedLanguageError(
                 "Target language is required."
             )
 
-        if source_language == target_language:
-            raise InvalidLanguagePairError(
-                "Source and target languages cannot be the same."
-            )
+        if (
+            target_language
+            not in self.SUPPORTED_LANGUAGES
+        ):
 
-        languages_config = self._configuration.get("languages")
-
-        supported_languages = {
-            language.lower()
-            for language in languages_config.get(
-                "translation",
-                {},
-            ).get(
-                "supported",
-                [],
-            )
-        }
-
-        if source_language not in supported_languages:
             raise UnsupportedLanguageError(
-                f"Unsupported source language "
-                f"'{source_language}'."
-            )
-
-        if target_language not in supported_languages:
-            raise UnsupportedLanguageError(
-                f"Unsupported target language "
+                "Unsupported target language "
                 f"'{target_language}'."
             )
 
-    # ---------------------------------------------------------
-    # Duplicate Job Validation
-    # ---------------------------------------------------------
+        # ---------------------------------------------------------------------
+        # Same language
+        #
+        # "auto" is excluded because the actual source language has not yet
+        # been detected.
+        # ---------------------------------------------------------------------
 
-    def _validate_duplicate_job(
-        self,
-        file_path: Path,
-    ) -> None:
+        if (
+            source_language != self.AUTO_LANGUAGE
+            and source_language == target_language
+        ):
 
-        existing_job = (
-            self._job_repository.find_active_job(
-                file_path
-            )
-        )
-
-        if existing_job is not None:
-            raise DuplicateJobError(
-                f"An active translation job already exists "
-                f"for '{file_path.name}'."
+            raise UnsupportedLanguageError(
+                "Source and target languages "
+                "cannot be the same."
             )

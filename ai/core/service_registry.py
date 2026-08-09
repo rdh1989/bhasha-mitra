@@ -5,26 +5,20 @@ Bhasha Mitra - AI Framework
 Module      : service_registry.py
 Purpose     : AI Service Registry
 
-Description
------------
-Constructs framework services.
+Description:
+    Constructs framework services.
 
-Responsibilities
-----------------
-• Build service instances
-• Inject adapters
-• Reuse ModelManager through services
+Responsibilities:
+    • Build service instances
+    • Inject adapters
+    • Keep provider/model resolution inside services
 
-Notes
------
-Model loading is handled by ModelManager.
-Services obtain loaded models directly from ModelManager.
+Notes:
+    Model loading is handled by ModelManager.
+    Services obtain configured/loaded implementations through the framework.
 
 Author:
     Bhasha Mitra AI Team
-
-Version:
-    1.0
 ===============================================================================
 """
 
@@ -47,16 +41,17 @@ from ai.tts.service import TTSService
 from ai.tts.adapter import TTSAdapter
 
 from ai.subtitle.service import SubtitleService
+from ai.subtitle.adapter import SubtitleAdapter
 
 
 class ServiceRegistry:
     """
     Creates AI service instances.
 
-    Notes
-    -----
-    Services use ModelManager internally to access
-    already-loaded AI models.
+    Services are provider-agnostic.
+
+    Provider/model resolution is handled internally by the respective
+    service and framework model-management layer.
     """
 
     # -------------------------------------------------------------------------
@@ -110,4 +105,6 @@ class ServiceRegistry:
     @staticmethod
     def subtitle_service() -> SubtitleService:
 
-        return SubtitleService()
+        return SubtitleService(
+            adapter=SubtitleAdapter(),
+        )

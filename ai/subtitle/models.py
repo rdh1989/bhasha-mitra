@@ -9,6 +9,10 @@ Description:
     Defines provider-independent request and response models used by the
     Subtitle module.
 
+    Subtitle generation works on generic timestamped text segments.
+    The source of those segments may be ASR, translation, or any future
+    processing component.
+
 Author:
     Bhasha Mitra AI Team
 
@@ -22,7 +26,25 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from ai.asr.models import ASRResult
+
+# ============================================================================
+# Segment
+# ============================================================================
+
+@dataclass(slots=True)
+class SubtitleSegment:
+    """
+    Provider-independent subtitle segment.
+
+    Represents one timed piece of subtitle text.
+    """
+
+    start: float
+
+    end: float
+
+    text: str
+
 
 # ============================================================================
 # Request Models
@@ -31,14 +53,16 @@ from ai.asr.models import ASRResult
 @dataclass(slots=True)
 class SubtitleRequest:
     """
-    Subtitle generation request.
+    Provider-independent subtitle generation request.
     """
 
-    transcription: ASRResult
+    segments: list[SubtitleSegment]
 
     output_path: Path
 
-    subtitle_format: str = "srt"
+    subtitle_format: str | None = None
+
+    language: str | None = None
 
 
 # ============================================================================
@@ -48,7 +72,7 @@ class SubtitleRequest:
 @dataclass(slots=True)
 class SubtitleResult:
     """
-    Standard subtitle generation result.
+    Standard subtitle generation result returned by every provider.
     """
 
     subtitle_path: Path

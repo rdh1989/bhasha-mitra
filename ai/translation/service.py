@@ -119,7 +119,7 @@ class TranslationService:
                 target_lang
             ),
             max_new_tokens=256,
-            num_beams=4,
+            num_beams=1,
             early_stopping=True,
         )
 

@@ -1,246 +1,570 @@
+{# =============================================================================
+   BHASHA MITRA
+
+   Module:
+       upload.html
+
+   Layer:
+       Frontend / Presentation
+
+   Description:
+       Local video selection page.
+
+   IMPORTANT:
+       - Video is NOT uploaded through the browser.
+       - Browse Files opens the native local file browser through the backend.
+       - Only the local file path and file name are sent to the backend.
+       - Original Bhasha Mitra UI structure/classes are preserved.
+   ============================================================================= #}
+
 {% extends "base.html" %}
 
-{% block title %}
-Upload Video | {{ app_name }}
-{% endblock %}
+{% block title %}Upload video | {{ app_name }}{% endblock %}
 
-{% block css %}
-<link rel="stylesheet"
-      href="{{ url_for('static', path='css/upload.css') }}">
-{% endblock %}
 
 {% block content %}
 
 <div class="page-header">
 
     <div>
-
-        <h1>Video Translation</h1>
+        <h1>Choose your video</h1>
 
         <p>
-            Upload a video and translate it into any supported language.
+            Select a video already stored on this computer.
         </p>
-
     </div>
 
 </div>
 
-<div class="upload-page">
 
-    <!-- ==========================================================
-         Upload Panel
-    =========================================================== -->
+<form
+    id="uploadForm"
+    class="upload-layout"
+    autocomplete="off"
+>
 
-    <section class="upload-panel card">
+    <!-- =====================================================================
+         VIDEO SELECTION
+         ===================================================================== -->
 
-        <h2>Upload Video</h2>
+    <section class="upload-card card">
 
-        <form id="uploadForm"
-              enctype="multipart/form-data">
+        <div class="card-heading">
 
-            <label
-                class="upload-area"
-                id="uploadArea">
+            <div class="heading-icon">
+                <i class="fa-solid fa-folder-open"></i>
+            </div>
 
-                <input
-                    id="videoFile"
-                    name="video"
-                    type="file"
-                    accept="video/*"
-                    hidden>
+            <div>
 
-                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <h2>
+                    Select a local video
+                </h2>
 
-                <h3>Drag & Drop Video</h3>
+                <p>
+                    Your video will not be uploaded or copied.
+                </p>
 
-                <span>MP4 • MOV • AVI • MKV</span>
-
-                <button
-                    type="button"
-                    class="btn btn-primary">
-
-                    Browse Files
-
-                </button>
-
-            </label>
-
-        </form>
-
-        <!-- Preview -->
-
-        <div
-            id="videoPreview"
-            class="video-preview"
-            style="display:none;">
-
-            <video controls width="100%"></video>
+            </div>
 
         </div>
 
-        <!-- Upload Progress -->
+
+        <!-- =================================================================
+             Original Drop Zone
+             ================================================================= -->
 
         <div
-            id="uploadProgress"
-            class="upload-progress card"
-            style="display:none;">
+            id="dropZone"
+            class="drop-zone"
+        >
 
-            <h4>Upload Progress</h4>
+            <span class="drop-zone-icon">
+                <i class="fa-solid fa-folder-open"></i>
+            </span>
 
-            <div class="progress">
 
-                <div
-                    id="uploadProgressBar"
-                    class="progress-bar"
-                    style="width:0%;">
+            <strong>
+                Select an existing local video
+            </strong>
+
+
+            <span class="drop-zone-copy">
+                Your video stays on this device.
+            </span>
+
+
+            <!-- =============================================================
+                 Native file browser trigger
+                 ============================================================= -->
+
+            <button
+                id="browseVideo"
+                class="browse-file"
+                type="button"
+            >
+                <i class="fa-solid fa-folder-open"></i>
+                Browse files
+            </button>
+
+
+            <span class="format-note">
+                MP4, MOV, AVI, MKV or WEBM · up to 2 GB
+            </span>
+
+
+            <!-- =============================================================
+                 Manual path
+                 ============================================================= -->
+
+            <div
+                id="manualPathContainer"
+                class="manual-path-container"
+                hidden
+            >
+
+                <label for="videoPath">
+                    Local video path
+                </label>
+
+                <input
+                    id="videoPath"
+                    name="file_path"
+                    type="text"
+                    class="input"
+                    placeholder="F:\Videos\my-video.mp4"
+                    autocomplete="off"
+                    spellcheck="false"
+                >
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================================
+             Selected Video
+             ================================================================= -->
+
+        <div
+            id="selectedFile"
+            class="selected-file"
+            hidden
+            aria-live="polite"
+        >
+
+            <div class="file-info">
+
+                <span class="file-icon">
+                    <i class="fa-solid fa-file-video"></i>
+                </span>
+
+                <div>
+
+                    <strong id="selectedFileName">
+                        video.mp4
+                    </strong>
+
+                    <span id="selectedFileMeta">
+                        Local file · Ready for translation
+                    </span>
 
                 </div>
 
             </div>
 
-            <p id="uploadProgressText">0%</p>
+
+            <button
+                id="removeFile"
+                class="icon-button"
+                type="button"
+                aria-label="Remove selected video"
+            >
+                <i class="fa-solid fa-xmark"></i>
+            </button>
 
         </div>
 
-    </section>
 
-    <!-- ==========================================================
-         Translation Settings
-    =========================================================== -->
+        <!-- =================================================================
+             Video Preview
+             ================================================================= -->
 
-    <section class="translation-panel card">
+        <div
+            id="videoPreview"
+            class="video-preview"
+            hidden
+        >
 
-        <h2>Translation Settings</h2>
-
-        <!-- Source Language -->
-
-        <div class="form-group">
-
-            <label>Source Language</label>
-
-            <select
-                id="sourceLanguage"
-                class="input"
-                name="source_language">
-
-                <option value="auto" selected>Auto Detect</option>
-                <option value="en">English</option>
-                <option value="hi">Hindi</option>
-                <option value="mr">Marathi</option>
-                <option value="ta">Tamil</option>
-                <option value="te">Telugu</option>
-                <option value="kn">Kannada</option>
-                <option value="gu">Gujarati</option>
-                <option value="bn">Bengali</option>
-
-            </select>
+            <video
+                id="videoPreviewPlayer"
+                controls
+                preload="metadata"
+            ></video>
 
         </div>
 
-        <!-- Target Language -->
 
-        <div class="form-group">
+        <!-- =================================================================
+             Progress
+             ================================================================= -->
 
-            <label>Target Language</label>
+        <div
+            id="uploadProgress"
+            class="upload-progress"
+            hidden
+            aria-live="polite"
+        >
 
-            <select
-                id="targetLanguage"
-                class="input"
-                name="target_language">
+            <div class="progress-header">
 
-                <option value="mr" selected>Marathi</option>
-                <option value="hi">Hindi</option>
-                <option value="ta">Tamil</option>
-                <option value="te">Telugu</option>
-                <option value="kn">Kannada</option>
-                <option value="gu">Gujarati</option>
-                <option value="bn">Bengali</option>
-                <option value="en">English</option>
+                <span id="progressLabel">
+                    Preparing your video
+                </span>
 
-            </select>
+                <strong id="progressText">
+                    0%
+                </strong>
 
-        </div>
+            </div>
 
-        <!-- Provider -->
 
-        <div class="form-group">
+            <div
+                class="progress"
+                role="progressbar"
+                aria-label="Processing progress"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0"
+            >
 
-            <label>Translation Provider</label>
-
-            <select
-                id="provider"
-                class="input"
-                name="provider">
-
-                <option value="local" selected>Local AI</option>
-                <option value="bhashini">Bhashini (Future)</option>
-                <option value="azure">Azure AI (Future)</option>
-                <option value="openai">OpenAI (Future)</option>
-
-            </select>
-
-        </div>
-
-        <!-- Output -->
-
-        <div class="form-group">
-
-            <label>Output Options</label>
-
-            <div class="checkbox-group">
-
-                <label>
-                    <input
-                        id="subtitleOutput"
-                        type="checkbox"
-                        checked>
-
-                    Subtitle (.srt)
-                </label>
-
-                <label>
-                    <input
-                        id="voiceOutput"
-                        type="checkbox">
-
-                    Voice Over
-                </label>
-
-                <label>
-                    <input
-                        id="transcriptOutput"
-                        type="checkbox">
-
-                    Transcript
-                </label>
+                <div
+                    id="progressBar"
+                    class="progress-bar"
+                ></div>
 
             </div>
 
         </div>
 
-        <!-- Start -->
+    </section>
+
+
+    <!-- =====================================================================
+         TRANSLATION SETTINGS
+         ===================================================================== -->
+
+    <aside
+        class="settings-card card"
+        aria-labelledby="settings-heading"
+    >
+
+        <div class="card-heading compact">
+
+            <div class="heading-icon">
+                <i class="fa-solid fa-sliders"></i>
+            </div>
+
+            <div>
+
+                <h2 id="settings-heading">
+                    Translation settings
+                </h2>
+
+                <p>
+                    Set the result you want to create.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================================
+             Language Selection
+             ================================================================= -->
+
+        <div class="language-grid">
+
+            <div class="form-group">
+
+                <label for="sourceLanguage">
+                    Original language
+                </label>
+
+                <select
+                    id="sourceLanguage"
+                    class="input"
+                    name="source_language"
+                >
+
+                    <option
+                        value="auto"
+                        selected
+                    >
+                        Auto detect
+                    </option>
+
+                    <option value="en">
+                        English
+                    </option>
+
+                    <option value="hi">
+                        Hindi
+                    </option>
+
+                    <option value="mr">
+                        Marathi
+                    </option>
+
+                    <option value="ta">
+                        Tamil
+                    </option>
+
+                    <option value="te">
+                        Telugu
+                    </option>
+
+                    <option value="kn">
+                        Kannada
+                    </option>
+
+                    <option value="gu">
+                        Gujarati
+                    </option>
+
+                    <option value="bn">
+                        Bengali
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <button
+                id="swapLanguages"
+                class="swap-button"
+                type="button"
+                aria-label="Swap languages"
+            >
+                <i class="fa-solid fa-arrow-right-arrow-left"></i>
+            </button>
+
+
+            <div class="form-group">
+
+                <label for="targetLanguage">
+                    Translate to
+                </label>
+
+                <select
+                    id="targetLanguage"
+                    class="input"
+                    name="target_language"
+                >
+
+                    <option
+                        value="mr"
+                        selected
+                    >
+                        Marathi
+                    </option>
+
+                    <option value="hi">
+                        Hindi
+                    </option>
+
+                    <option value="ta">
+                        Tamil
+                    </option>
+
+                    <option value="te">
+                        Telugu
+                    </option>
+
+                    <option value="kn">
+                        Kannada
+                    </option>
+
+                    <option value="gu">
+                        Gujarati
+                    </option>
+
+                    <option value="bn">
+                        Bengali
+                    </option>
+
+                    <option value="en">
+                        English
+                    </option>
+
+                </select>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================================
+             Output Options
+             ================================================================= -->
+
+        <fieldset class="output-options">
+
+            <legend>
+                Include with your translation
+            </legend>
+
+
+            <label class="option-row">
+
+                <span>
+
+                    <i class="fa-solid fa-closed-captioning"></i>
+
+                    <span>
+
+                        <strong>
+                            Subtitles
+                        </strong>
+
+                        <small>
+                            Export a timestamped SRT file
+                        </small>
+
+                    </span>
+
+                </span>
+
+                <input
+                    id="subtitleOutput"
+                    type="checkbox"
+                    checked
+                >
+
+            </label>
+
+
+            <label class="option-row">
+
+                <span>
+
+                    <i class="fa-solid fa-microphone-lines"></i>
+
+                    <span>
+
+                        <strong>
+                            Voice-over
+                        </strong>
+
+                        <small>
+                            Create translated audio
+                        </small>
+
+                    </span>
+
+                </span>
+
+                <input
+                    id="voiceOutput"
+                    type="checkbox"
+                >
+
+            </label>
+
+
+            <label class="option-row">
+
+                <span>
+
+                    <i class="fa-solid fa-align-left"></i>
+
+                    <span>
+
+                        <strong>
+                            Transcript
+                        </strong>
+
+                        <small>
+                            Keep a text copy of the speech
+                        </small>
+
+                    </span>
+
+                </span>
+
+                <input
+                    id="transcriptOutput"
+                    type="checkbox"
+                >
+
+            </label>
+
+        </fieldset>
+
+
+        <!-- =================================================================
+             Local Processing Notice
+             ================================================================= -->
+
+        <div class="local-ai-note">
+
+            <i class="fa-solid fa-shield-halved"></i>
+
+            <span>
+
+                <strong>
+                    Processed locally
+                </strong>
+
+                <small>
+                    Your video stays on this device.
+                </small>
+
+            </span>
+
+        </div>
+
+
+        <!-- =================================================================
+             Start Translation
+             ================================================================= -->
 
         <button
             id="startTranslation"
             type="button"
-            class="btn btn-primary full-width">
+            class="btn btn-primary start-button"
+            disabled
+        >
 
             <i class="fa-solid fa-language"></i>
 
-            Start Translation
+            <span>
+                Start translation
+            </span>
 
         </button>
 
-    </section>
 
-</div>
+        <p
+            id="formMessage"
+            class="form-message"
+            role="status"
+            aria-live="polite"
+        >
+            Select a video to continue.
+        </p>
+
+    </aside>
+
+</form>
 
 {% endblock %}
 
+
 {% block js %}
 
-<script src="{{ url_for('static', path='js/api.js') }}"></script>
-
-<script src="{{ url_for('static', path='js/upload.js') }}"></script>
+<script src="/static/js/upload.js"></script>
 
 {% endblock %}

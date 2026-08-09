@@ -18,8 +18,9 @@ Version:
     1.0
 ===============================================================================
 """
-
 from __future__ import annotations
+
+import gc
 
 from threading import Lock
 from typing import Any
@@ -221,8 +222,11 @@ class ModelManager:
 
             print(f"Loading {category}:{model}")
 
-            if category in ['language_detection','tts']:
-                print(f"Skipping {category}:{model} as it is not a model to be loaded.")
+            if category == "language_detection":
+                print(
+                    f"Skipping {category}:{model} "
+                    "as it is not loaded at startup."
+                )
                 continue
             
             self.load_model(
@@ -336,38 +340,49 @@ class ModelManager:
         """
         return self._cache.get(f"{category}:{model}")
 
-    # def unload_model(self, category: str, model: str) -> None:
-    #     """
-    #     Remove model from memory.
-    #     """
-
-    #     cache_key = f"{category}:{model}"
-
-    #     if not self._cache.exists(cache_key):
-    #         return
-
-    #     model = self._cache.get(cache_key)
-
-    #     self._loader.unload(model)
-
-    #     self._cache.remove(cache_key    )
-
-    def unload_model(
-        self,
-        category: str,
-        model: str,
-    ) -> None:
+    def unload_model(self, category: str, model: str) -> None:
         """
         Remove model from memory.
         """
+
         cache_key = f"{category}:{model}"
+
         if not self._cache.exists(cache_key):
             return
 
-        loaded_model = self._cache.get(cache_key)
-        self._loader.unload(loaded_model)
-        self._cache.remove(cache_key)
+        model = self._cache.get(cache_key)
 
+        self._loader.unload(model)
+
+        self._cache.remove(cache_key    )
+
+
+    def unload(
+        self,
+        model: Any,
+    ) -> None:
+
+        #
+        # Remove local reference
+        #
+        del model
+
+        #
+        # Force Python GC
+        #
+        gc.collect()
+
+        #
+        # Future GPU cleanup
+        #
+        try:
+            import torch
+
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+        except Exception:
+            pass
     # -------------------------------------------------------------------------
     # Query
     # -------------------------------------------------------------------------
@@ -395,11 +410,25 @@ class ModelManager:
 
     def shutdown(self) -> None:
 
-        for cache_key in self._cache.list():
+        loaded = list(self._cache.list())
+
+        for cache_key in loaded:
 
             category, model = cache_key.split(":", 1)
 
-            self.unload_model(
-                category,
-                model,
-            )
+            print(f"Unloading {cache_key}")
+
+            self.unload_model(category, model)
+
+        #
+        # Safety
+        #
+        self._cache.clear()
+
+        # import gc
+
+        gc.collect()
+
+        print("All AI Models Unloaded.")
+
+        print("All AI Models Unloaded.")

@@ -18,9 +18,15 @@ Version:
 
 from __future__ import annotations
 
+from httpcore import request
+
 from ai.asr.adapter import ASRAdapter
 from ai.model_manager.manager import ModelManager
-
+from ai.asr.models import (
+    ASRRequest,
+    ASRResult,
+    ASRSegment,
+)
 
 class ASRService:
     """
@@ -43,47 +49,63 @@ class ASRService:
 
     def transcribe(
         self,
-        audio_path: str,
-        language: str | None = None,
-    ):
+        request: ASRRequest,
+    ) -> ASRResult:
         """
-        Transcribe audio.
-
-        Parameters
-        ----------
-        audio_path : str
-
-        language : str | None
-
-        Returns
-        -------
-        Framework ASRResult
+        Transcribe audio using the already loaded ASR model.
         """
 
         #
-        # Get loaded ASR model
+        # Get loaded Whisper model
         #
-        model = self._model_manager.get_default_model(
-            "asr"
-        )
-
-        metadata = self._model_manager.get_default_metadata(
+        whisper = self._model_manager.get_default_model(
             "asr"
         )
 
         #
-        # Move inference from your working
-        # test_asr.py here.
+        # Run transcription
         #
+        segments, info = whisper.transcribe(
+            request.audio_path,
+            beam_size=1,
+            vad_filter=True,
+            condition_on_previous_text=False,
+        )
 
-        raise NotImplementedError(
-            "Move ASR inference from test_asr.py here."
+        #
+        # Convert framework segments
+        #
+        framework_segments = []
+
+        transcript = []
+
+        for idx, segment in enumerate(segments, start=1):
+
+            transcript.append(segment.text)
+
+            framework_segments.append(
+                ASRSegment(
+                    id=idx,
+                    start=segment.start,
+                    end=segment.end,
+                    text=segment.text.strip(),
+                    confidence=None,
+                )
+            )
+
+        #
+        # Framework response
+        #
+        return ASRResult(
+            provider="faster-whisper",
+            model="medium",
+            transcript=" ".join(transcript).strip(),
+            segments=framework_segments,
+            detected_language=info.language,
+            language_confidence=info.language_probability,
         )
 
     def health_check(self) -> bool:
-        """
-        Verify ASR model is loaded.
-        """
 
         try:
 

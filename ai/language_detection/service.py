@@ -4,26 +4,18 @@ Bhasha Mitra - AI Framework
 -------------------------------------------------------------------------------
 Module      : service.py
 Purpose     : Language Detection Service
-
-Description:
-    Detects language using the configured language detection provider.
-
-Author:
-    Bhasha Mitra AI Team
-
-Version:
-    1.0
 ===============================================================================
 """
 
 from __future__ import annotations
+
+from lingua import LanguageDetectorBuilder
 
 from ai.language_detection.adapter import LanguageDetectionAdapter
 from ai.language_detection.models import (
     LanguageDetectionRequest,
     LanguageDetectionResult,
 )
-from ai.model_manager.manager import ModelManager
 
 
 class LanguageDetectionService:
@@ -33,9 +25,8 @@ class LanguageDetectionService:
     Responsibilities
     ----------------
     • Accept language detection requests.
-    • Read provider metadata from ModelManager.
-    • Initialize detector on demand.
-    • Normalize provider output.
+    • Detect language using the configured detection engine.
+    • Return framework-standard result.
     """
 
     def __init__(
@@ -44,59 +35,77 @@ class LanguageDetectionService:
     ) -> None:
 
         self._adapter = adapter
-        self._model_manager = ModelManager()
+
+        self._detector = (
+            LanguageDetectorBuilder
+            .from_all_languages()
+            .build()
+        )
+
+    # ------------------------------------------------------------------
+    # Detect
+    # ------------------------------------------------------------------
 
     def detect(
         self,
         request: LanguageDetectionRequest,
     ) -> LanguageDetectionResult:
         """
-        Detect language.
+        Detect the language of supplied text.
         """
 
-        #
-        # Language Detection is NOT preloaded.
-        # Read provider configuration only.
-        #
-        metadata = self._model_manager.get_default_metadata(
-            "language_detection"
-        )
+        text = request.text.strip()
 
-        #
-        # TODO
-        #
-        # Initialize the detector using metadata.
-        #
-        # Example:
-        #
-        # provider = metadata["provider"]
-        #
-        # detector = ...
-        #
-        # provider_result = detector.detect(request.text)
-        #
-        # return self._adapter.to_framework_result(provider_result)
-        #
-
-        raise NotImplementedError(
-            "Move language detection implementation here."
-        )
-
-    def health_check(
-        self,
-    ) -> bool:
-        """
-        Verify Language Detection configuration exists.
-        """
-
-        try:
-
-            self._model_manager.get_default_metadata(
-                "language_detection"
+        if not text:
+            raise ValueError(
+                "Text cannot be empty."
             )
 
-            return True
+        detected = (
+            self._detector.detect_language_of(
+                text
+            )
+        )
 
-        except Exception:
+        if detected is None:
+            raise RuntimeError(
+                "Unable to detect language."
+            )
 
-            return False
+        confidence = (
+            self._detector.compute_language_confidence(
+                text,
+                detected,
+            )
+        )
+
+        language_code = (
+            detected.iso_code_639_1.name.lower()
+        )
+
+        language_name = detected.name.replace(
+            "_",
+            " ",
+        ).title()
+
+        return LanguageDetectionResult(
+            provider="lingua",
+            language=language_code,
+            language_name=language_name,
+            confidence=confidence,
+            alternatives=[],
+            metadata={
+                "detector": "lingua",
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # Health Check
+    # ------------------------------------------------------------------
+
+    def health_check(self) -> bool:
+        """
+        Check language detection service health.
+        """
+
+        return self._detector is not None

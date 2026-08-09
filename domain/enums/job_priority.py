@@ -1,70 +1,36 @@
 """
 ===============================================================================
-Module: Job Priority Enumeration
-Project: Bhasha Mitra
-Layer: Domain
+BHASHA MITRA
+
+Module:
+    job_priority.py
+
+Layer:
+    Domain / Enums
+
+Description:
+    Defines translation job priority levels.
+
+Database compatibility:
+    Existing SQLite records persist priority values such as:
+        NORMAL
+
+    Therefore enum values must match the persisted representation.
 ===============================================================================
-
-Defines the execution priority of translation jobs.
-
-Priority determines the order in which queued jobs are picked by workers.
-
-Usage:
-    from domain.enums.job_priority import JobPriority
-
-    job.priority = JobPriority.NORMAL
 """
 
-from enum import IntEnum
+from enum import Enum
 
 
-class JobPriority(IntEnum):
+class JobPriority(str, Enum):
     """
-    Represents the priority assigned to a translation job.
-
-    Higher numeric values indicate higher priority.
+    Priority assigned to a translation job.
     """
 
-    LOW = 1
-    """
-    Lowest execution priority.
-    Suitable for background or batch processing.
-    """
+    LOW = "LOW"
 
-    NORMAL = 2
-    """
-    Default priority for standard translation requests.
-    """
+    NORMAL = "NORMAL"
 
-    HIGH = 3
-    """
-    High priority for time-sensitive translations.
-    """
+    HIGH = "HIGH"
 
-    CRITICAL = 4
-    """
-    Highest priority.
-    Reserved for system or administrator requests.
-    """
-
-    @property
-    def is_high_priority(self) -> bool:
-        """
-        Returns True if the job should be processed before normal jobs.
-        """
-        return self in (
-            JobPriority.HIGH,
-            JobPriority.CRITICAL,
-        )
-
-    @property
-    def queue_weight(self) -> int:
-        """
-        Returns the scheduling weight.
-
-        Higher values are processed first.
-        """
-        return int(self)
-
-    def __str__(self) -> str:
-        return self.name
+    CRITICAL = "CRITICAL"

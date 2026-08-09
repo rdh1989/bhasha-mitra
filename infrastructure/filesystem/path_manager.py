@@ -1,94 +1,285 @@
 """
-Centralized Storage Path Manager.
+Module:
+    path_manager.py
 
-Responsible for resolving every storage location used
-throughout Bhasha Mitra.
+Layer:
+    Infrastructure / Filesystem
 
-No other component should hardcode storage paths.
+Description:
+    Centralized filesystem path management for Bhasha Mitra.
+
+Responsibilities:
+    - Read configured output and database paths
+    - Validate configured paths
+    - Create application output directories
+    - Create per-video directories
+    - Create per-translation-job directories
+    - Resolve generated file paths
+    - Never use a fallback storage path
+
+Output structure:
+
+    <output_path>/
+        <video_name>/
+            <job_id>/
+                translated.mp4
+                <video_name>.srt
+                files/
+                    audio.wav
+                    transcript.json
+                    translation.json
+                    subtitle.txt
+                metadata.txt
 """
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
+
+from infrastructure.configuration import configuration
 
 
 class PathManager:
     """
-    Provides strongly typed access to application storage paths.
+    Centralized filesystem path manager.
     """
 
-    def __init__(
+    def __init__(self) -> None:
+        """
+        Initialize paths from user application configuration.
+
+        No fallback path is used.
+        """
+
+        output_path = configuration.get_value(
+            "application",
+            "output_path",
+        )
+
+        database_path = configuration.get_value(
+            "application",
+            "database_path",
+        )
+
+        if not output_path:
+
+            raise RuntimeError(
+                "Application output path is not configured."
+            )
+
+        if not database_path:
+
+            raise RuntimeError(
+                "Application database path is not configured."
+            )
+
+        self._output_root = Path(
+            output_path
+        ).expanduser()
+
+        self._database_path = Path(
+            database_path
+        ).expanduser()
+
+    # =========================================================================
+    # Configured paths
+    # =========================================================================
+
+    @property
+    def output_root(self) -> Path:
+        """
+        Configured translated-video output directory.
+        """
+
+        return self._output_root
+
+    @property
+    def database_path(self) -> Path:
+        """
+        Configured SQLite database file path.
+        """
+
+        return self._database_path
+
+    # =========================================================================
+    # Health validation
+    # =========================================================================
+
+    def validate(self) -> None:
+        """
+        Validate configured output and database paths.
+
+        Raises:
+            RuntimeError:
+                When a configured path is not accessible.
+        """
+
+        self._validate_output_path()
+        self._validate_database_path()
+
+    def _validate_output_path(self) -> None:
+        """
+        Validate that the output location is accessible and writable.
+        """
+
+        if self._output_root.exists():
+
+            if not self._output_root.is_dir():
+
+                raise RuntimeError(
+                    "Configured output path is not a directory: "
+                    f"{self._output_root}"
+                )
+
+            if not os.access(
+                self._output_root,
+                os.W_OK,
+            ):
+
+                raise RuntimeError(
+                    "Configured output path is not writable: "
+                    f"{self._output_root}"
+                )
+
+            return
+
+        parent = self._output_root.parent
+
+        if not parent.exists():
+
+            raise RuntimeError(
+                "Configured output path is not accessible: "
+                f"{self._output_root}"
+            )
+
+        if not parent.is_dir():
+
+            raise RuntimeError(
+                "Parent of configured output path is not a directory: "
+                f"{parent}"
+            )
+
+        if not os.access(
+            parent,
+            os.W_OK,
+        ):
+
+            raise RuntimeError(
+                "Configured output location is not writable: "
+                f"{parent}"
+            )
+
+    def _validate_database_path(self) -> None:
+        """
+        Validate the configured database location.
+
+        The database file itself does not need to exist yet.
+        """
+
+        parent = self._database_path.parent
+
+        if not parent.exists():
+
+            raise RuntimeError(
+                "Configured database path is not accessible: "
+                f"{parent}"
+            )
+
+        if not parent.is_dir():
+
+            raise RuntimeError(
+                "Database path parent is not a directory: "
+                f"{parent}"
+            )
+
+        if not os.access(
+            parent,
+            os.W_OK,
+        ):
+
+            raise RuntimeError(
+                "Configured database location is not writable: "
+                f"{parent}"
+            )
+
+    # =========================================================================
+    # Directory creation
+    # =========================================================================
+
+    def ensure_output_root(self) -> Path:
+        """
+        Create the configured output directory.
+        """
+
+        self._output_root.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        if not self._output_root.is_dir():
+
+            raise RuntimeError(
+                "Unable to create output directory: "
+                f"{self._output_root}"
+            )
+
+        return self._output_root
+
+    def ensure_database_directory(self) -> Path:
+        """
+        Create the configured database parent directory.
+        """
+
+        parent = self._database_path.parent
+
+        parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        if not parent.is_dir():
+
+            raise RuntimeError(
+                "Unable to create database directory: "
+                f"{parent}"
+            )
+
+        return parent
+
+    # =========================================================================
+    # Video directory
+    # =========================================================================
+
+    def video_directory(
         self,
-        storage_root: Path,
-    ) -> None:
-
-        self._root = storage_root
-
-        self._uploads = self._root / "uploads"
-        self._output = self._root / "output"
-        self._transcripts = self._root / "transcripts"
-        self._subtitles = self._root / "subtitles"
-        self._temp = self._root / "temp"
-        self._cache = self._root / "cache"
-        self._history = self._root / "history"
-        self._logs = self._root / "logs"
-        self._jobs = self._root / "jobs"
-
-        self._create_directories()
-
-    # ==========================================================
-    # Public Properties
-    # ==========================================================
-
-    @property
-    def uploads(self) -> Path:
-        return self._uploads
-
-    @property
-    def output(self) -> Path:
-        return self._output
-
-    @property
-    def transcripts(self) -> Path:
-        return self._transcripts
-
-    @property
-    def subtitles(self) -> Path:
-        return self._subtitles
-
-    @property
-    def temp(self) -> Path:
-        return self._temp
-
-    @property
-    def cache(self) -> Path:
-        return self._cache
-
-    @property
-    def history(self) -> Path:
-        return self._history
-
-    @property
-    def logs(self) -> Path:
-        return self._logs
-
-    @property
-    def jobs(self) -> Path:
-        return self._jobs
-
-    # ==========================================================
-    # Job Specific Paths
-    # ==========================================================
-
-    def job_directory(
-        self,
-        job_id: str,
+        video_name: str,
     ) -> Path:
         """
-        Return the directory dedicated to one job.
+        Return and create the directory belonging to a source video.
+
+        Example:
+
+            movie.mp4
+                ↓
+            <output_path>/movie/
         """
 
-        path = self.jobs / job_id
+        name = Path(
+            video_name
+        ).stem.strip()
+
+        if not name:
+
+            raise ValueError(
+                "Video filename cannot be empty."
+            )
+
+        path = (
+            self._output_root
+            / name
+        )
+
         path.mkdir(
             parents=True,
             exist_ok=True,
@@ -96,52 +287,202 @@ class PathManager:
 
         return path
 
-    def transcript_file(
+    # =========================================================================
+    # Translation job directory
+    # =========================================================================
+
+    def job_directory(
         self,
+        video_name: str,
         job_id: str,
     ) -> Path:
-        return self.transcripts / f"{job_id}.txt"
+        """
+        Return and create the directory belonging to one translation job.
 
-    def subtitle_file(
-        self,
-        job_id: str,
-    ) -> Path:
-        return self.subtitles / f"{job_id}.srt"
+        Example:
 
-    def output_file(
-        self,
-        filename: str,
-    ) -> Path:
-        return self.output / filename
+            <output_path>/
+                movie/
+                    8f3c.../
+        """
 
-    def upload_file(
-        self,
-        filename: str,
-    ) -> Path:
-        return self.uploads / filename
+        if not job_id.strip():
 
-    # ==========================================================
-    # Internal
-    # ==========================================================
+            raise ValueError(
+                "Job ID cannot be empty."
+            )
 
-    def _create_directories(
-        self,
-    ) -> None:
-
-        directories = (
-            self.uploads,
-            self.output,
-            self.transcripts,
-            self.subtitles,
-            self.temp,
-            self.cache,
-            self.history,
-            self.logs,
-            self.jobs,
+        path = (
+            self.video_directory(video_name)
+            / job_id
         )
 
-        for directory in directories:
-            directory.mkdir(
-                parents=True,
-                exist_ok=True,
+        path.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        return path
+
+    # =========================================================================
+    # Intermediate files
+    # =========================================================================
+
+    def files_directory(
+        self,
+        video_name: str,
+        job_id: str,
+    ) -> Path:
+        """
+        Return and create the intermediate files directory.
+        """
+
+        path = (
+            self.job_directory(
+                video_name,
+                job_id,
             )
+            / "files"
+        )
+
+        path.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        return path
+
+    def audio_path(
+        self,
+        video_name: str,
+        job_id: str,
+    ) -> Path:
+        """
+        Path for extracted audio.
+        """
+
+        return (
+            self.files_directory(
+                video_name,
+                job_id,
+            )
+            / "audio.wav"
+        )
+
+    def transcript_path(
+        self,
+        video_name: str,
+        job_id: str,
+    ) -> Path:
+        """
+        Path for generated transcript.
+        """
+
+        return (
+            self.files_directory(
+                video_name,
+                job_id,
+            )
+            / "transcript.json"
+        )
+
+    def translation_path(
+        self,
+        video_name: str,
+        job_id: str,
+    ) -> Path:
+        """
+        Path for generated translation.
+        """
+
+        return (
+            self.files_directory(
+                video_name,
+                job_id,
+            )
+            / "translation.json"
+        )
+
+    def subtitle_text_path(
+        self,
+        video_name: str,
+        job_id: str,
+    ) -> Path:
+        """
+        Path for generated subtitle text.
+        """
+
+        return (
+            self.files_directory(
+                video_name,
+                job_id,
+            )
+            / "subtitle.txt"
+        )
+
+    # =========================================================================
+    # Final output files
+    # =========================================================================
+
+    def translated_video_path(
+        self,
+        video_name: str,
+        job_id: str,
+    ) -> Path:
+        """
+        Path for final translated video.
+
+        Always:
+
+            translated.mp4
+        """
+
+        return (
+            self.job_directory(
+                video_name,
+                job_id,
+            )
+            / "translated.mp4"
+        )
+
+    def subtitle_path(
+        self,
+        video_name: str,
+        job_id: str,
+    ) -> Path:
+        """
+        Path for final SRT subtitle file.
+
+        Example:
+
+            movie.srt
+        """
+
+        video_stem = Path(
+            video_name
+        ).stem
+
+        return (
+            self.job_directory(
+                video_name,
+                job_id,
+            )
+            / f"{video_stem}.srt"
+        )
+
+    def metadata_path(
+        self,
+        video_name: str,
+        job_id: str,
+    ) -> Path:
+        """
+        Path for final metadata file.
+        """
+
+        return (
+            self.job_directory(
+                video_name,
+                job_id,
+            )
+            / "metadata.txt"
+        )

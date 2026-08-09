@@ -4,50 +4,27 @@ Bhasha Mitra - AI Framework
 -------------------------------------------------------------------------------
 Module      : tts.py
 Purpose     : Text-to-Speech API
-
-Description
------------
-REST endpoints for Text-to-Speech.
-
-Author
-------
-Bhasha Mitra AI Team
-
-Version
--------
-1.0
 ===============================================================================
 """
 
+from __future__ import annotations
+
 from fastapi import APIRouter, HTTPException
 
-from ai.core.service_registry import ServiceRegistry
+from ai.core.pipeline_registry import PipelineRegistry
+from ai.tts.models import SpeechRequest
 
-from ai.tts.models import (
-    SpeechRequest,
-    SpeechResult,
-)
 
 router = APIRouter()
 
+pipeline = PipelineRegistry.tts_pipeline()
 
-# --------------------------------------------------------------------------
-# Service
-# --------------------------------------------------------------------------
-
-service = ServiceRegistry.tts_service()
-
-
-# --------------------------------------------------------------------------
-# AI-008
-# --------------------------------------------------------------------------
 
 @router.post(
     "/tts",
-    summary="Text To Speech",
+    summary="Convert Text to Speech",
 )
-
-def text_to_speech(
+def synthesize(
     request: SpeechRequest,
 ):
     """
@@ -56,9 +33,23 @@ def text_to_speech(
 
     try:
 
-        result = service.synthesize(request)
+        return pipeline.execute(
+            request
+        )
 
-        return result
+    except ValueError as exc:
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        )
+
+    except FileNotFoundError as exc:
+
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc),
+        )
 
     except Exception as exc:
 

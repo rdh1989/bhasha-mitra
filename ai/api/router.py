@@ -31,6 +31,8 @@ from ai.api.tts import router as tts_router
 from ai.api.subtitle import router as subtitle_router
 
 from ai.api.video_translation import router as video_router
+from ai.api.transcript import router as transcript_router
+from ai.api.dubbing import router as dubbing_router
 
 router = APIRouter(
     prefix="/api/ai",
@@ -59,3 +61,5 @@ router.include_router(subtitle_router)
 # -------------------------------------------------------------------------
 
 router.include_router(video_router)
+router.include_router(transcript_router)
+router.include_router(dubbing_router)

@@ -1,135 +1,186 @@
 """
-Global exception middleware.
+===============================================================================
+BHASHA MITRA
 
-Intercepts all unhandled exceptions and converts them into a
-standardized API error response.
+Module:
+    exceptions.py
+
+Layer:
+    Presentation / Middleware
+
+Description:
+    Global exception handling middleware.
+
+Responsibilities:
+    - Handle unhandled application exceptions
+    - Handle request validation errors safely
+    - Prevent raw request bytes from being JSON-decoded
+    - Return consistent API error responses
+    - Preserve correlation IDs
+===============================================================================
 """
 
 from __future__ import annotations
 
 import logging
+from uuid import uuid4
 
 from fastapi import Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.exceptions import HTTPException as StarletteHTTPException
-
-from app.application.exceptions.application_exception import ApplicationException
 
 logger = logging.getLogger(__name__)
 
 
+def _sanitize_value(
+    value: object,
+) -> object:
+    """
+    Convert values that are unsafe for JSON serialization
+    into safe representations.
+
+    In particular, FastAPI validation errors may contain the
+    complete raw multipart request body as bytes.
+    """
+
+    if isinstance(value, bytes):
+
+        return value.decode(
+            "utf-8",
+            errors="replace",
+        )
+
+    if isinstance(value, bytearray):
+
+        return bytes(value).decode(
+            "utf-8",
+            errors="replace",
+        )
+
+    if isinstance(value, dict):
+
+        return {
+            str(key): _sanitize_value(item)
+            for key, item in value.items()
+        }
+
+    if isinstance(value, (list, tuple)):
+
+        return [
+            _sanitize_value(item)
+            for item in value
+        ]
+
+    return value
+
+
+def _sanitize_validation_errors(
+    errors: list[dict],
+) -> list[dict]:
+    """
+    Make FastAPI validation errors JSON-safe.
+    """
+
+    return [
+        _sanitize_value(error)
+        for error in errors
+    ]
+
+
 class ExceptionMiddleware(BaseHTTPMiddleware):
     """
-    Middleware responsible for handling all application exceptions.
+    Global exception middleware for Bhasha Mitra.
     """
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(
+        self,
+        request: Request,
+        call_next,
+    ):
+        """
+        Process request and handle exceptions.
+        """
+
+        correlation_id = request.headers.get(
+            "X-Correlation-ID"
+        )
+
+        if not correlation_id:
+
+            correlation_id = str(
+                uuid4()
+            )
 
         try:
-            return await call_next(request)
 
-        #
-        # Application Exceptions
-        #
-        except ApplicationException as exc:
-
-            logger.warning(
-                "%s | %s | %s",
-                exc.error_code,
-                request.url.path,
-                exc.message,
+            response = await call_next(
+                request
             )
 
-            return JSONResponse(
-                status_code=exc.status_code,
-                content=self._error_response(
-                    request=request,
-                    code=exc.error_code,
-                    message=exc.message,
-                    details=exc.details,
-                ),
-            )
+            response.headers[
+                "X-Correlation-ID"
+            ] = correlation_id
 
-        #
-        # Request Validation (422)
-        #
+            return response
+
         except RequestValidationError as exc:
 
+            errors = _sanitize_validation_errors(
+                exc.errors()
+            )
+
             logger.warning(
-                "VALIDATION_ERROR | %s",
+                "Request validation failed | "
+                "path=%s | correlation_id=%s | errors=%s",
                 request.url.path,
+                correlation_id,
+                errors,
             )
 
             return JSONResponse(
                 status_code=422,
-                content=self._error_response(
-                    request=request,
-                    code="VALIDATION_ERROR",
-                    message="Request validation failed.",
-                    details=exc.errors(),
-                ),
+                content={
+                    "success": False,
+                    "error": "VALIDATION_ERROR",
+                    "detail": errors,
+                    "correlation_id": correlation_id,
+                },
+                headers={
+                    "X-Correlation-ID": correlation_id,
+                },
             )
 
-        #
-        # HTTP Exceptions (404, 405, etc.)
-        #
-        except StarletteHTTPException as exc:
-
-            logger.warning(
-                "HTTP_%s | %s",
-                exc.status_code,
-                request.url.path,
-            )
-
-            return JSONResponse(
-                status_code=exc.status_code,
-                content=self._error_response(
-                    request=request,
-                    code=f"HTTP_{exc.status_code}",
-                    message=str(exc.detail),
-                ),
-            )
-
-        #
-        # Unexpected Errors (500)
-        #
-        except Exception:
+        except Exception as exc:
 
             logger.exception(
-                "Unhandled exception while processing %s",
+                "Unhandled exception | "
+                "path=%s | correlation_id=%s",
                 request.url.path,
+                correlation_id,
             )
 
             return JSONResponse(
                 status_code=500,
-                content=self._error_response(
-                    request=request,
-                    code="INTERNAL_SERVER_ERROR",
-                    message="An unexpected error occurred.",
-                ),
+                content={
+                    "success": False,
+                    "error": "INTERNAL_SERVER_ERROR",
+                    "detail": "Internal server error.",
+                    "correlation_id": correlation_id,
+                },
+                headers={
+                    "X-Correlation-ID": correlation_id,
+                },
             )
 
-    @staticmethod
-    def _error_response(
-        *,
-        request: Request,
-        code: str,
-        message: str,
-        details: object | None = None,
-    ) -> dict:
 
-        return {
-            "success": False,
-            "error": {
-                "code": code,
-                "message": message,
-                "details": details,
-            },
-            "correlation_id": getattr(
-                request.state,
-                "correlation_id",
-                None,
-            ),
-        }
+def register_exception_middleware(
+    app,
+) -> None:
+    """
+    Register global exception middleware.
+    """
+
+    app.add_middleware(
+        ExceptionMiddleware
+    )

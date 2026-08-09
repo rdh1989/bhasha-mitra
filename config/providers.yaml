@@ -78,17 +78,33 @@ providers:
   # Subtitle
   ###########################################################################
 
-  subtitle:
+###########################################################################
+# Subtitle
+###########################################################################
 
-    default: default
+subtitle:
 
-    default:
+  default_format: srt
+  encoding: utf-8
+  overwrite_existing: true
+
+  formats:
+
+    srt:
       enabled: true
-      class: ai.subtitle.provider.DefaultSubtitleProvider
-      lifecycle: singleton
-      priority: 1
-      health_check: true
-      requires_model_directory: true
+      implementation: ai.subtitle.formats.srt:SRTFormatter
+
+    vtt:
+      enabled: false
+      implementation: ai.subtitle.formats.vtt:VTTFormatter
+
+    ass:
+      enabled: false
+      implementation: ai.subtitle.formats.ass:ASSFormatter
+
+    webvtt:
+      enabled: false
+      implementation: ai.subtitle.formats.webvtt:WebVTTFormatter
 
 
   ###########################################################################

@@ -2,99 +2,87 @@
 ===============================================================================
 Bhasha Mitra - AI Framework
 -------------------------------------------------------------------------------
-Module      : tts_provider.py
-Purpose     : Base interface for all Text-to-Speech providers.
-
-Description:
-    Defines the contract that every TTS provider must implement.
-
-    Examples:
-        • Piper
-        • Coqui TTS
-        • Bhashini
-        • Custom TTS Providers
-
-Design Pattern:
-    Strategy Pattern
-
-Author:
-    Bhasha Mitra AI Team
-
-Version:
-    1.0
+Module      : service.py
+Purpose     : Text-to-Speech Service
 ===============================================================================
 """
 
 from __future__ import annotations
 
-from abc import abstractmethod
-
-from ai.base.provider import Provider
+from ai.base.tts_provider import TTSProvider
+from ai.tts.adapter import TTSAdapter
 from ai.tts.models import (
     SpeechRequest,
     SpeechResult,
 )
 
 
-class TTSProvider(Provider):
+class TTSService:
     """
-    Base interface for all Text-to-Speech providers.
+    Text-to-Speech orchestration service.
 
-    Notes
-    -----
-    • Performs speech synthesis.
-    • Does not manage model lifecycle.
-    • Returns framework models only.
+    Responsibilities
+    ----------------
+    • Accept speech synthesis requests.
+    • Delegate synthesis to the configured TTS provider.
+    • Normalize provider output.
+    • Remain completely vendor independent.
     """
 
-    __slots__ = ()
+    def __init__(
+        self,
+        provider: TTSProvider,
+        adapter: TTSAdapter,
+    ) -> None:
 
-    @abstractmethod
+        self._provider = provider
+        self._adapter = adapter
+
+    # ------------------------------------------------------------------
+    # Synthesize
+    # ------------------------------------------------------------------
+
     def synthesize(
         self,
         request: SpeechRequest,
     ) -> SpeechResult:
         """
-        Convert text into speech.
-
-        Parameters
-        ----------
-        request : SpeechRequest
-            Speech synthesis request.
-
-        Returns
-        -------
-        SpeechResult
-            Provider-independent speech synthesis result.
+        Convert text into speech using the configured provider.
         """
-        raise NotImplementedError
 
-    @abstractmethod
-    def supported_languages(self) -> list[str]:
+        if not request.text.strip():
+            raise ValueError(
+                "Text cannot be empty."
+            )
+
+        provider_result = (
+            self._provider.synthesize(
+                request
+            )
+        )
+
+        return self._adapter.to_framework_result(
+            provider_result
+        )
+
+    # ------------------------------------------------------------------
+    # Health Check
+    # ------------------------------------------------------------------
+
+    def health_check(self) -> bool:
         """
-        Return supported language codes.
-
-        Returns
-        -------
-        list[str]
+        Check provider health.
         """
-        raise NotImplementedError
 
-    @abstractmethod
-    def available_voices(
-        self,
-        language: str | None = None,
-    ) -> list[str]:
+        return self._provider.health_check()
+
+    # ------------------------------------------------------------------
+    # Shutdown
+    # ------------------------------------------------------------------
+
+    def shutdown(self) -> None:
         """
-        Return available voices.
-
-        Parameters
-        ----------
-        language : str | None
-            Optional language filter.
-
-        Returns
-        -------
-        list[str]
+        Shutdown provider.
         """
-        raise NotImplementedError
+
+        self._provider.shutdown()
