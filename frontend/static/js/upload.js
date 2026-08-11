@@ -781,6 +781,23 @@ class UploadController {
                 "success"
             );
 
+            if (result.job_id) {
+
+                this.persistSubmittedJob(
+                    result.job_id,
+                    {
+                        fileName: payload.file_name,
+                        sourceLanguage: payload.source_language,
+                        targetLanguage: payload.target_language,
+                        status: "PENDING"
+                    }
+                );
+
+                window.location.href =
+                    `/translation?job_id=${encodeURIComponent(result.job_id)}&source_language=${encodeURIComponent(payload.source_language)}&target_language=${encodeURIComponent(payload.target_language)}`;
+
+                return;
+            }
 
             console.info(
                 "Translation job created:",
@@ -817,6 +834,47 @@ class UploadController {
         }
     }
 
+
+    // =========================================================================
+    // Local job storage
+    // =========================================================================
+
+    getStoredJobs() {
+
+        try {
+
+            const raw = localStorage.getItem("submittedJobs");
+            return raw ? JSON.parse(raw) : [];
+
+        } catch {
+
+            return [];
+
+        }
+    }
+
+    persistSubmittedJob(jobId, details = {}) {
+
+        const jobs = this.getStoredJobs().filter(
+            job => job.jobId !== jobId
+        );
+
+        jobs.unshift({
+            jobId,
+            fileName: details.fileName || this.selectedFileName,
+            sourceLanguage: details.sourceLanguage || this.sourceLanguage?.value || "auto",
+            targetLanguage: details.targetLanguage || this.targetLanguage?.value || "",
+            status: details.status || "PENDING",
+            updatedAt: new Date().toISOString()
+        });
+
+        localStorage.setItem(
+            "submittedJobs",
+            JSON.stringify(jobs)
+        );
+
+        window.dispatchEvent(new Event("storage"));
+    }
 
     // =========================================================================
     // Parse backend response

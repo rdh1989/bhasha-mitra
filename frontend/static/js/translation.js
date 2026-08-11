@@ -22,6 +22,7 @@ class TranslationController {
         this.progressValue = document.getElementById("translationProgressValue");
 
         this.stageLabel = document.getElementById("currentStage");
+        this.submittedJobsList = document.getElementById("submittedJobsList");
 
         this.downloadVideoButton =
             document.getElementById("downloadVideo");
@@ -53,11 +54,18 @@ class TranslationController {
 
         if (jobElement) {
 
-            this.jobId = jobElement.value;
+            this.jobId = jobElement.dataset.jobId || null;
 
-            this.startPolling();
+            if (this.jobId) {
+
+                this.startPolling();
+
+            }
 
         }
+
+        this.refreshSubmittedJobs();
+        window.addEventListener("storage", () => this.refreshSubmittedJobs());
 
     }
 
@@ -136,16 +144,27 @@ class TranslationController {
 
         try {
 
-            /*
-            const response =
-                await Api.get(
-                    `/api/translations/${this.jobId}/status`
+            const response = await fetch(
+                `/api/v1/jobs/${encodeURIComponent(this.jobId)}`,
+                {
+                    headers: {
+                        "Accept": "application/json"
+                    }
+                }
+            );
+
+            const payload = await response.json();
+
+            if (!response.ok || !payload.success) {
+
+                throw new Error(
+                    payload.detail ||
+                    "Unable to load translation status."
                 );
 
-            this.updateStatus(response);
-            */
+            }
 
-            this.simulateProgress();
+            this.updateStatus(payload.job);
 
         }
         catch (error) {
@@ -159,24 +178,140 @@ class TranslationController {
     }
 
     /*=========================================================================
+        Submit Jobs UI
+    =========================================================================*/
+
+    refreshSubmittedJobs() {
+
+        if (!this.submittedJobsList) {
+
+            return;
+
+        }
+
+        const jobs = this.getStoredJobs();
+
+        if (!jobs.length) {
+
+            this.submittedJobsList.innerHTML = `
+                <div class="summary-item">
+                    <div class="summary-label">
+                        No jobs submitted yet
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        this.submittedJobsList.innerHTML = jobs
+            .slice(0, 5)
+            .map(job => `
+                <div class="summary-item">
+                    <div class="summary-label">
+                        ${job.jobId || "Unknown job"}
+                    </div>
+                    <div class="summary-value">
+                        ${job.status || "Submitted"}
+                    </div>
+                </div>
+            `)
+            .join("");
+
+    }
+
+    getStoredJobs() {
+
+        try {
+
+            const raw = localStorage.getItem("submittedJobs");
+            return raw ? JSON.parse(raw) : [];
+
+        } catch {
+
+            return [];
+
+        }
+
+    }
+
+    persistJob(jobId, status = "Submitted") {
+
+        if (!jobId) {
+
+            return;
+
+        }
+
+        const jobs = this.getStoredJobs();
+        const existing = jobs.find(item => item.jobId === jobId);
+
+        if (existing) {
+
+            existing.status = status;
+
+        } else {
+
+            jobs.unshift({ jobId, status });
+        }
+
+        localStorage.setItem("submittedJobs", JSON.stringify(jobs));
+        this.refreshSubmittedJobs();
+
+    }
+
+    /*=========================================================================
         Update UI
     =========================================================================*/
 
     updateStatus(data) {
 
-        this.setProgress(data.progress);
+        this.setProgress(
+            data.display_progress ??
+            data.progress?.percentage ??
+            0
+        );
 
-        this.setStage(data.stage);
+        this.setStage(
+            data.display_stage ||
+            data.progress?.stage ||
+            "Pending"
+        );
 
-        this.setStatus(data.status);
+        this.setStatus(
+            this.formatStatus(data.status)
+        );
 
-        if (data.status === "Completed") {
+        this.persistJob(
+            data.job_id || this.jobId,
+            data.status
+        );
+
+        if (["COMPLETED", "FAILED", "CANCELLED"].includes(data.status)) {
 
             this.stopPolling();
 
-            App.showToast("Translation Completed");
+            if (data.status === "COMPLETED") {
+
+                App.showToast("Translation Completed");
+
+            }
 
         }
+
+    }
+
+    formatStatus(status) {
+
+        if (!status) {
+
+            return "Pending";
+
+        }
+
+        return status
+            .toLowerCase()
+            .replace(/_/g, " ")
+            .replace(/\b\w/g, letter => letter.toUpperCase());
 
     }
 
@@ -347,71 +482,6 @@ class TranslationController {
 
     }
 
-    /*=========================================================================
-        Demo Mode
-    =========================================================================*/
-
-    simulateProgress() {
-
-        if (!this.progressBar)
-            return;
-
-        let progress = parseInt(
-
-            this.progressValue?.textContent || "0"
-
-        );
-
-        if (progress >= 100) {
-
-            this.setStatus("Completed");
-
-            this.setStage("Finished");
-
-            this.stopPolling();
-
-            return;
-
-        }
-
-        progress += 5;
-
-        const stages = [
-
-            "Extracting Audio",
-
-            "Speech Recognition",
-
-            "Language Translation",
-
-            "Voice Synthesis",
-
-            "Rendering Video",
-
-            "Finalizing"
-
-        ];
-
-        const stageIndex = Math.min(
-
-            Math.floor(progress / 20),
-
-            stages.length - 1
-
-        );
-
-        this.setProgress(progress);
-
-        this.setStage(
-
-            stages[stageIndex]
-
-        );
-
-        this.setStatus("Running");
-
-    }
-
 }
 
 document.addEventListener(
@@ -421,6 +491,14 @@ document.addEventListener(
     () => {
 
         window.Translation = new TranslationController();
+
+        const jobId = document.getElementById("translationJobId")?.dataset.jobId;
+
+        if (jobId) {
+
+            window.Translation.persistJob(jobId, "PENDING");
+
+        }
 
     }
 

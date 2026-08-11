@@ -41,7 +41,10 @@ from __future__ import annotations
 import logging
 import threading
 from contextlib import asynccontextmanager
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
+
+from ai.model_manager.manager import ModelManager
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -74,6 +77,263 @@ from workers.worker_manager import WorkerManager
 logger = logging.getLogger(__name__)
 
 
+def _ensure_bootstrap_logging() -> None:
+    """
+    Ensure startup logs are always visible even before configuration loads.
+    """
+
+    project_root = Path(__file__).resolve().parents[1]
+    log_directory = project_root / "storage" / "logs"
+    log_directory.mkdir(parents=True, exist_ok=True)
+
+    format_string = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+    date_format = "%Y-%m-%d %H:%M:%S"
+    formatter = logging.Formatter(format_string, date_format)
+
+    root_logger = logging.getLogger()
+    if root_logger.level > logging.INFO:
+        root_logger.setLevel(logging.INFO)
+
+    has_bootstrap_console = any(
+        getattr(handler, "_bhasha_bootstrap_console", False)
+        for handler in root_logger.handlers
+    )
+
+    if not has_bootstrap_console:
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.INFO)
+        console_handler.setFormatter(formatter)
+        setattr(console_handler, "_bhasha_bootstrap_console", True)
+        root_logger.addHandler(console_handler)
+
+    bootstrap_log_path = log_directory / "application.log"
+
+    has_bootstrap_file = any(
+        isinstance(handler, RotatingFileHandler)
+        and Path(getattr(handler, "baseFilename", "")).resolve()
+        == bootstrap_log_path.resolve()
+        for handler in root_logger.handlers
+    )
+
+    if not has_bootstrap_file:
+        file_handler = RotatingFileHandler(
+            filename=bootstrap_log_path,
+            maxBytes=10 * 1024 * 1024,
+            backupCount=5,
+            encoding="utf-8",
+        )
+        file_handler.setLevel(logging.INFO)
+        file_handler.setFormatter(formatter)
+        root_logger.addHandler(file_handler)
+
+
+def _configure_background_file_logging() -> None:
+    """
+    Attach a rotating logfile handler to the root logger.
+
+    This ensures background worker logs and other module logs are
+    persisted to disk in addition to console output.
+    """
+
+    try:
+
+        logging_config = configuration.logging
+
+        application_config = logging_config.get(
+            "application",
+            {},
+        )
+
+        if not application_config.get("enabled", True):
+            return
+
+        log_directory = Path(
+            logging_config.get("directory", "storage/logs")
+        ).expanduser()
+        if not log_directory.is_absolute():
+            project_root = Path(__file__).resolve().parents[1]
+            log_directory = (project_root / log_directory).resolve()
+        log_directory.mkdir(parents=True, exist_ok=True)
+
+        application_filename = application_config.get(
+            "filename",
+            "application.log",
+        )
+        application_log_path = log_directory / application_filename
+
+        max_size_mb = int(
+            logging_config.get("rotation", {}).get("max_size_mb", 10)
+        )
+        backup_count = int(
+            logging_config.get("rotation", {}).get("backup_count", 5)
+        )
+
+        format_string = logging_config.get(
+            "format",
+            "%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+        )
+        date_format = logging_config.get(
+            "date_format",
+            "%Y-%m-%d %H:%M:%S",
+        )
+
+        level_name = str(
+            logging_config.get("level", "INFO")
+        ).upper()
+        level = getattr(logging, level_name, logging.INFO)
+
+        root_logger = logging.getLogger()
+        root_logger.setLevel(level)
+
+        for handler in root_logger.handlers:
+
+            if (
+                isinstance(handler, RotatingFileHandler)
+                and Path(getattr(handler, "baseFilename", "")).resolve()
+                == application_log_path.resolve()
+            ):
+                return
+
+        handler = RotatingFileHandler(
+            filename=application_log_path,
+            maxBytes=max_size_mb * 1024 * 1024,
+            backupCount=backup_count,
+            encoding="utf-8",
+        )
+        handler.setLevel(level)
+        handler.setFormatter(logging.Formatter(format_string, date_format))
+
+        root_logger.addHandler(handler)
+
+        logger.info(
+            "BACKGROUND FILE LOGGING CONFIGURED | file=%s",
+            application_log_path,
+        )
+
+    except Exception:
+
+        logger.exception(
+            "Failed to configure background file logging."
+        )
+
+
+def _configure_ai_file_logging() -> None:
+    """
+    Attach a dedicated rotating logfile handler to ai.* loggers.
+    """
+
+    try:
+
+        logging_config = configuration.logging
+
+        ai_config = logging_config.get("ai", {})
+
+        if not ai_config.get("enabled", False):
+            return
+
+        log_directory = Path(
+            logging_config.get("directory", "storage/logs")
+        ).expanduser()
+        if not log_directory.is_absolute():
+            project_root = Path(__file__).resolve().parents[1]
+            log_directory = (project_root / log_directory).resolve()
+        log_directory.mkdir(parents=True, exist_ok=True)
+
+        ai_log_filename = ai_config.get("filename", "ai.log")
+        ai_log_path = log_directory / ai_log_filename
+
+        max_size_mb = int(
+            logging_config.get("rotation", {}).get("max_size_mb", 10)
+        )
+        backup_count = int(
+            logging_config.get("rotation", {}).get("backup_count", 5)
+        )
+
+        format_string = logging_config.get(
+            "format",
+            "%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+        )
+        date_format = logging_config.get(
+            "date_format",
+            "%Y-%m-%d %H:%M:%S",
+        )
+
+        level_name = str(
+            logging_config.get("level", "INFO")
+        ).upper()
+        level = getattr(logging, level_name, logging.INFO)
+
+        ai_logger = logging.getLogger("ai")
+        ai_logger.setLevel(level)
+
+        for handler in ai_logger.handlers:
+
+            if (
+                isinstance(handler, RotatingFileHandler)
+                and Path(getattr(handler, "baseFilename", "")).resolve()
+                == ai_log_path.resolve()
+            ):
+                return
+
+        handler = RotatingFileHandler(
+            filename=ai_log_path,
+            maxBytes=max_size_mb * 1024 * 1024,
+            backupCount=backup_count,
+            encoding="utf-8",
+        )
+        handler.setLevel(level)
+        handler.setFormatter(logging.Formatter(format_string, date_format))
+
+        ai_logger.addHandler(handler)
+
+        logger.info(
+            "AI FILE LOGGING CONFIGURED | file=%s",
+            ai_log_path,
+        )
+
+    except Exception:
+
+        logger.exception(
+            "Failed to configure AI file logging."
+        )
+
+
+def _ensure_job_console_logging() -> None:
+    """
+    Ensure job and request loggers always print to console.
+    """
+
+    format_string = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+    date_format = "%Y-%m-%d %H:%M:%S"
+    formatter = logging.Formatter(format_string, date_format)
+
+    target_logger_names = (
+        "app.api.routes.job",
+        "bhasha_mitra",
+    )
+
+    for logger_name in target_logger_names:
+        target_logger = logging.getLogger(logger_name)
+        target_logger.setLevel(logging.INFO)
+
+        has_console = any(
+            isinstance(handler, logging.StreamHandler)
+            and getattr(handler, "_bhasha_job_console", False)
+            for handler in target_logger.handlers
+        )
+
+        if has_console:
+            continue
+
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.INFO)
+        console_handler.setFormatter(formatter)
+        setattr(console_handler, "_bhasha_job_console", True)
+
+        target_logger.addHandler(console_handler)
+        target_logger.propagate = True
+
+
 # =============================================================================
 # Application state
 # =============================================================================
@@ -96,7 +356,12 @@ def _initialize_application(
     Initialize infrastructure, workers and AI Framework in background.
     """
 
+    _ensure_bootstrap_logging()
+
     try:
+
+        manager = ModelManager()
+        manager.install_signal_handlers()
 
         logger.info(
             "Starting Bhasha Mitra background initialization."
@@ -111,6 +376,12 @@ def _initialize_application(
         logger.info(
             "Application configuration initialized."
         )
+
+        _configure_background_file_logging()
+
+        _configure_ai_file_logging()
+
+        _ensure_job_console_logging()
 
         if _shutdown_requested.is_set():
             logger.info(
@@ -388,6 +659,9 @@ async def lifespan(
 
         ai_framework.shutdown()
 
+        manager = ModelManager()
+        manager.shutdown()
+
         logger.info(
             "AI Framework shutdown completed."
         )
@@ -479,9 +753,9 @@ app.include_router(
 # Frontend static files
 # =============================================================================
 
-frontend_static_directory = Path(
-    "frontend/static"
-)
+frontend_static_directory = (
+    Path(__file__).resolve().parents[1] / "frontend" / "static"
+).resolve()
 
 if frontend_static_directory.is_dir():
 

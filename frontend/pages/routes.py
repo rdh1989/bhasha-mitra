@@ -13,10 +13,18 @@ Version : 1.0.0
 
 from datetime import datetime
 from pathlib import Path
+import shutil
+import subprocess
 
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+
+import psutil
+
+from infrastructure.bootstrap.application_container import (
+    ApplicationContainer,
+)
 
 # =============================================================================
 # Templates
@@ -57,10 +65,165 @@ def template_context(request: Request, **kwargs):
     return context
 
 
+def _get_application_container(
+    request: Request,
+) -> ApplicationContainer | None:
+    return getattr(
+        request.app.state,
+        "application_container",
+        None,
+    )
+
+
+def _format_dashboard_timestamp(value) -> str:
+    if value is None:
+        return "Just now"
+
+    try:
+        return value.strftime(
+            "%d %b %Y %H:%M"
+        )
+    except AttributeError:
+        return str(value)
+
+
+def _read_gpu_usage() -> str:
+    try:
+        result = subprocess.run(
+            [
+                "nvidia-smi",
+                "--query-gpu=utilization.gpu",
+                "--format=csv,noheader,nounits",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (
+        FileNotFoundError,
+        subprocess.CalledProcessError,
+        OSError,
+    ):
+        return "Not available"
+
+    usages = [
+        line.strip()
+        for line in result.stdout.splitlines()
+        if line.strip()
+    ]
+
+    if not usages:
+        return "Not available"
+
+    if len(usages) == 1:
+        return f"{usages[0]}%"
+
+    return ", ".join(
+        f"GPU {index + 1}: {usage}%"
+        for index, usage in enumerate(usages)
+    )
+
+
+def _build_system_information() -> dict[str, str]:
+    memory = psutil.virtual_memory()
+    disk = shutil.disk_usage(
+        Path.cwd().anchor or "/"
+    )
+
+    return {
+        "cpu_usage": f"{psutil.cpu_percent(interval=0.0):.1f}%",
+        "memory_usage": f"{memory.percent:.1f}%",
+        "gpu_usage": _read_gpu_usage(),
+        "disk_usage": (
+            f"{(disk.used / disk.total) * 100:.1f}%"
+        ),
+    }
+
+
+def _build_dashboard_data(
+    jobs,
+) -> dict:
+    sorted_jobs = sorted(
+        jobs,
+        key=lambda job: job.updated_at,
+        reverse=True,
+    )
+
+    dashboard = {
+        "total_videos": len(sorted_jobs),
+        "completed": sum(
+            1 for job in sorted_jobs
+            if job.status.value == "COMPLETED"
+        ),
+        "processing": sum(
+            1 for job in sorted_jobs
+            if job.status.value in {"PENDING", "QUEUED", "RUNNING", "RETRYING"}
+        ),
+        "failed": sum(
+            1 for job in sorted_jobs
+            if job.status.value == "FAILED"
+        ),
+        "queued": sum(
+            1 for job in sorted_jobs
+            if job.status.value == "QUEUED"
+        ),
+    }
+
+    recent_jobs = []
+
+    status_classes = {
+        "COMPLETED": "success",
+        "FAILED": "danger",
+        "CANCELLED": "danger",
+        "RUNNING": "info",
+        "RETRYING": "warning",
+        "QUEUED": "warning",
+        "PENDING": "warning",
+    }
+
+    for job in sorted_jobs[:5]:
+        recent_jobs.append(
+            {
+                "job_id": job.id,
+                "file_name": Path(job.input_file).name,
+                "language_pair": (
+                    f"{job.source_language or 'Auto'} → {job.target_language or '-'}"
+                ),
+                "status": job.status.value,
+                "status_label": job.status.value.title(),
+                "status_class": status_classes.get(
+                    job.status.value,
+                    "info",
+                ),
+                "progress": job.progress.percentage,
+                "updated_at": _format_dashboard_timestamp(job.updated_at),
+            }
+        )
+
+    return {
+        "dashboard": dashboard,
+        "recent_jobs": recent_jobs,
+        "system_information": _build_system_information(),
+    }
+
+
 def render_dashboard(request: Request):
     """
     Common dashboard renderer.
     """
+
+    container = _get_application_container(
+        request
+    )
+
+    jobs = []
+
+    if container is not None:
+        jobs = container.job_service.list_all()
+
+    view_model = _build_dashboard_data(
+        jobs
+    )
 
     return templates.TemplateResponse(
         request=request,
@@ -68,12 +231,9 @@ def render_dashboard(request: Request):
         context=template_context(
             request,
             page="dashboard",
-            dashboard={
-                "total_videos": 25,
-                "completed": 22,
-                "processing": 2,
-                "failed": 1,
-            },
+            dashboard=view_model["dashboard"],
+            recent_jobs=view_model["recent_jobs"],
+            system_information=view_model["system_information"],
         ),
     )
 
@@ -125,16 +285,28 @@ async def upload(request: Request):
 @router.get("/translation", response_class=HTMLResponse)
 async def translation(request: Request):
 
+    job_id = request.query_params.get(
+        "job_id"
+    )
+
+    source_language = request.query_params.get(
+        "source_language"
+    )
+
+    target_language = request.query_params.get(
+        "target_language"
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="translation.html",
         context=template_context(
             request,
             page="translation",
-            job_id="BM-20260724-0001",
-            source_language="English",
-            target_language="Marathi",
-            duration="04:36",
+            job_id=job_id,
+            source_language=source_language,
+            target_language=target_language,
+            duration=None,
         ),
     )
 
@@ -146,43 +318,13 @@ async def translation(request: Request):
 @router.get("/history", response_class=HTMLResponse)
 async def history(request: Request):
 
-    history_data = [
-        {
-            "filename": "Training.mp4",
-            "size": "120 MB",
-            "source_language": "English",
-            "target_language": "Marathi",
-            "duration": "04:36",
-            "status": "Completed",
-            "created_at": "24 Jul 2026",
-        },
-        {
-            "filename": "Demo.mp4",
-            "size": "86 MB",
-            "source_language": "English",
-            "target_language": "Hindi",
-            "duration": "03:12",
-            "status": "Running",
-            "created_at": "23 Jul 2026",
-        },
-        {
-            "filename": "Lecture.mp4",
-            "size": "540 MB",
-            "source_language": "English",
-            "target_language": "Tamil",
-            "duration": "21:40",
-            "status": "Failed",
-            "created_at": "20 Jul 2026",
-        },
-    ]
-
     return templates.TemplateResponse(
         request=request,
         name="history.html",
         context=template_context(
             request,
             page="history",
-            history=history_data,
+            history=[],
         ),
     )
 
@@ -223,13 +365,15 @@ async def translations_page(request: Request):
     Translation History page.
     """
     return templates.TemplateResponse(
-    request,
-    "history.html",
-    {
-        "page_title": "Translation History",
-        "active_page": "history",
-    },
-)
+        request=request,
+        name="history.html",
+        context=template_context(
+            request,
+            page="history",
+            history=[],
+            page_title="Translation History",
+        ),
+    )
 
 
 @router.get("/subtitles", response_class=HTMLResponse)

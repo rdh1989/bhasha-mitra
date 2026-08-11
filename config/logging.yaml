@@ -21,6 +21,11 @@ logging:
     enabled: true
     filename: jobs.log
 
+  ai:
+
+    enabled: true
+    filename: ai.log
+
   rotation:
 
     max_size_mb: 10

@@ -4,9 +4,20 @@ Translation History API routes.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, status
+import logging
+
+from fastapi import APIRouter, Depends, status
+
+from infrastructure.bootstrap.application_container import (
+    ApplicationContainer,
+)
+
+from .job import _serialize_job
+from .upload import get_application_container
 
 router = APIRouter(tags=["Translation History"])
+
+logger = logging.getLogger(__name__)
 
 
 @router.get(
@@ -14,44 +25,37 @@ router = APIRouter(tags=["Translation History"])
     status_code=status.HTTP_200_OK,
     summary="Get translation history",
 )
-async def get_translations() -> dict:
+async def get_translations(
+    container: ApplicationContainer = Depends(
+        get_application_container
+    ),
+) -> dict:
     """
     Return all translation jobs.
-
-    TODO:
-        Replace with TranslationService once implemented.
     """
+
+    logger.info(
+        "TRANSLATION HISTORY REQUESTED"
+    )
+
+    jobs = sorted(
+        container.job_service.list_all(),
+        key=lambda job: job.created_at,
+        reverse=True,
+    )
+
+    translations = [
+        _serialize_job(job)
+        for job in jobs
+    ]
+
+    logger.info(
+        "TRANSLATION HISTORY RETURNED | count=%s",
+        len(translations),
+    )
 
     return {
         "success": True,
-        "count": 3,
-        "translations": [
-            {
-                "job_id": "JOB-1001",
-                "file_name": "training_video.mp4",
-                "source_language": "English",
-                "target_language": "Marathi",
-                "status": "Completed",
-                "progress": 100,
-                "created_at": "2026-07-26 09:30",
-            },
-            {
-                "job_id": "JOB-1002",
-                "file_name": "meeting.mp4",
-                "source_language": "Hindi",
-                "target_language": "Marathi",
-                "status": "Processing",
-                "progress": 68,
-                "created_at": "2026-07-26 10:15",
-            },
-            {
-                "job_id": "JOB-1003",
-                "file_name": "demo.mov",
-                "source_language": "English",
-                "target_language": "Gujarati",
-                "status": "Failed",
-                "progress": 15,
-                "created_at": "2026-07-26 11:05",
-            },
-        ],
+        "count": len(translations),
+        "translations": translations,
     }

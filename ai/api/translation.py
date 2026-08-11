@@ -39,6 +39,7 @@ Version:
 from __future__ import annotations
 
 import json
+import logging
 import re
 from pathlib import Path
 
@@ -49,6 +50,8 @@ from ai.core.service_registry import ServiceRegistry
 
 
 router = APIRouter()
+
+logger = logging.getLogger(__name__)
 
 
 # --------------------------------------------------------------------------
@@ -436,9 +439,22 @@ def translate(
     except HTTPException:
         raise
 
-    except Exception:
+    except Exception as exc:
+
+        logger.exception(
+            "TRANSLATION API FAILED | "
+            "transcript=%s | "
+            "source=%s | "
+            "target=%s | "
+            "error=%s",
+            transcript_path,
+            source_language,
+            target_language,
+            exc,
+        )
 
         return {
             "status": "FAIL",
             "translation_path": None,
+            "error_message": str(exc),
         }

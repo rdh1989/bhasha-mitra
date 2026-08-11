@@ -367,6 +367,22 @@
 
 }
 
+.action-btn.details{
+
+    width:auto;
+
+    min-width:86px;
+
+    padding:0 14px;
+
+    background:#EEF4FF;
+
+    color:#1D4ED8;
+
+    font-weight:600;
+
+}
+
 .action-btn.delete{
 
     background:#FEF2F2;
@@ -380,6 +396,342 @@
     transform:translateY(-2px);
 
     box-shadow:var(--shadow-small);
+
+}
+
+/*=============================================================================
+    Details Modal
+=============================================================================*/
+
+.details-modal{
+
+    position:fixed;
+
+    inset:0;
+
+    z-index:1200;
+
+    display:none;
+
+}
+
+.details-modal.is-open{
+
+    display:block !important;
+
+}
+
+.content > .details-modal,
+body > .details-modal{
+
+    position:fixed !important;
+
+    inset:0 !important;
+
+    z-index:5000 !important;
+
+}
+
+.details-modal-backdrop{
+
+    position:absolute;
+
+    inset:0;
+
+    background:rgba(15,23,42,.45);
+
+}
+
+.details-modal-dialog{
+
+    position:relative;
+
+    width:min(780px, calc(100vw - 2rem));
+
+    max-height:calc(100vh - 2rem);
+
+    margin:1rem auto;
+
+    background:#ffffff;
+
+    border-radius:16px;
+
+    border:1px solid #E2E8F0;
+
+    box-shadow:0 24px 48px rgba(15,23,42,.22);
+
+    display:flex;
+
+    flex-direction:column;
+
+    overflow:hidden;
+
+}
+
+.details-modal-header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:16px 20px;
+
+    border-bottom:1px solid #E2E8F0;
+
+    background:linear-gradient(135deg,#EEF4FF,#EDE9FE);
+
+}
+
+.details-modal-header h3{
+
+    font-size:1.1rem;
+
+    font-weight:700;
+
+    color:#1E293B;
+
+}
+
+.details-close{
+
+    width:36px;
+
+    height:36px;
+
+    border:none;
+
+    border-radius:10px;
+
+    background:#ffffff;
+
+    color:#334155;
+
+    cursor:pointer;
+
+}
+
+.details-modal-body{
+
+    padding:18px 20px 22px;
+
+    overflow:auto;
+
+}
+
+.details-loading{
+
+    color:#475569;
+
+    font-weight:500;
+
+}
+
+.details-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(2,minmax(0,1fr));
+
+    gap:12px;
+
+}
+
+.details-item{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:6px;
+
+    padding:12px;
+
+    border:1px solid #E2E8F0;
+
+    border-radius:12px;
+
+    background:#F8FAFC;
+
+}
+
+.details-label{
+
+    font-size:.78rem;
+
+    font-weight:700;
+
+    letter-spacing:.04em;
+
+    color:#64748B;
+
+    text-transform:uppercase;
+
+}
+
+.details-value{
+
+    font-size:.94rem;
+
+    font-weight:600;
+
+    color:#0F172A;
+
+    word-break:break-word;
+
+}
+
+.details-error{
+
+    margin-top:14px;
+
+    border:1px solid #FECACA;
+
+    background:#FEF2F2;
+
+    border-radius:12px;
+
+    padding:12px;
+
+}
+
+.details-error-title{
+
+    font-weight:700;
+
+    color:#B91C1C;
+
+    margin-bottom:6px;
+
+}
+
+.details-error p{
+
+    color:#991B1B;
+
+    line-height:1.45;
+
+}
+
+.stage-breakdown{
+
+    margin-top:14px;
+
+    border:1px solid #E2E8F0;
+
+    border-radius:12px;
+
+    background:#FFFFFF;
+
+    padding:12px;
+
+}
+
+.stage-breakdown-title{
+
+    font-size:.9rem;
+
+    font-weight:700;
+
+    color:#1E293B;
+
+    margin-bottom:10px;
+
+}
+
+.stage-timeline{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:8px;
+
+}
+
+.stage-row{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    gap:12px;
+
+    padding:8px 10px;
+
+    border:1px solid #E2E8F0;
+
+    border-radius:10px;
+
+    background:#F8FAFC;
+
+}
+
+.stage-name{
+
+    color:#1E293B;
+
+    font-weight:600;
+
+    font-size:.88rem;
+
+}
+
+.stage-state{
+
+    font-size:.78rem;
+
+    font-weight:700;
+
+    border-radius:999px;
+
+    padding:4px 10px;
+
+    border:1px solid transparent;
+
+}
+
+.stage-state.is-completed{
+
+    color:#166534;
+
+    background:#DCFCE7;
+
+    border-color:#86EFAC;
+
+}
+
+.stage-state.is-running{
+
+    color:#1D4ED8;
+
+    background:#DBEAFE;
+
+    border-color:#93C5FD;
+
+}
+
+.stage-state.is-failed{
+
+    color:#B91C1C;
+
+    background:#FEE2E2;
+
+    border-color:#FCA5A5;
+
+}
+
+.stage-state.is-queued,
+.stage-state.is-pending{
+
+    color:#92400E;
+
+    background:#FEF3C7;
+
+    border-color:#FCD34D;
 
 }
 
@@ -568,6 +920,12 @@
     .action-buttons{
 
         justify-content:flex-end;
+
+    }
+
+    .details-grid{
+
+        grid-template-columns:1fr;
 
     }
 

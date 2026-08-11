@@ -38,6 +38,8 @@ The Backend owns:
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+import json
 import logging
 import shutil
 import time
@@ -48,6 +50,7 @@ from app.application.interfaces.job_repository import (
 )
 
 from domain.entities import TranslationJob
+from domain.enums.job_status import JobStatus
 
 from infrastructure.ai.dubbing_client import (
     DubbingClient,
@@ -75,6 +78,8 @@ class DubbingWorker(BaseWorker):
 
     DUBBING_COPY_RETRIES = 30
     DUBBING_COPY_RETRY_DELAY_SECONDS = 1.0
+    TIMESTAMP_EPSILON_SECONDS = 0.001
+    MIN_SEGMENT_DURATION_SECONDS = 0.05
 
     def __init__(
         self,
@@ -149,6 +154,11 @@ class DubbingWorker(BaseWorker):
                     job_id,
                     type(exc).__name__,
                     exc,
+                )
+
+                self._mark_failed(
+                    job_id=job_id,
+                    error_message=self._build_failure_message(exc),
                 )
 
             finally:
@@ -241,6 +251,13 @@ class DubbingWorker(BaseWorker):
             self._voice,
         )
 
+        normalized_translation_file = (
+            self._normalize_translation_timestamps(
+                translation_file=translation_file,
+                job_id=job.id,
+            )
+        )
+
         # =====================================================================
         # Call AI Framework
         # =====================================================================
@@ -252,7 +269,7 @@ class DubbingWorker(BaseWorker):
             "language=%s | "
             "voice=%s",
             job.id,
-            translation_file,
+            normalized_translation_file,
             job.target_language,
             self._voice,
         )
@@ -267,7 +284,7 @@ class DubbingWorker(BaseWorker):
 
         result = self._dubbing_client.generate(
             translated_text_path=str(
-                translation_file
+                normalized_translation_file
             ),
             language=job.target_language,
             voice=self._voice,
@@ -398,6 +415,256 @@ class DubbingWorker(BaseWorker):
             job.id,
             dubbing_file,
         )
+
+    def _normalize_translation_timestamps(
+        self,
+        translation_file: Path,
+        job_id: str,
+    ) -> Path:
+        """
+        Normalize translation segment timeline to avoid overlaps.
+
+        The AI dubbing pipeline rejects overlapping segments. This step
+        preserves ordering and text while repairing start/end boundaries.
+        """
+
+        with translation_file.open(
+            "r",
+            encoding="utf-8",
+        ) as handle:
+
+            payload = json.load(handle)
+
+        segments = payload.get("segments")
+
+        if not isinstance(segments, list) or not segments:
+            return translation_file
+
+        normalized_segments: list[dict] = []
+        previous_end = 0.0
+        adjusted_count = 0
+
+        for index, segment in enumerate(segments, start=1):
+
+            if not isinstance(segment, dict):
+                normalized_segments.append(segment)
+                continue
+
+            start_raw = segment.get("start")
+            end_raw = segment.get("end")
+
+            try:
+                start = float(start_raw)
+                end = float(end_raw)
+            except (TypeError, ValueError):
+                normalized_segments.append(segment)
+                continue
+
+            original_start = start
+            original_end = end
+
+            # Ensure monotonically non-decreasing start times.
+            if start < previous_end:
+                start = previous_end
+
+            # Ensure positive segment duration.
+            if end <= start:
+                end = start + self.MIN_SEGMENT_DURATION_SECONDS
+
+            if (
+                abs(start - original_start) > self.TIMESTAMP_EPSILON_SECONDS
+                or abs(end - original_end) > self.TIMESTAMP_EPSILON_SECONDS
+            ):
+                adjusted_count += 1
+
+            normalized_segment = dict(segment)
+            normalized_segment["start"] = round(start, 3)
+            normalized_segment["end"] = round(end, 3)
+
+            normalized_segments.append(normalized_segment)
+            previous_end = end
+
+            logger.debug(
+                "DUBBING TIMELINE SEGMENT CHECK | "
+                "job_id=%s | "
+                "index=%s | "
+                "start=%s | "
+                "end=%s",
+                job_id,
+                index,
+                normalized_segment["start"],
+                normalized_segment["end"],
+            )
+
+        if adjusted_count == 0:
+
+            return translation_file
+
+        normalized_payload = dict(payload)
+        normalized_payload["segments"] = normalized_segments
+
+        normalized_path = (
+            translation_file.parent
+            / "translation_dubbing_normalized.json"
+        )
+
+        with normalized_path.open(
+            "w",
+            encoding="utf-8",
+        ) as handle:
+
+            json.dump(
+                normalized_payload,
+                handle,
+                ensure_ascii=False,
+                indent=2,
+            )
+
+        logger.warning(
+            "DUBBING TIMELINE NORMALIZED | "
+            "job_id=%s | "
+            "source=%s | "
+            "normalized=%s | "
+            "adjusted_segments=%s",
+            job_id,
+            translation_file,
+            normalized_path,
+            adjusted_count,
+        )
+
+        return normalized_path
+
+    # =========================================================================
+    # Failure handling
+    # =========================================================================
+
+    def _build_failure_message(
+        self,
+        error: Exception,
+    ) -> str:
+        """
+        Convert worker/runtime exceptions into concise persisted messages.
+        """
+
+        message = str(error).strip()
+
+        if message:
+            return message
+
+        return (
+            "Dubbing failed due to an unexpected error. "
+            "Check worker logs for details."
+        )
+
+    def _mark_failed(
+        self,
+        job_id: str,
+        error_message: str,
+    ) -> None:
+        """
+        Persist FAILED status for a dubbing-stage failure.
+
+        Dubbing currently runs after translation marks the job COMPLETED.
+        This method supports both RUNNING and COMPLETED as recoverable
+        failure sources so UI and history reflect real pipeline outcome.
+        """
+
+        job = self._job_repository.get(
+            job_id
+        )
+
+        if job is None:
+
+            logger.warning(
+                "CANNOT MARK DUBBING FAILED | "
+                "JOB NOT FOUND | "
+                "job_id=%s",
+                job_id,
+            )
+
+            return
+
+        logger.error(
+            "MARKING DUBBING JOB FAILED | "
+            "job_id=%s | "
+            "current_status=%s | "
+            "error=%s",
+            job_id,
+            job.status.value,
+            error_message,
+        )
+
+        try:
+
+            if job.status == JobStatus.QUEUED:
+
+                logger.warning(
+                    "DUBBING FAILURE ON QUEUED JOB | "
+                    "job_id=%s | "
+                    "transition=QUEUED_TO_RUNNING",
+                    job_id,
+                )
+
+                job.start()
+
+            if job.status == JobStatus.RUNNING:
+
+                job.fail(
+                    error_message
+                )
+
+            elif job.status == JobStatus.COMPLETED:
+
+                now = datetime.now(UTC)
+
+                job.status = JobStatus.FAILED
+                job.error_message = error_message
+                job.completed_at = now
+                job.updated_at = now
+
+            elif job.status == JobStatus.FAILED:
+
+                job.error_message = error_message
+                job.updated_at = datetime.now(UTC)
+
+            else:
+
+                raise RuntimeError(
+                    "Cannot mark dubbing failure from "
+                    f"status {job.status.value}"
+                )
+
+            self._job_repository.save(
+                job
+            )
+
+            logger.error(
+                "DUBBING JOB MARKED FAILED | "
+                "job_id=%s | "
+                "status=%s",
+                job_id,
+                job.status.value,
+            )
+
+            logger.warning(
+                "JOB STATUS | "
+                "job_id=%s | "
+                "stage=DUBBING | "
+                "status=FAILED | "
+                "error=%s",
+                job_id,
+                error_message,
+            )
+
+        except Exception:
+
+            logger.exception(
+                "UNABLE TO MARK DUBBING JOB AS FAILED | "
+                "job_id=%s | "
+                "status=%s",
+                job_id,
+                job.status.value,
+            )
 
     # =========================================================================
     # Windows-safe artifact copy

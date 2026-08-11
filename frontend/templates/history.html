@@ -2,6 +2,10 @@
 
 {% block title %}Translation History | Bhasha Mitra{% endblock %}
 
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/history.css') }}?v=20260811f">
+{% endblock %}
+
 {% block page_title %}
 Translation History
 {% endblock %}
@@ -159,23 +163,21 @@ Translation History
                                 <div class="action-buttons">
 
                                     <button
-                                        class="action-btn view"
-                                        title="View">
+                                        type="button"
+                                        class="action-btn details btn-details"
+                                        onclick="HistoryController.openDetailsFromButton(this)"
+                                        data-id="{{ item.job_id if item.job_id is defined else item.id if item.id is defined else '' }}"
+                                        title="Details">
 
-                                        <i class="fas fa-eye"></i>
-
-                                    </button>
-
-                                    <button
-                                        class="action-btn download"
-                                        title="Download">
-
-                                        <i class="fas fa-download"></i>
+                                        Details
 
                                     </button>
 
                                     <button
-                                        class="action-btn delete"
+                                        type="button"
+                                        class="action-btn delete btn-delete"
+                                        onclick="window.History && window.History.delete(this.dataset.id)"
+                                        data-id="{{ item.job_id if item.job_id is defined else item.id if item.id is defined else '' }}"
                                         title="Delete">
 
                                         <i class="fas fa-trash"></i>
@@ -287,10 +289,51 @@ Translation History
 
 </div>
 
+<div
+    id="translationDetailsModal"
+    class="details-modal"
+    aria-hidden="true">
+
+    <div class="details-modal-backdrop" data-close="details-modal"></div>
+
+    <div
+        class="details-modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="detailsModalTitle">
+
+        <div class="details-modal-header">
+
+            <h3 id="detailsModalTitle">Translation Job Details</h3>
+
+            <button
+                type="button"
+                class="details-close"
+                id="closeDetailsModal"
+                aria-label="Close details">
+
+                <i class="fas fa-times"></i>
+
+            </button>
+
+        </div>
+
+        <div
+            class="details-modal-body"
+            id="translationDetailsBody">
+
+            <p class="details-loading">Loading details...</p>
+
+        </div>
+
+    </div>
+
+</div>
+
 {% endblock %}
 
-{% block scripts %}
+{% block js %}
 
-<script src="{{ url_for('static', path='js/history.js') }}"></script>
+<script src="{{ url_for('static', path='js/history.js') }}?v=20260811f"></script>
 
 {% endblock %}

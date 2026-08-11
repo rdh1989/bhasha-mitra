@@ -21,17 +21,38 @@
 
 {% block title %}Upload video | {{ app_name }}{% endblock %}
 
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/upload.css') }}">
+{% endblock %}
 
 {% block content %}
 
-<div class="page-header">
+<div class="upload-hero">
 
-    <div>
-        <h1>Choose your video</h1>
+    <div class="hero-copy">
+
+        <div class="eyebrow">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span>Local video workflow</span>
+        </div>
+
+        <h1>Translate your video from your own device</h1>
 
         <p>
-            Select a video already stored on this computer.
+            Choose a local file, pick your languages, and create subtitles or dubbed audio without uploading anything to the cloud.
         </p>
+
+        <ul class="workflow-steps">
+            <li class="is-active"><span>1</span>Select video</li>
+            <li><span>2</span>Choose languages</li>
+            <li><span>3</span>Generate results</li>
+        </ul>
+
+    </div>
+
+    <div class="hero-badge">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>100% local processing</span>
     </div>
 
 </div>

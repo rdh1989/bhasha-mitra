@@ -93,6 +93,7 @@ class DubbingPipeline:
     #
     # This value avoids unnecessary processing for tiny differences.
     DURATION_TOLERANCE_SECONDS = 0.15
+    EDGE_FADE_MILLISECONDS = 12
 
     def __init__(
         self,
@@ -599,6 +600,12 @@ class DubbingPipeline:
             # Place audio on timeline
             # ----------------------------------------------------------
 
+            adjusted_frames = self._apply_edge_fade(
+                frames=adjusted_frames,
+                channels=channels,
+                sample_rate=sample_rate,
+            )
+
             start_frame = int(
                 start * sample_rate
             )
@@ -619,15 +626,29 @@ class DubbingPipeline:
 
                 continue
 
-            output_frames[
-                destination_start:
-                destination_end
-            ] = adjusted_frames[
+            source_slice = adjusted_frames[
                 :(
                     destination_end
                     - destination_start
                 )
             ]
+
+            destination_slice = bytes(
+                output_frames[
+                    destination_start:
+                    destination_end
+                ]
+            )
+
+            mixed_slice = self._mix_pcm16(
+                destination_slice=destination_slice,
+                source_slice=source_slice,
+            )
+
+            output_frames[
+                destination_start:
+                destination_end
+            ] = mixed_slice
 
         # --------------------------------------------------------------
         # Write final WAV
@@ -746,8 +767,29 @@ class DubbingPipeline:
             frames
         )
 
+        if current_frames == 1:
+
+            repeated = array.array(
+                "h"
+            )
+
+            for _ in range(target_frames):
+
+                for channel in range(channels):
+
+                    repeated.append(
+                        source[channel]
+                    )
+
+            return repeated.tobytes()
+
         result = array.array(
             "h"
+        )
+
+        denominator = max(
+            target_frames - 1,
+            1,
         )
 
         for target_index in range(
@@ -756,17 +798,31 @@ class DubbingPipeline:
 
             source_position = (
                 target_index
-                * current_frames
-                / target_frames
+                * (current_frames - 1)
+                / denominator
             )
 
-            source_index = min(
-                int(source_position),
+            left_index = int(
+                source_position
+            )
+
+            right_index = min(
+                left_index + 1,
                 current_frames - 1,
             )
 
-            source_offset = (
-                source_index
+            fraction = (
+                source_position
+                - left_index
+            )
+
+            left_offset = (
+                left_index
+                * channels
+            )
+
+            right_offset = (
+                right_index
                 * channels
             )
 
@@ -774,14 +830,129 @@ class DubbingPipeline:
                 channels
             ):
 
+                left_sample = source[
+                    left_offset + channel
+                ]
+
+                right_sample = source[
+                    right_offset + channel
+                ]
+
+                interpolated = int(
+                    left_sample
+                    + (
+                        right_sample
+                        - left_sample
+                    )
+                    * fraction
+                )
+
+                if interpolated > 32767:
+                    interpolated = 32767
+                elif interpolated < -32768:
+                    interpolated = -32768
+
                 result.append(
-                    source[
-                        source_offset
-                        + channel
-                    ]
+                    interpolated
                 )
 
         return result.tobytes()
+
+    def _apply_edge_fade(
+        self,
+        frames: bytes,
+        channels: int,
+        sample_rate: int,
+    ) -> bytes:
+        """
+        Apply short fades at segment boundaries to reduce click artifacts.
+        """
+
+        if not frames:
+            return frames
+
+        import array
+
+        samples = array.array(
+            "h"
+        )
+        samples.frombytes(
+            frames
+        )
+
+        frame_count = len(samples) // channels
+
+        fade_frames = min(
+            int(sample_rate * self.EDGE_FADE_MILLISECONDS / 1000),
+            frame_count // 2,
+        )
+
+        if fade_frames <= 0:
+            return frames
+
+        for frame_index in range(fade_frames):
+
+            gain = (frame_index + 1) / fade_frames
+
+            head_offset = frame_index * channels
+            tail_offset = (frame_count - 1 - frame_index) * channels
+
+            for channel in range(channels):
+
+                head_index = head_offset + channel
+                tail_index = tail_offset + channel
+
+                samples[head_index] = int(
+                    samples[head_index] * gain
+                )
+                samples[tail_index] = int(
+                    samples[tail_index] * gain
+                )
+
+        return samples.tobytes()
+
+    def _mix_pcm16(
+        self,
+        destination_slice: bytes,
+        source_slice: bytes,
+    ) -> bytes:
+        """
+        Mix two 16-bit PCM buffers with saturation to avoid overflow.
+        """
+
+        import array
+
+        destination = array.array(
+            "h"
+        )
+        destination.frombytes(
+            destination_slice
+        )
+
+        source = array.array(
+            "h"
+        )
+        source.frombytes(
+            source_slice
+        )
+
+        count = min(
+            len(destination),
+            len(source),
+        )
+
+        for index in range(count):
+
+            mixed = destination[index] + source[index]
+
+            if mixed > 32767:
+                mixed = 32767
+            elif mixed < -32768:
+                mixed = -32768
+
+            destination[index] = mixed
+
+        return destination.tobytes()
 
     # ------------------------------------------------------------------
     # WAV Metadata

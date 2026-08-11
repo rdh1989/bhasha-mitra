@@ -18,9 +18,10 @@ Version:
 
 from __future__ import annotations
 
-from httpcore import request
+import time
 
 from ai.asr.adapter import ASRAdapter
+from ai.asr.config import ASRConfig
 from ai.model_manager.manager import ModelManager
 from ai.asr.models import (
     ASRRequest,
@@ -46,6 +47,7 @@ class ASRService:
 
         self._adapter = adapter
         self._model_manager = ModelManager()
+        self._config = ASRConfig()
 
     def transcribe(
         self,
@@ -65,11 +67,33 @@ class ASRService:
         #
         # Run transcription
         #
+        start_time = time.perf_counter()
+        transcribe_kwargs = {
+            "beam_size": self._config.beam_size,
+            "best_of": self._config.best_of,
+            "temperature": self._config.temperature,
+            "vad_filter": True,
+            "vad_parameters": {"min_silence_duration_ms": 500},
+            "condition_on_previous_text": False,
+            "word_timestamps": False,
+            "compression_ratio_threshold": 2.4,
+            "log_prob_threshold": -1.0,
+            "patience": 1.0,
+            "without_timestamps": True,
+        }
+
+        if request.language or self._config.language:
+            transcribe_kwargs["language"] = (
+                request.language or self._config.language
+            )
+
         segments, info = whisper.transcribe(
             request.audio_path,
-            beam_size=1,
-            vad_filter=True,
-            condition_on_previous_text=False,
+            **transcribe_kwargs,
+        )
+        processing_time_seconds = round(
+            time.perf_counter() - start_time,
+            3,
         )
 
         #
@@ -96,13 +120,19 @@ class ASRService:
         #
         # Framework response
         #
+        model_name = getattr(whisper, "model_name", None) or "medium"
+
         return ASRResult(
             provider="faster-whisper",
-            model="medium",
+            model=model_name,
             transcript=" ".join(transcript).strip(),
             segments=framework_segments,
             detected_language=info.language,
             language_confidence=info.language_probability,
+            processing_time_seconds=processing_time_seconds,
+            metadata={
+                "transcribe_kwargs": transcribe_kwargs,
+            },
         )
 
     def health_check(self) -> bool:

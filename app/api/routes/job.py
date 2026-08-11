@@ -35,6 +35,7 @@ Version : 1.0.0
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 from fastapi import (
     APIRouter,
@@ -55,10 +56,98 @@ from .upload import (
 logger = logging.getLogger(__name__)
 
 
+def _serialize_job(job) -> dict:
+    payload = job.to_dict()
+    preprocessing = payload["preprocessing"]
+    progress = payload["progress"]
+    status = payload["status"]
+
+    display_stage = progress.get("stage") or "Pending"
+    display_progress = progress.get("percentage", 0)
+
+    if status == "PENDING":
+        display_stage = "Preparing"
+        display_progress = max(display_progress, 5)
+
+    if not preprocessing.get("audio_extracted"):
+        display_stage = "Extracting Audio"
+        display_progress = max(display_progress, 15)
+    elif not preprocessing.get("asr_completed"):
+        display_stage = "Speech Recognition"
+        display_progress = max(display_progress, 40)
+    elif status == "QUEUED":
+        display_stage = "Queued For Translation"
+        display_progress = max(display_progress, 65)
+    elif status == "RUNNING":
+        display_stage = (
+            display_stage
+            if display_stage not in {"Pending", "Preparing"}
+            else "Translation"
+        )
+        display_progress = max(display_progress, 80)
+    elif status == "COMPLETED":
+        display_stage = "Completed"
+        display_progress = 100
+    elif status == "FAILED":
+        display_stage = "Failed"
+    elif status == "CANCELLED":
+        display_stage = "Cancelled"
+
+    payload.update(
+        {
+            "job_id": job.id,
+            "file_name": Path(payload["input_file"]).name,
+            "display_stage": display_stage,
+            "display_progress": display_progress,
+        }
+    )
+
+    return payload
+
+
 router = APIRouter(
     prefix="/jobs",
     tags=["Jobs"],
 )
+
+
+@router.get(
+    "/{job_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Get translation job",
+)
+def get_job(
+    job_id: str,
+    container: ApplicationContainer = Depends(
+        get_application_container
+    ),
+) -> dict:
+    logger.info(
+        "TRANSLATION JOB STATUS REQUESTED | job_id=%s",
+        job_id,
+    )
+
+    job = container.job_service.get(job_id)
+
+    if job is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Translation job not found.",
+        )
+
+    payload = _serialize_job(job)
+
+    logger.info(
+        "TRANSLATION JOB STATUS RETURNED | job_id=%s | status=%s | stage=%s",
+        job_id,
+        payload["status"],
+        payload["display_stage"],
+    )
+
+    return {
+        "success": True,
+        "job": payload,
+    }
 
 
 @router.post(
@@ -84,6 +173,11 @@ def start_translation(
     # =========================================================================
     # Get job
     # =========================================================================
+
+    logger.info(
+        "TRANSLATION START REQUESTED | job_id=%s",
+        job_id,
+    )
 
     job = container.job_repository.get(
         job_id
@@ -134,7 +228,14 @@ def start_translation(
     # Response
     # =========================================================================
 
+    queued_job = container.job_service.get(job_id)
+
     return {
         "success": True,
         "job_id": job.id,
+        "status": (
+            queued_job.status.value
+            if queued_job is not None
+            else job.status.value
+        ),
     }

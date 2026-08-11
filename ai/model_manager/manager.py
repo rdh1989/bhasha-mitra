@@ -21,6 +21,11 @@ Version:
 from __future__ import annotations
 
 import gc
+import logging
+import signal
+import sys
+import threading
+import weakref
 
 from threading import Lock
 from typing import Any
@@ -32,6 +37,9 @@ from ai.model_manager.manifest import ManifestReader
 from ai.model_manager.registry import ModelRegistry
 from ai.model_manager.validator import ModelValidator
 from ai.model_manager.downloader import ModelDownloader
+
+
+logger = logging.getLogger(__name__)
 
 
 class ModelManager:
@@ -143,16 +151,14 @@ class ModelManager:
         • Register available AI assets
         """
 
-        manifest_path = Path("config/manifest.json")
+        project_root = Path(__file__).resolve().parents[2]
+        manifest_path = (project_root / "config" / "manifest.json").resolve()
 
         # Read manifest
         manifest = self._manifest.read(manifest_path)
 
         # Validate manifest structure
         self._validator.validate_manifest(manifest)
-
-        # Project root
-        project_root = Path(__file__).resolve().parents[2]
 
         for category, metadata in manifest.items():
 
@@ -214,26 +220,44 @@ class ModelManager:
         Called once during application startup.
         """
 
-        print("\nLoading AI Models...\n")
+        logger.info("Loading AI Models")
 
         for key in self._registry.list():
 
             category, model = key.split(":", 1)
 
-            print(f"Loading {category}:{model}")
+            logger.info("Loading %s:%s", category, model)
 
             if category == "language_detection":
-                print(
-                    f"Skipping {category}:{model} "
-                    "as it is not loaded at startup."
+                logger.info(
+                    "Skipping %s:%s as it is not loaded at startup.",
+                    category,
+                    model,
                 )
                 continue
-            
-            self.load_model(
-                category=category,
-                model=model,
-            )
-        print("\nAll AI Models Loaded.")
+
+            try:
+                self.load_model(
+                    category=category,
+                    model=model,
+                )
+            except Exception as exc:
+                root_cause = exc
+                while getattr(root_cause, "__cause__", None) is not None:
+                    root_cause = root_cause.__cause__
+                logger.error(
+                    "Failed to load %s:%s: %s",
+                    category,
+                    model,
+                    exc,
+                )
+                logger.error(
+                    "Root cause %s: %s",
+                    type(root_cause).__name__,
+                    root_cause,
+                )
+
+        logger.info("Model startup completed")
 
 
     def load_model(
@@ -354,7 +378,8 @@ class ModelManager:
 
         self._loader.unload(model)
 
-        self._cache.remove(cache_key    )
+        self._cache.remove(cache_key)
+        gc.collect()
 
 
     def unload(
@@ -420,15 +445,38 @@ class ModelManager:
 
             self.unload_model(category, model)
 
-        #
-        # Safety
-        #
         self._cache.clear()
 
-        # import gc
+        try:
+            import torch
 
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                torch.cuda.ipc_collect()
+        except Exception:
+            pass
+
+        gc.collect()
         gc.collect()
 
         print("All AI Models Unloaded.")
 
-        print("All AI Models Unloaded.")
+    def install_signal_handlers(self) -> None:
+        """
+        Ensure Ctrl+C triggers a full model cleanup before exit.
+        """
+
+        def _handle_interrupt(signum, _frame):
+            print("Interrupted. Cleaning up loaded AI models...")
+            self.shutdown()
+            raise SystemExit(130)
+
+        try:
+            signal.signal(signal.SIGINT, _handle_interrupt)
+        except (ValueError, OSError):
+            pass
+
+        try:
+            signal.signal(signal.SIGTERM, _handle_interrupt)
+        except (ValueError, OSError):
+            pass

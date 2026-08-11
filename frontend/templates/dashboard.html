@@ -5,8 +5,8 @@ Dashboard | {{ app_name }}
 {% endblock %}
 
 {% block css %}
-<link rel="stylesheet" href="{{ url_for('static', path='css/dashboard-layout.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', path='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/dashboard-layout.css') }}?v=20260811c">
+<link rel="stylesheet" href="{{ url_for('static', path='css/dashboard.css') }}?v=20260811c">
 {% endblock %}
 
 {% block content %}
@@ -119,9 +119,11 @@ Dashboard | {{ app_name }}
 
                 <!-- Card -->
 
-                <div class="mini-card">
+                <div class="mini-card stat-card stat-videos">
 
-                    <i class="fa-solid fa-video"></i>
+                    <div class="icon">
+                        <i class="fa-solid fa-video"></i>
+                    </div>
 
                     <h4>
 
@@ -129,13 +131,13 @@ Dashboard | {{ app_name }}
 
                     </h4>
 
-                    <h2>
+                    <h2 class="stat-value">
 
                         {{ dashboard.total_videos }}
 
                     </h2>
 
-                    <span>
+                    <span class="stat-label">
 
                         Total Videos
 
@@ -145,25 +147,27 @@ Dashboard | {{ app_name }}
 
                 <!-- Card -->
 
-                <div class="mini-card">
+                <div class="mini-card stat-card stat-failed">
 
-                    <i class="fa-solid fa-clock"></i>
+                    <div class="icon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
 
                     <h4>
 
-                        Hours
+                        Failed
 
                     </h4>
 
-                    <h2>
+                    <h2 class="stat-value">
 
-                        842
+                        {{ dashboard.failed }}
 
                     </h2>
 
-                    <span>
+                    <span class="stat-label">
 
-                        Translation Hours
+                        Failed Jobs
 
                     </span>
 
@@ -171,9 +175,11 @@ Dashboard | {{ app_name }}
 
                 <!-- Card -->
 
-                <div class="mini-card">
+                <div class="mini-card stat-card stat-completed">
 
-                    <i class="fa-solid fa-bullseye"></i>
+                    <div class="icon">
+                        <i class="fa-solid fa-bullseye"></i>
+                    </div>
 
                     <h4>
 
@@ -181,13 +187,13 @@ Dashboard | {{ app_name }}
 
                     </h4>
 
-                    <h2>
+                    <h2 class="stat-value">
 
                         {{ dashboard.completed }}
 
                     </h2>
 
-                    <span>
+                    <span class="stat-label">
 
                         Completed Jobs
 
@@ -197,9 +203,11 @@ Dashboard | {{ app_name }}
 
                 <!-- Card -->
 
-                <div class="mini-card">
+                <div class="mini-card stat-card stat-active">
 
-                    <i class="fa-solid fa-briefcase"></i>
+                    <div class="icon">
+                        <i class="fa-solid fa-briefcase"></i>
+                    </div>
 
                     <h4>
 
@@ -207,13 +215,13 @@ Dashboard | {{ app_name }}
 
                     </h4>
 
-                    <h2>
+                    <h2 class="stat-value">
 
                         {{ dashboard.processing }}
 
                     </h2>
 
-                    <span>
+                    <span class="stat-label">
 
                         Active Jobs
 
@@ -258,9 +266,13 @@ Dashboard | {{ app_name }}
 
             <div class="activity-list">
 
+                {% if recent_jobs %}
+
+                {% for item in recent_jobs %}
+
                 <div class="activity-item">
 
-                    <div class="activity-icon completed">
+                    <div class="activity-icon">
 
                         <i class="fa-solid fa-circle-check"></i>
 
@@ -268,205 +280,61 @@ Dashboard | {{ app_name }}
 
                     <div class="activity-details">
 
-                        <h4>AI_Training_Module.mp4</h4>
+                        <h4>{{ item.file_name }}</h4>
 
-                        <p>English → Marathi</p>
+                        <p>{{ item.language_pair }}</p>
 
                     </div>
 
                     <div class="activity-status">
 
-                        <span class="badge processing">
+                        <span class="badge badge-{{ item.status_class }}">
 
-                            Processing
+                            {{ item.status_label }}
 
                         </span>
 
                         <div class="progress">
 
-                            <div class="progress-bar w45"></div>
+                            <div class="progress-bar" data-progress="{{ item.progress }}"></div>
 
                         </div>
 
-                        <small>45%</small>
+                        <small>{{ item.progress }}%</small>
 
                     </div>
 
                     <span class="time">
 
-                        2 min ago
+                        {{ item.updated_at }}
 
                     </span>
 
                 </div>
+
+                {% endfor %}
+
+                {% else %}
 
                 <div class="activity-item">
 
-                    <div class="activity-icon completed">
-
-                        <i class="fa-solid fa-circle-check"></i>
-
-                    </div>
-
                     <div class="activity-details">
 
-                        <h4>History_of_India.mp4</h4>
+                        <h4>No jobs yet</h4>
 
-                        <p>English → Hindi</p>
-
-                    </div>
-
-                    <div class="activity-status">
-
-                        <span class="badge success">
-
-                            Completed
-
-                        </span>
-
-                        <div class="progress">
-
-                            <div class="progress-bar w100"></div>
-
-                        </div>
-
-                        <small>100%</small>
+                        <p>Submit a translation to see recent activity here.</p>
 
                     </div>
 
                     <span class="time">
 
-                        15 min ago
+                        Waiting
 
                     </span>
 
                 </div>
 
-                <div class="activity-item">
-
-                    <div class="activity-icon completed">
-
-                        <i class="fa-solid fa-circle-check"></i>
-
-                    </div>
-
-                    <div class="activity-details">
-
-                        <h4>Python_Basics.mp4</h4>
-
-                        <p>English → Marathi</p>
-
-                    </div>
-
-                    <div class="activity-status">
-
-                        <span class="badge success">
-
-                            Completed
-
-                        </span>
-
-                        <div class="progress">
-
-                            <div class="progress-bar w100"></div>
-
-                        </div>
-
-                        <small>100%</small>
-
-                    </div>
-
-                    <span class="time">
-
-                        32 min ago
-
-                    </span>
-
-                </div>
-
-                <div class="activity-item">
-
-                    <div class="activity-icon queue">
-
-                        <i class="fa-solid fa-clock"></i>
-
-                    </div>
-
-                    <div class="activity-details">
-
-                        <h4>News_Today_Clip.mp4</h4>
-
-                        <p>English → Hindi</p>
-
-                    </div>
-
-                    <div class="activity-status">
-
-                        <span class="badge queue">
-
-                            Queue
-
-                        </span>
-
-                        <div class="progress">
-
-                            <div class="progress-bar w0"></div>
-
-                        </div>
-
-                        <small>0%</small>
-
-                    </div>
-
-                    <span class="time">
-
-                        48 min ago
-
-                    </span>
-
-                </div>
-
-                <div class="activity-item">
-
-                    <div class="activity-icon completed">
-
-                        <i class="fa-solid fa-circle-check"></i>
-
-                    </div>
-
-                    <div class="activity-details">
-
-                        <h4>Motivation_Speech.mp4</h4>
-
-                        <p>English → Marathi</p>
-
-                    </div>
-
-                    <div class="activity-status">
-
-                        <span class="badge success">
-
-                            Completed
-
-                        </span>
-
-                        <div class="progress">
-
-                            <div class="progress-bar w100"></div>
-
-                        </div>
-
-                        <small>100%</small>
-
-                    </div>
-
-                    <span class="time">
-
-                        1 hr ago
-
-                    </span>
-
-                </div>
+                {% endif %}
 
             </div>
 
@@ -522,75 +390,35 @@ Dashboard | {{ app_name }}
 
                 <tbody>
 
-                    <tr>
+                    {% if recent_jobs %}
 
-                        <td>Introduction_to_AI.mp4</td>
-
-                        <td>English → Marathi</td>
-
-                        <td><span class="badge success">Completed</span></td>
-
-                        <td>Today</td>
-
-                        <td><i class="fa-solid fa-download"></i></td>
-
-                    </tr>
+                    {% for item in recent_jobs %}
 
                     <tr>
 
-                        <td>Business_Fundamentals.mp4</td>
+                        <td>{{ item.file_name }}</td>
 
-                        <td>English → Hindi</td>
+                        <td>{{ item.language_pair }}</td>
 
-                        <td><span class="badge success">Completed</span></td>
+                        <td><span class="badge badge-{{ item.status_class }}">{{ item.status_label }}</span></td>
 
-                        <td>Yesterday</td>
+                        <td>{{ item.updated_at }}</td>
 
-                        <td><i class="fa-solid fa-download"></i></td>
+                        <td><i class="fa-solid fa-arrow-up-right-from-square"></i></td>
 
                     </tr>
+
+                    {% endfor %}
+
+                    {% else %}
 
                     <tr>
 
-                        <td>Indian_Constitution.mp4</td>
-
-                        <td>English → Marathi</td>
-
-                        <td><span class="badge success">Completed</span></td>
-
-                        <td>Yesterday</td>
-
-                        <td><i class="fa-solid fa-download"></i></td>
+                        <td colspan="5">No translations found in the database yet.</td>
 
                     </tr>
 
-                    <tr>
-
-                        <td>Science_Explained.mp4</td>
-
-                        <td>English → Hindi</td>
-
-                        <td><span class="badge processing">Processing</span></td>
-
-                        <td>17 May</td>
-
-                        <td><i class="fa-solid fa-rotate"></i></td>
-
-                    </tr>
-
-                    <tr>
-
-                        <td>Space_Exploration.mp4</td>
-
-                        <td>English → Marathi</td>
-
-                        <td><span class="badge failed">Failed</span></td>
-
-                        <td>17 May</td>
-
-                        <td><i class="fa-solid fa-arrow-rotate-right"></i></td>
-
-                    </tr>
+                    {% endif %}
 
                 </tbody>
 
@@ -629,7 +457,7 @@ Dashboard | {{ app_name }}
 
             <div class="language-grid">
 
-                <div class="language-item">
+                <div class="language-item lang-english">
 
                     🇬🇧
 
@@ -637,7 +465,7 @@ Dashboard | {{ app_name }}
 
                 </div>
 
-                <div class="language-item">
+                <div class="language-item lang-hindi">
 
                     🇮🇳
 
@@ -645,7 +473,7 @@ Dashboard | {{ app_name }}
 
                 </div>
 
-                <div class="language-item">
+                <div class="language-item lang-marathi">
 
                     🇮🇳
 
@@ -653,7 +481,7 @@ Dashboard | {{ app_name }}
 
                 </div>
 
-                <div class="language-item">
+                <div class="language-item lang-gujarati">
 
                     🇮🇳
 
@@ -661,15 +489,7 @@ Dashboard | {{ app_name }}
 
                 </div>
 
-                <div class="language-item">
-
-                    🇮🇳
-
-                    <span>Punjabi</span>
-
-                </div>
-
-                <div class="language-item">
+                <div class="language-item lang-bengali">
 
                     🇮🇳
 
@@ -677,23 +497,7 @@ Dashboard | {{ app_name }}
 
                 </div>
 
-                <div class="language-item">
-
-                    🇮🇳
-
-                    <span>Kannada</span>
-
-                </div>
-
-                <div class="language-item">
-
-                    🇮🇳
-
-                    <span>Telugu</span>
-
-                </div>
-
-                <div class="language-item">
+                <div class="language-item lang-tamil">
 
                     🇮🇳
 
@@ -701,27 +505,11 @@ Dashboard | {{ app_name }}
 
                 </div>
 
-                <div class="language-item">
+                <div class="language-item lang-more">
 
-                    🇮🇳
+                    <i class="fa-solid fa-plus"></i>
 
-                    <span>Malayalam</span>
-
-                </div>
-
-                <div class="language-item">
-
-                    🇮🇳
-
-                    <span>Odia</span>
-
-                </div>
-
-                <div class="language-item">
-
-                    🇮🇳
-
-                    <span>Assamese</span>
+                    <span>+6 More</span>
 
                 </div>
 
@@ -753,13 +541,117 @@ Dashboard | {{ app_name }}
 
             <div class="system-list">
 
-                <div class="system-row">
+                <div class="system-row metric-cpu">
 
-                    <span>
+                    <div class="metric-label">
+
+                        <span class="metric-icon">
+                            <i class="fa-solid fa-microchip"></i>
+                        </span>
+
+                        <span>
+
+                        CPU Usage
+
+                        </span>
+
+                    </div>
+
+                    <strong>
+
+                        {{ system_information.cpu_usage }}
+
+                    </strong>
+
+                </div>
+
+                <div class="system-row metric-memory">
+
+                    <div class="metric-label">
+
+                        <span class="metric-icon">
+                            <i class="fa-solid fa-memory"></i>
+                        </span>
+
+                        <span>
+
+                        Memory Usage
+
+                        </span>
+
+                    </div>
+
+                    <strong>
+
+                        {{ system_information.memory_usage }}
+
+                    </strong>
+
+                </div>
+
+                <div class="system-row metric-gpu">
+
+                    <div class="metric-label">
+
+                        <span class="metric-icon">
+                            <i class="fa-solid fa-display"></i>
+                        </span>
+
+                        <span>
+
+                        GPU Usage
+
+                        </span>
+
+                    </div>
+
+                    <strong>
+
+                        {{ system_information.gpu_usage }}
+
+                    </strong>
+
+                </div>
+
+                <div class="system-row metric-disk">
+
+                    <div class="metric-label">
+
+                        <span class="metric-icon">
+                            <i class="fa-solid fa-hard-drive"></i>
+                        </span>
+
+                        <span>
+
+                        Disk Usage
+
+                        </span>
+
+                    </div>
+
+                    <strong>
+
+                        {{ system_information.disk_usage }}
+
+                    </strong>
+
+                </div>
+
+                <div class="system-row metric-app">
+
+                    <div class="metric-label">
+
+                        <span class="metric-icon">
+                            <i class="fa-solid fa-cubes"></i>
+                        </span>
+
+                        <span>
 
                         Application
 
-                    </span>
+                        </span>
+
+                    </div>
 
                     <strong>
 
@@ -769,99 +661,27 @@ Dashboard | {{ app_name }}
 
                 </div>
 
-                <div class="system-row">
+                <div class="system-row metric-queue">
 
-                    <span>
+                    <div class="metric-label">
 
-                        Version
+                        <span class="metric-icon">
+                            <i class="fa-solid fa-wave-square"></i>
+                        </span>
 
-                    </span>
-
-                    <strong>
-
-                        1.0.0
-
-                    </strong>
-
-                </div>
-
-                <div class="system-row">
-
-                    <span>
-
-                        Translation Engine
-
-                    </span>
-
-                    <strong>
-
-                        AI Powered
-
-                    </strong>
-
-                </div>
-
-                <div class="system-row">
-
-                    <span>
-
-                        Backend
-
-                    </span>
-
-                    <strong>
-
-                        FastAPI
-
-                    </strong>
-
-                </div>
-
-                <div class="system-row">
-
-                    <span>
-
-                        Database
-
-                    </span>
-
-                    <strong>
-
-                        SQLite
-
-                    </strong>
-
-                </div>
-
-                <div class="system-row">
-
-                    <span>
+                        <span>
 
                         Queue Status
 
-                    </span>
+                        </span>
+
+                    </div>
 
                     <strong class="status-online">
 
                         <i class="fa-solid fa-circle"></i>
 
                         Healthy
-
-                    </strong>
-
-                </div>
-
-                <div class="system-row">
-
-                    <span>
-
-                        Last Backup
-
-                    </span>
-
-                    <strong>
-
-                        Today 08:15 AM
 
                     </strong>
 

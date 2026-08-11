@@ -21,7 +21,11 @@ Version:
 
 from __future__ import annotations
 
+import importlib.machinery
 import os
+import sys
+import types
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +34,34 @@ from ai.core.exceptions import (
     ModelNotFoundError,
 )
 from ai.model_manager.registry import ModelRegistry
+
+
+@contextmanager
+def _temporary_torchaudio_stub() -> Any:
+    """
+    Temporarily inject a torchaudio stub for text-only transformers loads.
+
+    This avoids loading a broken torchaudio native extension while still
+    allowing translation models to initialize.
+    """
+
+    had_existing = "torchaudio" in sys.modules
+    existing_module = sys.modules.get("torchaudio")
+
+    fake_module = types.ModuleType("torchaudio")
+    fake_module.__spec__ = importlib.machinery.ModuleSpec(
+        "torchaudio",
+        loader=None,
+    )
+    sys.modules["torchaudio"] = fake_module
+
+    try:
+        yield
+    finally:
+        if had_existing:
+            sys.modules["torchaudio"] = existing_module
+        else:
+            sys.modules.pop("torchaudio", None)
 
 
 class ModelLoader:
@@ -117,7 +149,20 @@ class ModelLoader:
         """
 
         provider = metadata["provider"]
-        model_path = Path(metadata["path"])
+        configured_path = metadata.get("path")
+
+        if not configured_path:
+            raise ModelLoadError("Model path is missing from metadata.")
+
+        model_path = Path(configured_path)
+        if not model_path.is_absolute():
+            repo_root = Path(__file__).resolve().parents[2]
+            model_path = (repo_root / model_path).resolve()
+
+        if not model_path.exists():
+            raise ModelLoadError(
+                f"Model path does not exist: {model_path}"
+            )
 
         #
         # Faster Whisper
@@ -192,25 +237,80 @@ class ModelLoader:
 
         if provider == "nllb":
 
-            from transformers import (
-                AutoTokenizer,
-                AutoModelForSeq2SeqLM,
-            )
+            with _temporary_torchaudio_stub():
 
-            tokenizer = AutoTokenizer.from_pretrained(
-                str(model_path),
-                local_files_only=True,
-            )
+                try:
+                    import transformers
+                except ImportError as exc:
+                    raise ModelLoadError(
+                        "Transformers is required to load the NLLB model."
+                    ) from exc
 
-            model = AutoModelForSeq2SeqLM.from_pretrained(
-                str(model_path),
-                local_files_only=True,
-            )
+                if (
+                    hasattr(transformers, "NllbTokenizer")
+                    and hasattr(transformers, "NllbForConditionalGeneration")
+                ):
+                    tokenizer = transformers.NllbTokenizer.from_pretrained(
+                        str(model_path),
+                        local_files_only=True,
+                    )
+                    model = transformers.NllbForConditionalGeneration.from_pretrained(
+                        str(model_path),
+                        local_files_only=True,
+                    )
+                    return {
+                        "model": model,
+                        "tokenizer": tokenizer,
+                    }
 
-            return {
-                "model": model,
-                "tokenizer": tokenizer,
-            }
+                expected_files = [
+                    "config.json",
+                    "generation_config.json",
+                    "pytorch_model.bin",
+                    "tokenizer_config.json",
+                ]
+                missing_files = [
+                    file_name
+                    for file_name in expected_files
+                    if not (model_path / file_name).exists()
+                ]
+
+                if missing_files:
+                    raise ModelLoadError(
+                        f"NLLB model directory is incomplete: {model_path}. "
+                        f"Missing files: {', '.join(missing_files)}"
+                    )
+
+                import torch
+                from transformers import (
+                    AutoTokenizer,
+                    AutoModelForSeq2SeqLM,
+                )
+
+                tokenizer = AutoTokenizer.from_pretrained(
+                    str(model_path),
+                    local_files_only=True,
+                )
+
+                use_safetensors = (model_path / "model.safetensors").exists()
+
+                model = AutoModelForSeq2SeqLM.from_pretrained(
+                    str(model_path),
+                    local_files_only=True,
+                    low_cpu_mem_usage=True,
+                    use_safetensors=use_safetensors,
+                    dtype=torch.float32,
+                )
+
+                try:
+                    model.to("cpu")
+                except Exception:
+                    pass
+
+                return {
+                    "model": model,
+                    "tokenizer": tokenizer,
+                }
 
         #
         # Piper
@@ -246,5 +346,4 @@ class ModelLoader:
         raise ModelLoadError(
             f"Unsupported provider: {provider}"
         )
-
 

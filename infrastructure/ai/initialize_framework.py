@@ -26,7 +26,12 @@ It does NOT:
 ===============================================================================
 """
 
+import logging
+
 from ai.model_manager.manager import ModelManager
+
+
+logger = logging.getLogger(__name__)
 
 
 class AIFramework:
@@ -47,13 +52,13 @@ class AIFramework:
         Initialize AI Framework.
         """
 
-        print("Initializing AI Framework...")
+        logger.info("Initializing AI Framework")
 
         self._manager.initialize()
 
         self._manager.load_all()
 
-        print("AI Framework Ready.")
+        logger.info("AI Framework Ready")
 
     # ------------------------------------------------------------------
     # Shutdown
@@ -64,11 +69,11 @@ class AIFramework:
         Shutdown AI Framework.
         """
 
-        print("Shutting down AI Framework...")
+        logger.info("Shutting down AI Framework")
 
         self._manager.shutdown()
 
-        print("AI Framework Shutdown Complete.")
+        logger.info("AI Framework Shutdown Complete")
 
 
 ai_framework = AIFramework()

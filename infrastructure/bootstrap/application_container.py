@@ -428,8 +428,12 @@ class ApplicationContainer:
                 "in manifest."
             )
 
-        return (
-            Path(ffmpeg_path)
-            .expanduser()
-            .resolve()
-        )
+        ffmpeg_directory = Path(ffmpeg_path).expanduser()
+
+        if not ffmpeg_directory.is_absolute():
+            project_root = Path(__file__).resolve().parents[2]
+            ffmpeg_directory = (
+                project_root / ffmpeg_directory
+            ).resolve()
+
+        return ffmpeg_directory.resolve()

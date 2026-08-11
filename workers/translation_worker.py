@@ -468,8 +468,16 @@ class TranslationWorker(BaseWorker):
 
         if result.get("status") != "PASS":
 
+            error_message = (
+                str(
+                    result.get("error_message")
+                    or result.get("detail")
+                    or "Translation API did not return PASS."
+                )
+            )
+
             raise RuntimeError(
-                "Translation API did not return PASS."
+                error_message
             )
 
         source_translation_path = (

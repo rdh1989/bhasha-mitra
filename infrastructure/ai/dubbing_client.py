@@ -60,6 +60,46 @@ class DubbingClient:
 
         self._timeout = timeout
 
+    @staticmethod
+    def _extract_error_detail(
+        error_body: Any,
+    ) -> str:
+        """
+        Normalize AI Framework error payloads into one readable message.
+        """
+
+        if isinstance(error_body, dict):
+
+            detail = error_body.get("detail")
+
+            if isinstance(detail, str) and detail.strip():
+                return detail.strip()
+
+            if isinstance(detail, list):
+                parts = []
+
+                for item in detail:
+
+                    if isinstance(item, dict):
+                        msg = item.get("msg") or item.get("message")
+                        if isinstance(msg, str) and msg.strip():
+                            parts.append(msg.strip())
+                    elif isinstance(item, str) and item.strip():
+                        parts.append(item.strip())
+
+                if parts:
+                    return "; ".join(parts)
+
+            message = error_body.get("message")
+
+            if isinstance(message, str) and message.strip():
+                return message.strip()
+
+        if isinstance(error_body, str) and error_body.strip():
+            return error_body.strip()
+
+        return "Unknown dubbing API error."
+
     def generate(
         self,
         translated_text_path: str,
@@ -188,7 +228,14 @@ class DubbingClient:
                 error_body,
             )
 
-            response.raise_for_status()
+            detail = self._extract_error_detail(
+                error_body
+            )
+
+            raise RuntimeError(
+                "Dubbing API returned HTTP "
+                f"{response.status_code}: {detail}"
+            )
 
         # =====================================================================
         # Parse response

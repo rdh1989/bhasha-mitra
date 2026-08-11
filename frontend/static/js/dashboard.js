@@ -79,6 +79,7 @@ class DashboardController {
          * this.updateDashboard(data);
          */
 
+        this.applyProgressWidths();
         this.animateCounters();
 
     }
@@ -136,6 +137,27 @@ class DashboardController {
             return;
 
         element.textContent = value;
+
+    }
+
+    applyProgressWidths() {
+
+        document.querySelectorAll(".progress-bar[data-progress]")
+
+            .forEach(bar => {
+
+                const progress = parseInt(
+                    bar.dataset.progress || "0",
+                    10
+                );
+
+                const width = Number.isNaN(progress)
+                    ? 0
+                    : Math.max(0, Math.min(100, progress));
+
+                bar.style.width = width + "%";
+
+            });
 
     }
 

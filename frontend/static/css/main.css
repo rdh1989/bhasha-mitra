@@ -89,6 +89,23 @@ THEME VARIABLES
 
     --transition:.30s ease;
 
+    /* Compatibility aliases used across older page styles */
+
+    --primary-color:var(--primary);
+    --primary-dark-color:var(--primary-dark);
+    --secondary-color:var(--secondary);
+
+    --success-color:var(--success);
+    --warning-color:var(--warning);
+    --danger-color:var(--danger);
+    --info-color:var(--info);
+
+    --border-color:var(--border);
+
+    --shadow-small:var(--shadow-sm);
+    --shadow-medium:var(--shadow-md);
+    --shadow-large:var(--shadow-lg);
+
 }
 
 /*=============================================================================
@@ -200,6 +217,8 @@ CONTENT
 
     position:relative;
 
+    isolation:isolate;
+
     flex:1;
 
     padding:30px;
@@ -225,21 +244,55 @@ GLOBAL WATERMARK
 
     inset:0;
 
-    background-color:#F8F4FD;
+    background:
+        radial-gradient(
+            circle at 15% 20%,
+            rgba(90,45,255,.08),
+            transparent 26%
+        ),
+        radial-gradient(
+            circle at 85% 78%,
+            rgba(123,60,255,.10),
+            transparent 28%
+        );
 
     background-image:url("/static/images/logo-watermark.png");
 
     background-repeat:no-repeat;
 
-    background-position:center;
+    background-position:right 2rem bottom 2rem;
 
-    background-size:cover;
+    background-size:min(36rem, 42vw);
 
-    opacity:.38;
+    opacity:.18;
+
+    filter:saturate(.9);
 
     pointer-events:none;
 
     z-index:0;
+
+}
+
+.watermark::after{
+
+    content:"Bhasha Mitra";
+
+    position:absolute;
+
+    right:2.5rem;
+
+    bottom:1.2rem;
+
+    font-size:clamp(1rem, 1vw + .75rem, 1.35rem);
+
+    font-weight:700;
+
+    letter-spacing:.22em;
+
+    text-transform:uppercase;
+
+    color:rgba(90,45,255,.22);
 
 }
 
@@ -405,6 +458,14 @@ RESPONSIVE
 
     }
 
+    .watermark{
+
+        background-position:right 1rem bottom 1rem;
+
+        background-size:min(24rem, 55vw);
+
+    }
+
 }
 
 @media(max-width:768px){
@@ -412,6 +473,24 @@ RESPONSIVE
     .content{
 
         padding:16px;
+
+    }
+
+    .watermark{
+
+        opacity:.14;
+
+        background-size:min(18rem, 60vw);
+
+    }
+
+    .watermark::after{
+
+        right:1rem;
+
+        bottom:.9rem;
+
+        letter-spacing:.14em;
 
     }
 

@@ -2,6 +2,10 @@
 
 {% block title %}Translation Progress | Bhasha Mitra{% endblock %}
 
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/translation.css') }}">
+{% endblock %}
+
 {% block page_title %}
 Translation Progress
 {% endblock %}
@@ -457,6 +461,30 @@ Translation Progress
 
             </h3>
 
+            <div class="summary-card" style="margin-bottom: 1rem;">
+
+                <h3 style="margin-bottom: 0.5rem;">
+
+                    Submitted Jobs
+
+                </h3>
+
+                <div id="submittedJobsList" class="action-list">
+
+                    <div class="summary-item">
+
+                        <div class="summary-label">
+
+                            No jobs submitted yet
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
             <div class="action-list">
 
                 <div class="eta-card">
@@ -485,11 +513,10 @@ Translation Progress
 
                     <div
                         id="translationJobId"
-                        class="summary-value">
+                    class="summary-value"
+                    data-job-id="{{ job_id or '' }}">
 
-                        {{ job_id or "BM-000001" }}
-
-                    </div>
+                    {{ job_id or "Waiting for job" }}
 
                 </div>
 
@@ -534,7 +561,7 @@ Translation Progress
 
 {% endblock %}
 
-{% block scripts %}
+{% block js %}
 
 <script src="{{ url_for('static', path='js/translation.js') }}"></script>
 

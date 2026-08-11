@@ -118,9 +118,16 @@ class ConfigurationManager:
         if self._initialized:
             return
 
+        project_root = Path(__file__).resolve().parents[2]
+
         config_directory = Path(
             config_directory
         ).expanduser()
+
+        if not config_directory.is_absolute():
+            config_directory = (
+                project_root / config_directory
+            ).resolve()
 
         if not config_directory.exists():
 
