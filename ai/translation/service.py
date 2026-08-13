@@ -26,6 +26,8 @@ import re
 import time
 import logging
 
+import torch
+
 from ai.base.translation_provider import TranslationProvider
 from ai.translation.adapter import TranslationAdapter
 from ai.translation.models import (
@@ -50,6 +52,11 @@ class TranslationService:
     • Normalize provider output.
     • Return framework models.
     """
+
+    # num_beams=1 (greedy) is fastest but measurably lower quality for NLLB.
+    # 2 beams gives a real accuracy gain while staying cheap; batching all
+    # chunks into one generate() call below offsets most of the added cost.
+    NUM_BEAMS = 2
 
     def __init__(
         self,
@@ -128,42 +135,62 @@ class TranslationService:
 
         start_time = time.perf_counter()
 
-        # Split long input into smaller chunks so each generation pass is
-        # faster and the overall latency is reduced.
-        chunks = self._chunk_text(request.text)
-        translated_parts = []
+        # Split long input into smaller chunks so each generation pass stays
+        # within a reasonable sequence length.
+        chunks = [
+            chunk.strip()
+            for chunk in self._chunk_text(request.text)
+            if chunk.strip()
+        ]
 
-        for chunk in chunks:
-            if not chunk.strip():
-                continue
+        if not chunks:
+            translated_text = ""
+        else:
 
+            # Batch every chunk into a single generate() call instead of one
+            # call per chunk: one batched forward pass beats N sequential
+            # ones (fewer kernel/model dispatch round-trips).
             inputs = tokenizer(
-                chunk,
+                chunks,
                 return_tensors="pt",
                 padding=True,
             )
 
-            translated = model.generate(
-                **inputs,
-                forced_bos_token_id=tokenizer.convert_tokens_to_ids(
-                    target_lang
-                ),
-                max_new_tokens=90,
-                num_beams=1,
-                do_sample=False,
-                repetition_penalty=1.15,
-                no_repeat_ngram_size=3,
-                length_penalty=1.0,
+            # A fixed token budget truncates longer chunks: Devanagari output
+            # from NLLB commonly needs more tokens than the English input has
+            # words. Scale the budget with the longest chunk in the batch.
+            max_new_tokens = min(
+                512,
+                max(90, inputs["input_ids"].shape[-1] * 3),
             )
 
-            translated_parts.append(
-                tokenizer.batch_decode(
-                    translated,
-                    skip_special_tokens=True,
-                )[0]
+            with torch.inference_mode():
+
+                translated = model.generate(
+                    **inputs,
+                    forced_bos_token_id=tokenizer.convert_tokens_to_ids(
+                        target_lang
+                    ),
+                    # NLLB's generation_config.json ships a default max_length=200
+                    # that conflicts with max_new_tokens; disable it explicitly.
+                    max_length=None,
+                    max_new_tokens=max_new_tokens,
+                    num_beams=self.NUM_BEAMS,
+                    do_sample=False,
+                    early_stopping=True,
+                    repetition_penalty=1.15,
+                    no_repeat_ngram_size=3,
+                    length_penalty=1.0,
+                )
+
+            translated_parts = tokenizer.batch_decode(
+                translated,
+                skip_special_tokens=True,
             )
 
-        translated_text = " ".join(translated_parts).strip()
+            translated_text = " ".join(
+                part.strip() for part in translated_parts
+            ).strip()
 
         #
         # Framework response

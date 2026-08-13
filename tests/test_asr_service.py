@@ -27,6 +27,37 @@ class FakeModelManager:
         return self._model
 
 
+def test_model_manager_autoloads_registered_models_when_missing(monkeypatch):
+    from pathlib import Path
+
+    from ai.model_manager.manager import ModelManager
+
+    manager = ModelManager()
+    manager._registry.clear()
+    manager._cache.clear()
+    manager._registry.register(
+        "asr",
+        "small",
+        Path("dummy-model"),
+        "faster_whisper",
+        "1.0",
+    )
+
+    fake_loaded = object()
+    calls = []
+
+    def fake_load_all():
+        calls.append("load_all")
+        manager._cache.add("asr:small", fake_loaded)
+
+    monkeypatch.setattr(manager, "load_all", fake_load_all)
+
+    loaded = manager.get_default_model("asr")
+
+    assert loaded is fake_loaded
+    assert calls == ["load_all"]
+
+
 def test_transcribe_uses_balanced_decoding_settings(monkeypatch):
     fake_model = FakeWhisperModel()
 
@@ -49,3 +80,5 @@ def test_transcribe_uses_balanced_decoding_settings(monkeypatch):
     assert kwargs["vad_filter"] is True
     assert kwargs["vad_parameters"] == {"min_silence_duration_ms": 500}
     assert kwargs["condition_on_previous_text"] is False
+    assert kwargs["without_timestamps"] is False
+    assert kwargs["word_timestamps"] is False

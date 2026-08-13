@@ -41,6 +41,10 @@ class SpeechRequest:
 
     output_path: Path
 
+    # Piper phoneme length scale (< 1.0 speaks faster, > 1.0 speaks slower).
+    # None uses the voice model's default rate.
+    length_scale: float | None = None
+
 
 # ============================================================================
 # Response Models

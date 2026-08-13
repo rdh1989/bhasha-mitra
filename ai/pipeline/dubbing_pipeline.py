@@ -53,9 +53,16 @@ Version:
 from __future__ import annotations
 
 import json
+import logging
+import re
+import shutil
+import subprocess
+import tempfile
 import wave
+from dataclasses import dataclass
 from pathlib import Path
 
+from ai.model_manager.manager import ModelManager
 from ai.tts.models import SpeechRequest
 from ai.tts.service import TTSService
 
@@ -63,6 +70,20 @@ from ai.pipeline.contracts import (
     VideoDubbingRequest,
     VideoDubbingResult,
 )
+
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass(slots=True)
+class _TTSTimelineChunk:
+    segment_id: int
+    audio_path: Path
+    start: float
+    end: float
+    target_duration: float
+    generated_duration: float
+    action: str
 
 
 class DubbingPipeline:
@@ -94,6 +115,18 @@ class DubbingPipeline:
     # This value avoids unnecessary processing for tiny differences.
     DURATION_TOLERANCE_SECONDS = 0.15
     EDGE_FADE_MILLISECONDS = 12
+    MAX_RESAMPLE_RATIO = 1.15
+    CHUNK_TARGET_MIN_SECONDS = 4.0
+    CHUNK_TARGET_MAX_SECONDS = 8.0
+    CHUNK_TARGET_HARD_MAX_SECONDS = 9.0
+    # Overflow within this margin is left to assembly-time compression
+    # instead of triggering expensive text resegmentation.
+    SIGNIFICANT_OVERFLOW_RATIO = 1.15
+    # Floor for Piper's length_scale when proactively speeding up
+    # verbose segments, to keep speech intelligible.
+    MIN_LENGTH_SCALE = 0.7
+    SENTENCE_SPLIT_PATTERN = re.compile(r"(?<=[.!?\u0964])\s+")
+    CLAUSE_SPLIT_PATTERN = re.compile(r"(?<=[,;:])\s+|\s+-\s+")
 
     def __init__(
         self,
@@ -101,6 +134,7 @@ class DubbingPipeline:
     ) -> None:
 
         self._tts_service = tts_service
+        self._model_manager = ModelManager()
 
     # ------------------------------------------------------------------
     # Execute
@@ -177,6 +211,14 @@ class DubbingPipeline:
             )
         )
 
+        # ------------------------------------------------------------------
+        # Voice selection
+        # ------------------------------------------------------------------
+        # Keep the request contract unchanged, but ignore request.voice for
+        # synthesis. The configured Piper voice loaded by ModelManager must
+        # be used consistently for every segment.
+        configured_voice = self._get_configured_tts_voice()
+
         # --------------------------------------------------------------
         # Output
         # --------------------------------------------------------------
@@ -204,9 +246,7 @@ class DubbingPipeline:
             exist_ok=True,
         )
 
-        generated_segments: list[
-            tuple[Path, float, float]
-        ] = []
+        generated_segments: list[_TTSTimelineChunk] = []
 
         try:
 
@@ -218,35 +258,13 @@ class DubbingPipeline:
                 validated_segments,
                 start=1,
             ):
-
-                segment_path = (
-                    segment_directory
-                    / f"segment_{index:05d}.wav"
-                )
-
-                speech_request = SpeechRequest(
-                    text=segment["translated_text"],
-                    language=request.language,
-                    voice=request.voice,
-                    output_path=segment_path,
-                )
-
-                self._tts_service.synthesize(
-                    speech_request
-                )
-
-                if not segment_path.exists():
-
-                    raise RuntimeError(
-                        "TTS did not generate audio "
-                        f"for segment {segment['id']}."
-                    )
-
-                generated_segments.append(
-                    (
-                        segment_path,
-                        segment["start"],
-                        segment["end"],
+                generated_segments.extend(
+                    self._synthesize_segment_chunks(
+                        segment=segment,
+                        request=request,
+                        configured_voice=configured_voice,
+                        segment_directory=segment_directory,
+                        segment_index=index,
                     )
                 )
 
@@ -272,7 +290,7 @@ class DubbingPipeline:
             return VideoDubbingResult(
                 audio_file=output_path,
                 language=request.language,
-                voice=request.voice,
+                voice=configured_voice,
                 sample_rate=sample_rate,
                 duration=duration,
             )
@@ -390,9 +408,7 @@ class DubbingPipeline:
 
     def _assemble_audio(
         self,
-        generated_segments: list[
-            tuple[Path, float, float]
-        ],
+        generated_segments: list[_TTSTimelineChunk],
         output_path: Path,
     ) -> None:
         """
@@ -417,7 +433,7 @@ class DubbingPipeline:
         # Read first WAV parameters
         # --------------------------------------------------------------
 
-        first_path = generated_segments[0][0]
+        first_path = generated_segments[0].audio_path
 
         with wave.open(
             str(first_path),
@@ -440,8 +456,8 @@ class DubbingPipeline:
         # --------------------------------------------------------------
 
         final_end = max(
-            end
-            for _, _, end in generated_segments
+            chunk.end
+            for chunk in generated_segments
         )
 
         total_frames = int(
@@ -460,13 +476,11 @@ class DubbingPipeline:
         # Process each segment
         # --------------------------------------------------------------
 
-        for index, (
-            segment_path,
-            start,
-            end,
-        ) in enumerate(
-            generated_segments
-        ):
+        for index, chunk in enumerate(generated_segments):
+
+            segment_path = chunk.audio_path
+            start = chunk.start
+            end = chunk.end
 
             target_duration = (
                 end - start
@@ -516,6 +530,21 @@ class DubbingPipeline:
                 / sample_rate
             )
 
+            duration_ratio = (
+                current_duration / target_duration
+                if target_duration > 0
+                else 1.0
+            )
+
+            logger.info(
+                "DUBBING TIMING | segment_id=%s | target_duration=%.3f | generated_duration=%.3f | duration_ratio=%.3f | action=%s",
+                chunk.segment_id,
+                chunk.target_duration,
+                chunk.generated_duration,
+                duration_ratio,
+                chunk.action,
+            )
+
             duration_difference = (
                 current_duration
                 - target_duration
@@ -536,7 +565,7 @@ class DubbingPipeline:
                 next_start = (
                     generated_segments[
                         index + 1
-                    ][1]
+                    ].start
                 )
 
                 available_duration = max(
@@ -557,29 +586,44 @@ class DubbingPipeline:
                 duration_difference
             ) <= self.DURATION_TOLERANCE_SECONDS:
 
-                adjusted_frames = (
-                    self._pad_or_trim_audio(
+                if current_frames > target_frames:
+                    adjusted_frames = self._resize_audio(
                         frames=frames,
                         current_frames=current_frames,
                         target_frames=target_frames,
-                        frame_size=frame_size,
+                        channels=channels,
+                        sample_rate=sample_rate,
+                        segment_id=chunk.segment_id,
                     )
-                )
+                else:
+                    adjusted_frames = (
+                        self._pad_audio(
+                            frames=frames,
+                            current_frames=current_frames,
+                            target_frames=target_frames,
+                            frame_size=frame_size,
+                        )
+                    )
 
             # ----------------------------------------------------------
             # TTS longer than target
             # ----------------------------------------------------------
 
             elif current_duration > available_duration:
-
-                adjusted_frames = (
-                    self._resize_audio(
+                if available_frames <= 0:
+                    adjusted_frames = b""
+                else:
+                    resample_ratio = (
+                        current_frames / available_frames
+                    )
+                    adjusted_frames = self._resize_audio(
                         frames=frames,
                         current_frames=current_frames,
                         target_frames=available_frames,
                         channels=channels,
+                        sample_rate=sample_rate,
+                        segment_id=chunk.segment_id,
                     )
-                )
 
             # ----------------------------------------------------------
             # TTS shorter than target
@@ -588,7 +632,7 @@ class DubbingPipeline:
             else:
 
                 adjusted_frames = (
-                    self._pad_or_trim_audio(
+                    self._pad_audio(
                         frames=frames,
                         current_frames=current_frames,
                         target_frames=target_frames,
@@ -679,7 +723,7 @@ class DubbingPipeline:
     # Pad / Trim
     # ------------------------------------------------------------------
 
-    def _pad_or_trim_audio(
+    def _pad_audio(
         self,
         frames: bytes,
         current_frames: int,
@@ -687,9 +731,10 @@ class DubbingPipeline:
         frame_size: int,
     ) -> bytes:
         """
-        Adjust only by padding or trimming.
+        Adjust only by padding.
 
-        Used when the duration difference is small.
+        Shorter-than-target audio keeps natural speed and the remaining
+        timeline is left as silence.
         """
 
         if target_frames <= 0:
@@ -706,9 +751,7 @@ class DubbingPipeline:
 
         if current_bytes >= target_bytes:
 
-            return frames[
-                :target_bytes
-            ]
+            return frames
 
         return (
             frames
@@ -731,9 +774,11 @@ class DubbingPipeline:
         current_frames: int,
         target_frames: int,
         channels: int,
+        sample_rate: int,
+        segment_id: int | None = None,
     ) -> bytes:
         """
-        Resize 16-bit PCM audio to the target frame count.
+        Pitch-preserving time stretch to the target frame count.
 
         This is used only when TTS exceeds the available timeline.
 
@@ -757,106 +802,99 @@ class DubbingPipeline:
 
             return frames
 
-        import array
-
-        source = array.array(
-            "h"
+        stretch_ratio = (
+            current_frames / target_frames
         )
 
-        source.frombytes(
-            frames
+        # Beyond this cap, prefer natural speech (and mild timeline drift)
+        # over unintelligible speed-up.
+        applied_ratio = min(
+            stretch_ratio,
+            self.MAX_RESAMPLE_RATIO,
         )
 
-        if current_frames == 1:
+        with tempfile.TemporaryDirectory() as temp_directory:
 
-            repeated = array.array(
-                "h"
+            temp_directory_path = Path(
+                temp_directory
             )
+            input_path = temp_directory_path / "input.wav"
+            output_path = temp_directory_path / "output.wav"
 
-            for _ in range(target_frames):
+            with wave.open(
+                str(input_path),
+                "wb",
+            ) as wav_file:
 
-                for channel in range(channels):
-
-                    repeated.append(
-                        source[channel]
-                    )
-
-            return repeated.tobytes()
-
-        result = array.array(
-            "h"
-        )
-
-        denominator = max(
-            target_frames - 1,
-            1,
-        )
-
-        for target_index in range(
-            target_frames
-        ):
-
-            source_position = (
-                target_index
-                * (current_frames - 1)
-                / denominator
-            )
-
-            left_index = int(
-                source_position
-            )
-
-            right_index = min(
-                left_index + 1,
-                current_frames - 1,
-            )
-
-            fraction = (
-                source_position
-                - left_index
-            )
-
-            left_offset = (
-                left_index
-                * channels
-            )
-
-            right_offset = (
-                right_index
-                * channels
-            )
-
-            for channel in range(
-                channels
-            ):
-
-                left_sample = source[
-                    left_offset + channel
-                ]
-
-                right_sample = source[
-                    right_offset + channel
-                ]
-
-                interpolated = int(
-                    left_sample
-                    + (
-                        right_sample
-                        - left_sample
-                    )
-                    * fraction
+                wav_file.setnchannels(
+                    channels
+                )
+                wav_file.setsampwidth(
+                    2
+                )
+                wav_file.setframerate(
+                    sample_rate
+                )
+                wav_file.writeframes(
+                    frames
                 )
 
-                if interpolated > 32767:
-                    interpolated = 32767
-                elif interpolated < -32768:
-                    interpolated = -32768
+            ffmpeg_executable = (
+                self._resolve_ffmpeg_executable()
+            )
 
-                result.append(
-                    interpolated
+            if ffmpeg_executable is None:
+                raise RuntimeError(
+                    "FFmpeg is required for pitch-preserving TTS time stretching."
                 )
 
-        return result.tobytes()
+            if segment_id is not None:
+                logger.info(
+                    "DUBBING TIMING | segment_id=%s | generated_duration=%.3f | target_duration=%.3f | stretch_ratio=%.3f | applied_ratio=%.3f | action=%s",
+                    segment_id,
+                    current_frames / sample_rate,
+                    target_frames / sample_rate,
+                    stretch_ratio,
+                    applied_ratio,
+                    "time_stretch",
+                )
+
+            command = [
+                str(ffmpeg_executable),
+                "-y",
+                "-i",
+                str(input_path),
+                "-filter:a",
+                self._build_atempo_filter(applied_ratio),
+                "-ac",
+                str(channels),
+                "-ar",
+                str(sample_rate),
+                "-c:a",
+                "pcm_s16le",
+                str(output_path),
+            ]
+
+            try:
+                subprocess.run(
+                    command,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
+            except subprocess.CalledProcessError as exc:
+                raise RuntimeError(
+                    "Pitch-preserving TTS time stretching failed."
+                ) from exc
+
+            with wave.open(
+                str(output_path),
+                "rb",
+            ) as wav_file:
+
+                return wav_file.readframes(
+                    wav_file.getnframes()
+                )
 
     def _apply_edge_fade(
         self,
@@ -910,6 +948,389 @@ class DubbingPipeline:
                 )
 
         return samples.tobytes()
+
+    @staticmethod
+    def _build_atempo_filter(stretch_ratio: float) -> str:
+        """
+        Build an ffmpeg atempo filter chain for the requested ratio.
+        """
+
+        remaining = stretch_ratio
+        filters: list[str] = []
+
+        while remaining > 2.0:
+            filters.append("atempo=2.0")
+            remaining /= 2.0
+
+        while remaining < 0.5:
+            filters.append("atempo=0.5")
+            remaining /= 0.5
+
+        filters.append(f"atempo={remaining:.6f}")
+
+        return ",".join(filters)
+
+    @staticmethod
+    def _resolve_ffmpeg_executable() -> Path | None:
+        """
+        Resolve the bundled or PATH ffmpeg executable.
+        """
+
+        project_root = Path(__file__).resolve().parents[3]
+        bundled_ffmpeg = (
+            project_root
+            / "models"
+            / "third_party"
+            / "ffmpeg"
+            / "ffmpeg-8.1.2"
+            / "bin"
+            / "ffmpeg.exe"
+        )
+
+        if bundled_ffmpeg.is_file():
+            return bundled_ffmpeg
+
+        system_ffmpeg = shutil.which("ffmpeg")
+        if system_ffmpeg:
+            return Path(system_ffmpeg)
+
+        return None
+
+    def _synthesize_segment_chunks(
+        self,
+        segment: dict,
+        request: VideoDubbingRequest,
+        configured_voice: str,
+        segment_directory: Path,
+        segment_index: int,
+    ) -> list[_TTSTimelineChunk]:
+        """
+        Generate one or more natural TTS chunks for a segment.
+        """
+
+        segment_id = int(segment["id"])
+        segment_start = float(segment["start"])
+        segment_end = float(segment["end"])
+        segment_text = str(segment["translated_text"]).strip()
+        segment_duration = max(segment_end - segment_start, 0.001)
+
+        text_chunks = self._split_text_for_tts(
+            text=segment_text,
+            segment_duration=segment_duration,
+        )
+
+        windows = self._allocate_chunk_windows(
+            start=segment_start,
+            end=segment_end,
+            texts=text_chunks,
+        )
+
+        generated: list[_TTSTimelineChunk] = []
+
+        for chunk_index, (chunk_text, chunk_start, chunk_end) in enumerate(
+            windows,
+            start=1,
+        ):
+            generated.extend(
+                self._synthesize_window_with_regeneration(
+                    segment_id=segment_id,
+                    text=chunk_text,
+                    start=chunk_start,
+                    end=chunk_end,
+                    request=request,
+                    configured_voice=configured_voice,
+                    segment_directory=segment_directory,
+                    file_stem=f"segment_{segment_index:05d}_{chunk_index:02d}",
+                    depth=0,
+                )
+            )
+
+        return generated
+
+    def _synthesize_window_with_regeneration(
+        self,
+        segment_id: int,
+        text: str,
+        start: float,
+        end: float,
+        request: VideoDubbingRequest,
+        configured_voice: str,
+        segment_directory: Path,
+        file_stem: str,
+        depth: int,
+        length_scale: float | None = None,
+    ) -> list[_TTSTimelineChunk]:
+        """
+        Synthesize a chunk and regenerate with finer segmentation when needed.
+        """
+
+        target_duration = max(end - start, 0.001)
+        chunk_path = segment_directory / f"{file_stem}_d{depth}.wav"
+
+        speech_request = SpeechRequest(
+            text=text,
+            language=request.language,
+            voice=configured_voice,
+            output_path=chunk_path,
+            length_scale=length_scale,
+        )
+
+        self._tts_service.synthesize(
+            speech_request
+        )
+
+        if not chunk_path.exists():
+            raise RuntimeError(
+                "TTS did not generate audio "
+                f"for segment {segment_id}."
+            )
+
+        _, generated_duration = self._read_wav_metadata(chunk_path)
+
+        if generated_duration is None:
+            generated_duration = 0.0
+
+        ratio = (
+            generated_duration / target_duration
+            if target_duration > 0
+            else 1.0
+        )
+
+        if ratio > self.SIGNIFICANT_OVERFLOW_RATIO and depth < 4:
+
+            # Proactively ask Piper to speak faster before falling back to
+            # the more expensive text resegmentation path.
+            if length_scale is None:
+                proactive_scale = max(
+                    self.MIN_LENGTH_SCALE,
+                    min(1.0, 1.0 / ratio),
+                )
+                if proactive_scale < 1.0:
+                    logger.info(
+                        "DUBBING TIMING | segment_id=%s | target_duration=%.3f | generated_duration=%.3f | duration_ratio=%.3f | action=%s",
+                        segment_id,
+                        target_duration,
+                        generated_duration,
+                        ratio,
+                        "proactive_speed_regenerate",
+                    )
+                    return self._synthesize_window_with_regeneration(
+                        segment_id=segment_id,
+                        text=text,
+                        start=start,
+                        end=end,
+                        request=request,
+                        configured_voice=configured_voice,
+                        segment_directory=segment_directory,
+                        file_stem=file_stem,
+                        depth=depth + 1,
+                        length_scale=proactive_scale,
+                    )
+
+            subparts = self._split_text_into_subparts(text)
+            if len(subparts) > 1:
+                action = "resegment_regenerate"
+                logger.info(
+                    "DUBBING TIMING | segment_id=%s | target_duration=%.3f | generated_duration=%.3f | duration_ratio=%.3f | action=%s",
+                    segment_id,
+                    target_duration,
+                    generated_duration,
+                    ratio,
+                    action,
+                )
+                windows = self._allocate_chunk_windows(
+                    start=start,
+                    end=end,
+                    texts=subparts,
+                )
+                regenerated: list[_TTSTimelineChunk] = []
+                for index, (subtext, substart, subend) in enumerate(
+                    windows,
+                    start=1,
+                ):
+                    regenerated.extend(
+                        self._synthesize_window_with_regeneration(
+                            segment_id=segment_id,
+                            text=subtext,
+                            start=substart,
+                            end=subend,
+                            request=request,
+                            configured_voice=configured_voice,
+                            segment_directory=segment_directory,
+                            file_stem=f"{file_stem}_r{index:02d}",
+                            depth=depth + 1,
+                            length_scale=length_scale,
+                        )
+                    )
+                return regenerated
+
+        action = "keep_natural"
+        if ratio > 1.0:
+            action = "mild_compress" if ratio <= self.MAX_RESAMPLE_RATIO else "compress_after_regen"
+        elif ratio < 1.0:
+            action = "pad_silence"
+
+        return [
+            _TTSTimelineChunk(
+                segment_id=segment_id,
+                audio_path=chunk_path,
+                start=start,
+                end=end,
+                target_duration=target_duration,
+                generated_duration=generated_duration,
+                action=action,
+            )
+        ]
+
+    def _split_text_for_tts(
+        self,
+        text: str,
+        segment_duration: float,
+    ) -> list[str]:
+        """
+        Split text at sentence/clause boundaries for natural TTS chunks.
+        """
+
+        units: list[str] = []
+        for sentence in self.SENTENCE_SPLIT_PATTERN.split(text):
+            sentence = sentence.strip()
+            if not sentence:
+                continue
+            clauses = [
+                clause.strip()
+                for clause in self.CLAUSE_SPLIT_PATTERN.split(sentence)
+                if clause.strip()
+            ]
+            if clauses:
+                units.extend(clauses)
+
+        if not units:
+            units = [text.strip()]
+
+        if segment_duration <= self.CHUNK_TARGET_MAX_SECONDS:
+            return [" ".join(units).strip()]
+
+        desired_chunks = max(
+            1,
+            int(round(segment_duration / 6.0)),
+        )
+
+        packed: list[str] = []
+        current_parts: list[str] = []
+        current_weight = 0
+        total_weight = sum(max(len(part), 1) for part in units)
+        target_weight = max(1, total_weight // desired_chunks)
+
+        for part in units:
+            part_weight = max(len(part), 1)
+            if current_parts and current_weight + part_weight > target_weight:
+                packed.append(" ".join(current_parts).strip())
+                current_parts = []
+                current_weight = 0
+            current_parts.append(part)
+            current_weight += part_weight
+
+        if current_parts:
+            packed.append(" ".join(current_parts).strip())
+
+        return [chunk for chunk in packed if chunk]
+
+    def _split_text_into_subparts(self, text: str) -> list[str]:
+        """
+        Split text into smaller natural parts for regeneration.
+        """
+
+        clauses = [
+            clause.strip()
+            for clause in self.CLAUSE_SPLIT_PATTERN.split(text)
+            if clause.strip()
+        ]
+
+        if len(clauses) > 1:
+            return clauses
+
+        words = text.split()
+        if len(words) <= 2:
+            return [text.strip()]
+
+        midpoint = len(words) // 2
+        return [
+            " ".join(words[:midpoint]).strip(),
+            " ".join(words[midpoint:]).strip(),
+        ]
+
+    def _allocate_chunk_windows(
+        self,
+        start: float,
+        end: float,
+        texts: list[str],
+    ) -> list[tuple[str, float, float]]:
+        """
+        Allocate contiguous timeline windows proportionally to text length.
+        """
+
+        duration = max(end - start, 0.001)
+        if not texts:
+            return []
+
+        weights = [max(len(text.strip()), 1) for text in texts]
+        weight_sum = sum(weights)
+
+        windows: list[tuple[str, float, float]] = []
+        cursor = start
+
+        for index, text in enumerate(texts):
+            if index == len(texts) - 1:
+                window_end = end
+            else:
+                portion = duration * (weights[index] / weight_sum)
+                window_end = min(end, cursor + portion)
+            windows.append((text, cursor, window_end))
+            cursor = window_end
+
+        return self._rebalance_oversized_windows(windows)
+
+    def _rebalance_oversized_windows(
+        self,
+        windows: list[tuple[str, float, float]],
+        depth: int = 0,
+    ) -> list[tuple[str, float, float]]:
+        """
+        Split windows that exceed the preferred hard max duration.
+        """
+
+        if depth >= 3:
+            return windows
+
+        balanced: list[tuple[str, float, float]] = []
+
+        for text, start, end in windows:
+            duration = end - start
+
+            if duration <= self.CHUNK_TARGET_HARD_MAX_SECONDS:
+                balanced.append((text, start, end))
+                continue
+
+            subparts = self._split_text_into_subparts(text)
+
+            if len(subparts) <= 1:
+                balanced.append((text, start, end))
+                continue
+
+            split_windows = self._allocate_chunk_windows(
+                start=start,
+                end=end,
+                texts=subparts,
+            )
+
+            balanced.extend(
+                self._rebalance_oversized_windows(
+                    split_windows,
+                    depth=depth + 1,
+                )
+            )
+
+        return balanced
 
     def _mix_pcm16(
         self,
@@ -1014,6 +1435,26 @@ class DubbingPipeline:
 
         except OSError:
             pass
+
+    def _get_configured_tts_voice(self) -> str:
+        """
+        Return the configured default TTS voice from ModelManager metadata.
+        """
+
+        metadata = self._model_manager.get_default_metadata(
+            "tts"
+        )
+
+        voice = str(
+            metadata.get("model", "")
+        ).strip()
+
+        if not voice:
+            raise ValueError(
+                "Configured TTS voice is missing in model metadata."
+            )
+
+        return voice
 
     # ------------------------------------------------------------------
     # Health Check

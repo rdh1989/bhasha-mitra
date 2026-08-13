@@ -85,6 +85,8 @@ class ModelManager:
         self._cache = ModelCache()
         self._manifest = ManifestReader()
         self._downloader = ModelDownloader()
+        self._startup_load_lock = Lock()
+        self._startup_load_done = False
 
     # -------------------------------------------------------------------------
     # Initialization
@@ -220,44 +222,49 @@ class ModelManager:
         Called once during application startup.
         """
 
-        logger.info("Loading AI Models")
+        with self._startup_load_lock:
+            if self._startup_load_done:
+                return
 
-        for key in self._registry.list():
+            logger.info("Loading AI Models")
 
-            category, model = key.split(":", 1)
+            for key in self._registry.list():
 
-            logger.info("Loading %s:%s", category, model)
+                category, model = key.split(":", 1)
 
-            if category == "language_detection":
-                logger.info(
-                    "Skipping %s:%s as it is not loaded at startup.",
-                    category,
-                    model,
-                )
-                continue
+                logger.info("Loading %s:%s", category, model)
 
-            try:
-                self.load_model(
-                    category=category,
-                    model=model,
-                )
-            except Exception as exc:
-                root_cause = exc
-                while getattr(root_cause, "__cause__", None) is not None:
-                    root_cause = root_cause.__cause__
-                logger.error(
-                    "Failed to load %s:%s: %s",
-                    category,
-                    model,
-                    exc,
-                )
-                logger.error(
-                    "Root cause %s: %s",
-                    type(root_cause).__name__,
-                    root_cause,
-                )
+                if category == "language_detection":
+                    logger.info(
+                        "Skipping %s:%s as it is not loaded at startup.",
+                        category,
+                        model,
+                    )
+                    continue
 
-        logger.info("Model startup completed")
+                try:
+                    self.load_model(
+                        category=category,
+                        model=model,
+                    )
+                except Exception as exc:
+                    root_cause = exc
+                    while getattr(root_cause, "__cause__", None) is not None:
+                        root_cause = root_cause.__cause__
+                    logger.error(
+                        "Failed to load %s:%s: %s",
+                        category,
+                        model,
+                        exc,
+                    )
+                    logger.error(
+                        "Root cause %s: %s",
+                        type(root_cause).__name__,
+                        root_cause,
+                    )
+
+            self._startup_load_done = True
+            logger.info("Model startup completed")
 
 
     def load_model(
@@ -294,21 +301,13 @@ class ModelManager:
         """
         Return the default loaded model for a category.
 
-        Parameters
-        ----------
-        category : str
-            AI category (translation, asr, tts, ...)
-
-        Returns
-        -------
-        Any
-            Loaded model instance.
-
-        Raises
-        ------
-        RuntimeError
-            If no model is registered or loaded.
+        If the framework is still in the startup window, this method ensures the
+        registry has been initialized and loads the registered model into memory
+        before returning it.
         """
+
+        if not self._registry.list():
+            self.initialize()
 
         for key in self._registry.list():
 
@@ -318,9 +317,17 @@ class ModelManager:
                 continue
 
             if not self.is_loaded(category, model_name):
-                raise RuntimeError(
-                    f"Model '{category}:{model_name}' is not loaded."
+                logger.warning(
+                    "Model '%s:%s' is not loaded yet; warming it up before use.",
+                    category,
+                    model_name,
                 )
+                self.load_all()
+                if not self.is_loaded(category, model_name):
+                    self.load_model(
+                        category=registered_category,
+                        model=model_name,
+                    )
 
             return self.get_model(
                 category=category,

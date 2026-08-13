@@ -36,6 +36,7 @@ from __future__ import annotations
 import json
 import logging
 import threading
+from datetime import UTC, datetime
 from pathlib import Path
 
 from app.application.handlers.queue_job_handler import (
@@ -64,6 +65,7 @@ from infrastructure.media.audio_extractor import (
 
 from workers.base_worker import BaseWorker
 from workers.job_queue import JobQueue
+from domain.enums.job_status import JobStatus
 
 
 logger = logging.getLogger(__name__)
@@ -133,12 +135,18 @@ class PreprocessingWorker(BaseWorker):
                     job_id
                 )
 
-            except Exception:
+            except Exception as exc:
+                error = self._build_failure_message(exc)
 
                 logger.exception(
                     "PREPROCESSING FAILED | "
                     "job_id=%s",
                     job_id,
+                )
+
+                self._mark_failed(
+                    job_id=job_id,
+                    error_message=error,
                 )
 
             finally:
@@ -154,6 +162,100 @@ class PreprocessingWorker(BaseWorker):
         logger.info(
             "PREPROCESSING WORKER STOPPED"
         )
+
+    def _build_failure_message(
+        self,
+        error: Exception,
+    ) -> str:
+        """
+        Build a generic persisted error message for preprocessing failures.
+        """
+
+        message = str(error).strip()
+
+        if message:
+            return message
+
+        return (
+            "Preprocessing failed. Check application logs for detailed "
+            "error information."
+        )
+
+    def _mark_failed(
+        self,
+        job_id: str,
+        error_message: str,
+    ) -> None:
+        """
+        Persist FAILED status for preprocessing-stage failures.
+
+        Preprocessing typically runs while a job is PENDING.
+        """
+
+        job = self._job_repository.get(job_id)
+
+        if job is None:
+
+            logger.warning(
+                "CANNOT MARK PREPROCESSING FAILED | "
+                "JOB NOT FOUND | "
+                "job_id=%s",
+                job_id,
+            )
+
+            return
+
+        logger.error(
+            "MARKING PREPROCESSING JOB FAILED | "
+            "job_id=%s | "
+            "current_status=%s | "
+            "error=%s",
+            job_id,
+            job.status.value,
+            error_message,
+        )
+
+        try:
+
+            if job.status == JobStatus.PENDING:
+                job.queue()
+                job.start()
+
+            elif job.status == JobStatus.QUEUED:
+                job.start()
+
+            if job.status == JobStatus.RUNNING:
+                job.fail(error_message)
+
+            elif job.status == JobStatus.FAILED:
+                job.error_message = error_message
+                job.updated_at = datetime.now(UTC)
+
+            else:
+                raise RuntimeError(
+                    "Cannot mark preprocessing failure from "
+                    f"status {job.status.value}"
+                )
+
+            self._job_repository.save(job)
+
+            logger.error(
+                "PREPROCESSING JOB MARKED FAILED | "
+                "job_id=%s | "
+                "status=%s",
+                job_id,
+                job.status.value,
+            )
+
+        except Exception:
+
+            logger.exception(
+                "UNABLE TO MARK PREPROCESSING JOB AS FAILED | "
+                "job_id=%s | "
+                "status=%s",
+                job_id,
+                job.status.value,
+            )
 
     # =========================================================================
     # Job Processing

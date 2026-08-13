@@ -67,6 +67,12 @@ service = ServiceRegistry.translation_service()
 
 MAX_TRANSLATION_CHUNK_SIZE = 500
 
+# Sentence boundary takes priority over MAX_TRANSLATION_CHUNK_SIZE (see grouping
+# preference below). This hard ceiling only forces a split when a sentence
+# never terminates (e.g. missing punctuation from ASR output), preventing
+# clauses from being cut apart mid-sentence before translation.
+HARD_MAX_TRANSLATION_CHUNK_SIZE = MAX_TRANSLATION_CHUNK_SIZE * 2
+
 
 # --------------------------------------------------------------------------
 # Segment Grouping
@@ -117,7 +123,7 @@ def _build_translation_units(
             and
             current_length
             + additional_length
-            <= MAX_TRANSLATION_CHUNK_SIZE
+            <= HARD_MAX_TRANSLATION_CHUNK_SIZE
         ):
 
             current_unit.append(segment)

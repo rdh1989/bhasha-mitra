@@ -75,11 +75,13 @@ class ASRService:
             "vad_filter": True,
             "vad_parameters": {"min_silence_duration_ms": 500},
             "condition_on_previous_text": False,
-            "word_timestamps": False,
+            "word_timestamps": self._config.enable_word_timestamps,
             "compression_ratio_threshold": 2.4,
             "log_prob_threshold": -1.0,
             "patience": 1.0,
-            "without_timestamps": True,
+            # Must stay False so Faster-Whisper emits real ASR time-aligned
+            # speech segments rather than text-only output.
+            "without_timestamps": False,
         }
 
         if request.language or self._config.language:

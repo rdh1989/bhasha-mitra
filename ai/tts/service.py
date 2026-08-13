@@ -75,10 +75,21 @@ class TTSService:
             "wb",
         ) as wav_file:
 
-            tts_model.synthesize_wav(
-                request.text,
-                wav_file,
-            )
+            if request.length_scale is not None:
+                from piper import SynthesisConfig
+
+                tts_model.synthesize_wav(
+                    request.text,
+                    wav_file,
+                    syn_config=SynthesisConfig(
+                        length_scale=request.length_scale,
+                    ),
+                )
+            else:
+                tts_model.synthesize_wav(
+                    request.text,
+                    wav_file,
+                )
 
         # Read generated WAV metadata
         with wave.open(
@@ -95,6 +106,18 @@ class TTSService:
             else None
         )
 
+        configured_voice = str(
+            self._model_manager.get_default_metadata("tts").get(
+                "model",
+                "",
+            )
+        ).strip()
+
+        if not configured_voice:
+            raise RuntimeError(
+                "Configured TTS voice is missing from model metadata."
+            )
+
         #
         # Framework response
         #
@@ -102,7 +125,7 @@ class TTSService:
         return SpeechResult(
             audio_path=request.output_path,
             language=request.language,
-            voice=request.voice,
+            voice=configured_voice,
             sample_rate=sample_rate,
             duration=duration,
         )
