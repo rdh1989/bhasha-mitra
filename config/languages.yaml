@@ -6,42 +6,55 @@ languages:
 
   en:
     name: English
+    nllb_code: eng_Latn
 
   hi:
     name: Hindi
+    nllb_code: hin_Deva
 
   mr:
     name: Marathi
+    nllb_code: mar_Deva
 
   ta:
     name: Tamil
+    nllb_code: tam_Taml
 
   te:
     name: Telugu
+    nllb_code: tel_Telu
 
   kn:
     name: Kannada
+    nllb_code: kan_Knda
 
   ml:
     name: Malayalam
+    nllb_code: mal_Mlym
 
   gu:
     name: Gujarati
+    nllb_code: guj_Gujr
 
   pa:
     name: Punjabi
+    nllb_code: pan_Guru
 
   bn:
     name: Bengali
+    nllb_code: ben_Beng
 
   or:
     name: Odia
+    nllb_code: ory_Orya
 
   as:
     name: Assamese
+    nllb_code: asm_Beng
 
   ur:
     name: Urdu
+    nllb_code: urd_Arab
 
 translation:
 

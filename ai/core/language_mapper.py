@@ -1,13 +1,37 @@
-LANGUAGE_CODES = {
+"""
+Maps ISO language codes to NLLB-200 FLORES-200 codes.
 
-    "en": "eng_Latn",
+The source of truth is config/languages.yaml (`languages.<code>.nllb_code`)
+so adding a supported language only requires editing that YAML file.
+"""
 
-    "mr": "mar_Deva",
+from __future__ import annotations
 
-    "hi": "hin_Deva",
+from pathlib import Path
 
-    "ta": "tam_Taml",
+import yaml
 
-    "te": "tel_Telu",
+_LANGUAGES_YAML_PATH = (
+    Path(__file__).resolve().parents[2] / "config" / "languages.yaml"
+)
 
-}
+
+def _load_language_codes() -> dict[str, str]:
+
+    with _LANGUAGES_YAML_PATH.open(
+        "r",
+        encoding="utf-8",
+    ) as handle:
+
+        config = yaml.safe_load(handle) or {}
+
+    languages = config.get("languages") or {}
+
+    return {
+        code: info["nllb_code"]
+        for code, info in languages.items()
+        if isinstance(info, dict) and "nllb_code" in info
+    }
+
+
+LANGUAGE_CODES: dict[str, str] = _load_language_codes()
