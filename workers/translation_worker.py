@@ -23,7 +23,7 @@ Workflow:
             ↓
        RUNNING → COMPLETED
             ↓
-       Dubbing Queue
+       Subtitle Queue
 
 AI Contract:
     POST /translate
@@ -38,7 +38,7 @@ Backend owns:
     - Translation artifact persistence
     - Job state
     - Translation-stage logging
-    - Dubbing queue handoff
+    - Subtitle queue handoff
 ===============================================================================
 """
 
@@ -85,7 +85,7 @@ class TranslationWorker(BaseWorker):
     def __init__(
         self,
         job_queue: JobQueue[str],
-        dubbing_queue: JobQueue[str],
+        subtitle_queue: JobQueue[str],
         job_repository: JobRepository,
         translation_client: TranslationClient,
         path_manager: PathManager,
@@ -94,7 +94,7 @@ class TranslationWorker(BaseWorker):
         super().__init__("translation")
 
         self._job_queue = job_queue
-        self._dubbing_queue = dubbing_queue
+        self._subtitle_queue = subtitle_queue
         self._job_repository = job_repository
         self._translation_client = translation_client
         self._path_manager = path_manager
@@ -664,11 +664,11 @@ class TranslationWorker(BaseWorker):
         )
 
         # =====================================================================
-        # Queue Dubbing
+        # Queue Subtitle
         # =====================================================================
 
         logger.warning(
-            "DUBBING QUEUE REQUESTED | "
+            "SUBTITLE QUEUE REQUESTED | "
             "job_id=%s | "
             "translation=%s | "
             "target_language=%s",
@@ -677,12 +677,12 @@ class TranslationWorker(BaseWorker):
             job.target_language,
         )
 
-        self._dubbing_queue.put(
+        self._subtitle_queue.put(
             job.id
         )
 
         logger.warning(
-            "JOB QUEUED FOR DUBBING | "
+            "JOB QUEUED FOR SUBTITLE | "
             "job_id=%s | "
             "target_language=%s",
             job.id,

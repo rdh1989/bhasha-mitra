@@ -84,6 +84,7 @@ class DubbingWorker(BaseWorker):
     def __init__(
         self,
         job_queue: JobQueue[str],
+        export_queue: JobQueue[str],
         job_repository: JobRepository,
         dubbing_client: DubbingClient,
         path_manager: PathManager,
@@ -93,6 +94,7 @@ class DubbingWorker(BaseWorker):
         super().__init__("dubbing")
 
         self._job_queue = job_queue
+        self._export_queue = export_queue
         self._job_repository = job_repository
         self._dubbing_client = dubbing_client
         self._path_manager = path_manager
@@ -414,6 +416,28 @@ class DubbingWorker(BaseWorker):
             "audio=%s",
             job.id,
             dubbing_file,
+        )
+
+        # =====================================================================
+        # Queue Export
+        # =====================================================================
+
+        logger.warning(
+            "EXPORT QUEUE REQUESTED | "
+            "job_id=%s | "
+            "audio=%s",
+            job.id,
+            dubbing_file,
+        )
+
+        self._export_queue.put(
+            job.id
+        )
+
+        logger.warning(
+            "JOB QUEUED FOR EXPORT | "
+            "job_id=%s",
+            job.id,
         )
 
     def _normalize_translation_timestamps(

@@ -55,15 +55,15 @@ class VideoExporter:
         self,
         input_video: Path,
         dubbed_audio: Path,
-        subtitle_file: Path,
         output_video: Path,
+        subtitle_file: Path | None = None,
     ) -> Path:
         """
         Create the final translated video.
 
         The original video is retained as the video stream.
         Dubbed audio replaces the original audio.
-        Subtitle file is embedded as a subtitle stream.
+        Subtitle file is embedded as a subtitle stream when provided.
 
         The caller is responsible for supplying the configured
         output path.
@@ -77,9 +77,11 @@ class VideoExporter:
             dubbed_audio
         ).expanduser()
 
-        subtitle_file = Path(
-            subtitle_file
-        ).expanduser()
+        subtitle_file = (
+            Path(subtitle_file).expanduser()
+            if subtitle_file is not None
+            else None
+        )
 
         output_video = Path(
             output_video
@@ -99,10 +101,12 @@ class VideoExporter:
             "Dubbed audio",
         )
 
-        self._validate_file(
-            subtitle_file,
-            "Subtitle file",
-        )
+        if subtitle_file is not None:
+
+            self._validate_file(
+                subtitle_file,
+                "Subtitle file",
+            )
 
         # =====================================================================
         # Validate FFmpeg
@@ -139,11 +143,16 @@ class VideoExporter:
             # Dubbed audio
             "-i",
             str(dubbed_audio),
+        ]
 
-            # Subtitle
-            "-i",
-            str(subtitle_file),
+        if subtitle_file is not None:
 
+            command += [
+                "-i",
+                str(subtitle_file),
+            ]
+
+        command += [
             # Video stream
             "-map",
             "0:v:0",
@@ -151,11 +160,17 @@ class VideoExporter:
             # Dubbed audio stream
             "-map",
             "1:a:0",
+        ]
 
-            # Subtitle stream
-            "-map",
-            "2:0",
+        if subtitle_file is not None:
 
+            command += [
+                # Subtitle stream
+                "-map",
+                "2:0",
+            ]
+
+        command += [
             # Preserve original video encoding
             "-c:v",
             "copy",
@@ -163,16 +178,23 @@ class VideoExporter:
             # Encode dubbed audio
             "-c:a",
             "aac",
+        ]
 
-            # MP4 subtitle format
-            "-c:s",
-            "mov_text",
+        if subtitle_file is not None:
 
+            command += [
+                # MP4 subtitle format
+                "-c:s",
+                "mov_text",
+            ]
+
+        command += [
             # Stop when the shortest stream ends
             "-shortest",
 
             str(output_video),
         ]
+
 
         logger.info(
             "Starting video export | "

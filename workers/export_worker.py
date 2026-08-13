@@ -35,6 +35,7 @@ Version : 1.0.0
 from __future__ import annotations
 
 import logging
+import time
 from pathlib import Path
 
 from app.application.interfaces.job_repository import JobRepository
@@ -53,6 +54,13 @@ class ExportWorker(BaseWorker):
     """
     Processes final video export jobs.
     """
+
+    # =========================================================================
+    # Windows file-lock protection
+    # =========================================================================
+
+    ARTIFACT_READY_RETRIES = 30
+    ARTIFACT_READY_RETRY_DELAY_SECONDS = 1.0
 
     def __init__(
         self,
@@ -134,7 +142,8 @@ class ExportWorker(BaseWorker):
 
         job_directory = (
             self._path_manager.job_directory(
-                job_id
+                job.input_file.name,
+                job.id,
             )
         )
 
@@ -171,9 +180,23 @@ class ExportWorker(BaseWorker):
         # ---------------------------------------------------------------------
 
         output_video = (
-            job_directory
-            / "translated_video.mp4"
+            self._path_manager.translated_video_path(
+                job.input_file.name,
+                job.id,
+            )
         )
+
+        # ---------------------------------------------------------------------
+        # Wait out any transient Windows file lock (WinError 32) left behind
+        # by the AI Framework/upstream workers before FFmpeg opens the files.
+        # ---------------------------------------------------------------------
+
+        for artifact_path in (input_video, dubbed_audio, subtitle_file):
+
+            self._wait_until_readable(
+                artifact_path,
+                job_id=job_id,
+            )
 
         logger.info(
             "Starting final video export | "
@@ -195,6 +218,14 @@ class ExportWorker(BaseWorker):
             output_video,
         )
 
+        job.complete(
+            output_video
+        )
+
+        self._job_repository.save(
+            job
+        )
+
     @staticmethod
     def _get_required_artifact(
         job_directory: Path,
@@ -204,10 +235,93 @@ class ExportWorker(BaseWorker):
         Resolve a required export artifact.
 
         The actual artifact filename must be established by the
-        preceding workflow stage.
+        preceding workflow stage, inside the job's `files` directory.
         """
 
-        raise NotImplementedError(
-            f"Export artifact resolution for "
-            f"'{artifact_name}' has not been defined."
+        files_directory = job_directory / "files"
+
+        if artifact_name == "dubbed_audio":
+
+            artifact_path = files_directory / "dubbed_audio.wav"
+
+            if not artifact_path.is_file():
+
+                raise FileNotFoundError(
+                    f"Dubbed audio artifact not found: {artifact_path}"
+                )
+
+            return artifact_path
+
+        if artifact_name == "subtitle_file":
+
+            matches = sorted(
+                files_directory.glob("subtitle.*")
+            )
+
+            if not matches:
+
+                raise FileNotFoundError(
+                    "Subtitle artifact not found in: "
+                    f"{files_directory}"
+                )
+
+            return matches[0]
+
+        raise ValueError(
+            f"Unknown export artifact: {artifact_name}"
         )
+
+    def _wait_until_readable(
+        self,
+        file_path: Path,
+        job_id: str,
+    ) -> None:
+        """
+        Block until an artifact is free of a Windows sharing violation.
+
+        FFmpeg opens every input file itself; if an upstream writer (AI
+        Framework or a prior worker) briefly retains a handle, FFmpeg would
+        otherwise fail with WinError 32. Only ERROR_SHARING_VIOLATION /
+        ERROR_LOCK_VIOLATION is retried here.
+        """
+
+        for attempt in range(
+            1,
+            self.ARTIFACT_READY_RETRIES + 1,
+        ):
+
+            try:
+
+                with file_path.open("rb"):
+                    return
+
+            except PermissionError as exc:
+
+                if getattr(exc, "winerror", None) != 32:
+                    raise
+
+                if attempt == self.ARTIFACT_READY_RETRIES:
+
+                    logger.error(
+                        "EXPORT ARTIFACT REMAINS LOCKED | "
+                        "job_id=%s | attempts=%d | file=%s",
+                        job_id,
+                        self.ARTIFACT_READY_RETRIES,
+                        file_path,
+                    )
+
+                    raise
+
+                logger.warning(
+                    "EXPORT ARTIFACT LOCKED | "
+                    "job_id=%s | attempt=%d/%d | file=%s | retry_in=%.1fs",
+                    job_id,
+                    attempt,
+                    self.ARTIFACT_READY_RETRIES,
+                    file_path,
+                    self.ARTIFACT_READY_RETRY_DELAY_SECONDS,
+                )
+
+                time.sleep(
+                    self.ARTIFACT_READY_RETRY_DELAY_SECONDS
+                )

@@ -87,6 +87,7 @@ class SubtitleWorker(BaseWorker):
     def __init__(
         self,
         job_queue: JobQueue[str],
+        dubbing_queue: JobQueue[str],
         job_repository: JobRepository,
         subtitle_client: SubtitleClient,
         path_manager: PathManager,
@@ -95,6 +96,7 @@ class SubtitleWorker(BaseWorker):
         super().__init__("subtitle")
 
         self._job_queue = job_queue
+        self._dubbing_queue = dubbing_queue
         self._job_repository = job_repository
         self._subtitle_client = subtitle_client
         self._path_manager = path_manager
@@ -499,22 +501,48 @@ class SubtitleWorker(BaseWorker):
         # =====================================================================
         # Persist artifact
         # =====================================================================
+        #
+        # The AI Framework may write subtitle.<ext> directly into the
+        # Backend's final job/files directory. If that happens, source and
+        # destination are the SAME file.
+        #
+        # Never call shutil.copy2(source, source). On Windows this can
+        # produce WinError 32 even though the AI Framework already closed
+        # the file, because the destination is opened for writing while it
+        # is still being read as the source.
+        # =====================================================================
 
-        logger.info(
-            "SUBTITLE ARTIFACT COPY STARTED | "
-            "job_id=%s | "
-            "source=%s | "
-            "destination=%s",
-            job.id,
-            source_subtitle,
-            subtitle_file,
-        )
+        source_subtitle = source_subtitle.resolve()
+        subtitle_file = subtitle_file.resolve()
 
-        self._copy_subtitle_artifact(
-            source=source_subtitle,
-            destination=subtitle_file,
-            job_id=job.id,
-        )
+        if source_subtitle == subtitle_file:
+
+            logger.info(
+                "SUBTITLE ARTIFACT ALREADY IN FINAL LOCATION | "
+                "job_id=%s | "
+                "path=%s | "
+                "copy_skipped=True",
+                job.id,
+                subtitle_file,
+            )
+
+        else:
+
+            logger.info(
+                "SUBTITLE ARTIFACT COPY STARTED | "
+                "job_id=%s | "
+                "source=%s | "
+                "destination=%s",
+                job.id,
+                source_subtitle,
+                subtitle_file,
+            )
+
+            self._copy_subtitle_artifact(
+                source=source_subtitle,
+                destination=subtitle_file,
+                job_id=job.id,
+            )
 
         if not subtitle_file.is_file():
 
@@ -544,6 +572,30 @@ class SubtitleWorker(BaseWorker):
             job.id,
             subtitle_file,
             elapsed,
+        )
+
+        # =====================================================================
+        # Queue Dubbing
+        # =====================================================================
+
+        logger.warning(
+            "DUBBING QUEUE REQUESTED | "
+            "job_id=%s | "
+            "target_language=%s",
+            job.id,
+            job.target_language,
+        )
+
+        self._dubbing_queue.put(
+            job.id
+        )
+
+        logger.warning(
+            "JOB QUEUED FOR DUBBING | "
+            "job_id=%s | "
+            "target_language=%s",
+            job.id,
+            job.target_language,
         )
 
         logger.info(

@@ -51,7 +51,7 @@ class SubtitleClient:
     ) -> None:
 
         self._url = (
-            f"{base_url.rstrip('/')}/subtitle"
+            f"{base_url.rstrip('/')}/api/ai/subtitle"
         )
 
         self._timeout = timeout

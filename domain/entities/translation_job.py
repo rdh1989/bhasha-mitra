@@ -213,10 +213,16 @@ class TranslationJob:
 
         self.progress = JobProgress.completed_progress()
 
+        # Translation, subtitle/dubbing handoff, and export are separate
+        # queue stages that each may finalize the job's output_file
+        # (translation.json, then the final merged video). Re-completing
+        # an already COMPLETED job lets a later stage overwrite the
+        # output artifact without raising an invalid transition error.
         self._transition_to(
             JobStatus.COMPLETED,
             allowed_from={
                 JobStatus.RUNNING,
+                JobStatus.COMPLETED,
             },
         )
 

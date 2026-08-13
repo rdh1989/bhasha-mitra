@@ -51,6 +51,7 @@ def test_dubbing_worker_marks_completed_job_as_failed() -> None:
     repository = InMemoryJobRepository(job)
     worker = DubbingWorker(
         job_queue=JobQueue[str](),
+        export_queue=JobQueue[str](),
         job_repository=repository,
         dubbing_client=None,  # type: ignore[arg-type]
         path_manager=None,  # type: ignore[arg-type]
@@ -110,6 +111,7 @@ def test_dubbing_worker_normalizes_overlapping_timestamps(
 
     worker = DubbingWorker(
         job_queue=JobQueue[str](),
+        export_queue=JobQueue[str](),
         job_repository=InMemoryJobRepository(job),
         dubbing_client=None,  # type: ignore[arg-type]
         path_manager=None,  # type: ignore[arg-type]

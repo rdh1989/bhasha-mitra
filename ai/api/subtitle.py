@@ -34,6 +34,7 @@ import json
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel
 
 from ai.subtitle.models import (
     SubtitleRequest,
@@ -54,6 +55,20 @@ service = ServiceRegistry.subtitle_service()
 
 
 # ---------------------------------------------------------------------------
+# Request
+# ---------------------------------------------------------------------------
+
+class SubtitleGenerationRequest(BaseModel):
+    """
+    Request for subtitle generation.
+    """
+
+    translation_path: str
+    subtitle_format: str | None = None
+    language: str | None = None
+
+
+# ---------------------------------------------------------------------------
 # AI-009
 # ---------------------------------------------------------------------------
 
@@ -62,9 +77,7 @@ service = ServiceRegistry.subtitle_service()
     summary="Generate Subtitle",
 )
 def generate_subtitle(
-    translation_path: str,
-    subtitle_format: str | None = None,
-    language: str | None = None,
+    request: SubtitleGenerationRequest,
 ):
     """
     Generate subtitle from translation.json.
@@ -85,6 +98,10 @@ def generate_subtitle(
             "subtitle_path": "..."
         }
     """
+
+    translation_path = request.translation_path
+    subtitle_format = request.subtitle_format
+    language = request.language
 
     try:
 
@@ -187,8 +204,14 @@ def generate_subtitle(
                         end=float(
                             segment["end"]
                         ),
+                        # translation.json stores translated text under
+                        # "translated_text"; fall back to "text" for other
+                        # segment sources (e.g. raw transcripts).
                         text=str(
-                            segment["text"]
+                            segment.get(
+                                "translated_text",
+                                segment.get("text", ""),
+                            )
                         ).strip(),
                     )
                 )

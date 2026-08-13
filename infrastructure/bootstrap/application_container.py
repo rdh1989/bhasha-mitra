@@ -75,6 +75,10 @@ from infrastructure.ai.language_detection_client import (
     LanguageDetectionClient,
 )
 
+from infrastructure.ai.subtitle_client import (
+    SubtitleClient,
+)
+
 from infrastructure.ai.transcript_client import (
     TranscriptClient,
 )
@@ -95,6 +99,10 @@ from infrastructure.media.audio_extractor import (
     AudioExtractor,
 )
 
+from infrastructure.media.video_exporter import (
+    VideoExporter,
+)
+
 from infrastructure.persistence.job.sqlite_job_repository import (
     SQLiteJobRepository,
 )
@@ -108,6 +116,12 @@ from workers.translation_worker import (
 )
 from workers.dubbing_worker import (
     DubbingWorker,
+)
+from workers.subtitle_worker import (
+    SubtitleWorker,
+)
+from workers.export_worker import (
+    ExportWorker,
 )
 
 
@@ -226,6 +240,10 @@ class ApplicationContainer:
 
         self.dubbing_queue: JobQueue[str] = JobQueue()
 
+        self.subtitle_queue: JobQueue[str] = JobQueue()
+
+        self.export_queue: JobQueue[str] = JobQueue()
+
         # =================================================================
         # FFmpeg
         # =================================================================
@@ -280,6 +298,18 @@ class ApplicationContainer:
 
         self.dubbing_client = DubbingClient(
             base_url=ai_base_url,
+        )
+
+        self.subtitle_client = SubtitleClient(
+            base_url=ai_base_url,
+        )
+
+        # =================================================================
+        # Video Exporter
+        # =================================================================
+
+        self.video_exporter = VideoExporter(
+            ffmpeg_path=ffmpeg_executable,
         )
 
         # =================================================================
@@ -344,7 +374,7 @@ class ApplicationContainer:
         self.translation_worker = (
             TranslationWorker(
                 job_queue=self.translation_queue,
-                dubbing_queue=self.dubbing_queue,
+                subtitle_queue=self.subtitle_queue,
                 job_repository=self.job_repository,
                 translation_client=self.translation_client,
                 path_manager=self.path_manager,
@@ -379,10 +409,63 @@ class ApplicationContainer:
         self.dubbing_worker = (
             DubbingWorker(
                 job_queue=self.dubbing_queue,
+                export_queue=self.export_queue,
                 job_repository=self.job_repository,
                 dubbing_client=self.dubbing_client,
                 path_manager=self.path_manager,
                 voice=dubbing_voice,
+            )
+        )
+
+        # =================================================================
+        # Subtitle Worker
+        # =================================================================
+        #
+        # Workflow:
+        #
+        #   Subtitle Queue
+        #        ↓
+        #   SubtitleWorker
+        #        ↓
+        #   AI /subtitle
+        #        ↓
+        #   subtitle artifact
+        # =================================================================
+
+        self.subtitle_worker = (
+            SubtitleWorker(
+                job_queue=self.subtitle_queue,
+                dubbing_queue=self.dubbing_queue,
+                job_repository=self.job_repository,
+                subtitle_client=self.subtitle_client,
+                path_manager=self.path_manager,
+            )
+        )
+
+        # =================================================================
+        # Export Worker
+        # =================================================================
+        #
+        # Workflow:
+        #
+        #   Export Queue
+        #        ↓
+        #   ExportWorker
+        #        ↓
+        #   VideoExporter (FFmpeg)
+        #        ↓
+        #   translated video artifact
+        #
+        # Requires the dubbed audio and subtitle artifacts to already
+        # exist for the job.
+        # =================================================================
+
+        self.export_worker = (
+            ExportWorker(
+                job_queue=self.export_queue,
+                job_repository=self.job_repository,
+                video_exporter=self.video_exporter,
+                path_manager=self.path_manager,
             )
         )
 

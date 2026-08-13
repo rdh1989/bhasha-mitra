@@ -129,6 +129,14 @@ def register_workers(
         container.dubbing_worker
     )
 
+    manager.register(
+        container.subtitle_worker
+    )
+
+    manager.register(
+        container.export_worker
+    )
+
     # =========================================================================
     # Maintenance workers
     # =========================================================================
