@@ -23,8 +23,26 @@ Version:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+
+
+# ============================================================================
+# Word
+# ============================================================================
+
+@dataclass(slots=True)
+class SubtitleWord:
+    """
+    Provider-independent word-level timing used to build rolling subtitle
+    windows. Optional: callers without word timing simply omit it.
+    """
+
+    word: str
+
+    start: float
+
+    end: float
 
 
 # ============================================================================
@@ -44,6 +62,12 @@ class SubtitleSegment:
     end: float
 
     text: str
+
+    # Optional word-level timing for this segment. When present, the
+    # subtitle service uses it to generate readable rolling subtitle
+    # windows instead of showing the whole segment text for its entire
+    # duration. When empty, generation falls back to the whole segment.
+    words: list[SubtitleWord] = field(default_factory=list)
 
 
 # ============================================================================

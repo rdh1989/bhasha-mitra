@@ -32,6 +32,7 @@ from ai.subtitle.models import (
     SubtitleRequest,
     SubtitleResult,
 )
+from ai.subtitle.windowing import build_rolling_groups
 
 
 class SubtitleService:
@@ -98,6 +99,24 @@ class SubtitleService:
             if not segment.text.strip():
                 raise ValueError("Subtitle segment text cannot be empty.")
 
+        # ------------------------------------------------------------------
+        # Rolling subtitle windows
+        # ------------------------------------------------------------------
+        #
+        # Expand each segment that has word-level timing into several
+        # smaller, readable, non-overlapping subtitle cues instead of
+        # showing the whole segment text for its entire duration.
+        #
+        # Segments without usable word timing pass through unchanged
+        # (graceful fallback to existing segment-level behavior).
+        # ------------------------------------------------------------------
+
+        expanded_segments = [
+            expanded
+            for segment in request.segments
+            for expanded in build_rolling_groups(segment, self._config)
+        ]
+
         subtitle_format = (
             request.subtitle_format
             or self._config.default_format
@@ -110,7 +129,12 @@ class SubtitleService:
         )
 
         provider_result = formatter.generate(
-            request
+            SubtitleRequest(
+                segments=expanded_segments,
+                output_path=request.output_path,
+                subtitle_format=request.subtitle_format,
+                language=request.language,
+            )
         )
 
         return self._adapter.to_framework_result(

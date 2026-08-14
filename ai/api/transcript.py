@@ -84,6 +84,15 @@ def _serialize_asr_result(
                 "end": segment.end,
                 "text": segment.text,
                 "confidence": segment.confidence,
+                "words": [
+                    {
+                        "word": word.word,
+                        "start": word.start,
+                        "end": word.end,
+                        "confidence": word.confidence,
+                    }
+                    for word in segment.words
+                ],
             }
             for segment in result.segments
         ],

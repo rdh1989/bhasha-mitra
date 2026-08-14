@@ -46,6 +46,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 
 from ai.translation.models import TranslationRequest
+from ai.translation.timing import align_translation_words
 from ai.core.service_registry import ServiceRegistry
 
 
@@ -292,12 +293,40 @@ def _translate_unit(
         request
     )
 
+    unit_start = unit[0]["start"]
+    unit_end = unit[-1]["end"]
+
+    # Word-level ASR timing carried over from transcript.json, used to
+    # pace the translated words instead of copying source timestamps
+    # (translation may reorder/merge/split words, so a 1:1 mapping would
+    # be wrong).
+    source_words = [
+        word
+        for segment in unit
+        for word in segment.get("words", []) or []
+    ]
+
+    translated_words = align_translation_words(
+        translated_text=result.translated_text.strip(),
+        unit_start=unit_start,
+        unit_end=unit_end,
+        source_words=source_words,
+    )
+
     return {
         "id": unit[0]["id"],
-        "start": unit[0]["start"],
-        "end": unit[-1]["end"],
+        "start": unit_start,
+        "end": unit_end,
         "source_text": source_text,
         "translated_text": result.translated_text.strip(),
+        "words": [
+            {
+                "word": word.word,
+                "start": word.start,
+                "end": word.end,
+            }
+            for word in translated_words
+        ],
     }
 
 

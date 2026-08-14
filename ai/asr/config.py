@@ -55,7 +55,7 @@ class ASRConfig:
     # Output
     # -------------------------------------------------------------------------
 
-    enable_word_timestamps: bool = False
+    enable_word_timestamps: bool = True
 
     enable_segment_timestamps: bool = True
 

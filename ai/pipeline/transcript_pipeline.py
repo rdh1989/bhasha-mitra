@@ -58,6 +58,7 @@ from ai.asr.models import (
     ASRRequest,
     ASRResult,
     ASRSegment,
+    ASRWord,
 )
 from ai.core.service_registry import ServiceRegistry
 
@@ -261,6 +262,15 @@ class TranscriptPipeline:
                         ),
                         text=segment.text.strip(),
                         confidence=segment.confidence,
+                        words=[
+                            ASRWord(
+                                word=word.word,
+                                start=word.start + offset_seconds,
+                                end=word.end + offset_seconds,
+                                confidence=word.confidence,
+                            )
+                            for word in segment.words
+                        ],
                     )
                 )
 
@@ -321,6 +331,15 @@ class TranscriptPipeline:
                     "start": segment.start,
                     "end": segment.end,
                     "text": segment.text,
+                    "words": [
+                        {
+                            "word": word.word,
+                            "start": word.start,
+                            "end": word.end,
+                            "confidence": word.confidence,
+                        }
+                        for word in segment.words
+                    ],
                 }
                 for segment in transcription.segments
             ]

@@ -40,6 +40,9 @@ from pathlib import Path
 
 from app.application.interfaces.job_repository import JobRepository
 
+from infrastructure.configuration.configuration_manager import (
+    ConfigurationManager,
+)
 from infrastructure.media.video_exporter import VideoExporter
 from infrastructure.filesystem.path_manager import PathManager
 
@@ -204,11 +207,19 @@ class ExportWorker(BaseWorker):
             job_id,
         )
 
+        subtitle_language, subtitle_title = (
+            self._resolve_subtitle_language(
+                job.target_language
+            )
+        )
+
         self._video_exporter.export(
             input_video=input_video,
             dubbed_audio=dubbed_audio,
             subtitle_file=subtitle_file,
             output_video=output_video,
+            subtitle_language=subtitle_language,
+            subtitle_title=subtitle_title,
         )
 
         logger.info(
@@ -225,6 +236,36 @@ class ExportWorker(BaseWorker):
         self._job_repository.save(
             job
         )
+
+    @staticmethod
+    def _resolve_subtitle_language(
+        target_language: str,
+    ) -> tuple[str | None, str | None]:
+        """
+        Derive the muxed subtitle stream's language code/title.
+
+        Reuses config/languages.yaml (same source as the NLLB code map)
+        instead of introducing a second language registry. The FLORES-200
+        `nllb_code` (e.g. "mar_Deva") already carries the ISO 639-2 code as
+        its prefix, which MP4 subtitle metadata expects (e.g. "mar").
+        """
+
+        languages = (
+            ConfigurationManager().languages.get("languages")
+            or {}
+        )
+
+        entry = languages.get(target_language) or {}
+
+        nllb_code = entry.get("nllb_code")
+
+        language_code = (
+            nllb_code.split("_")[0]
+            if nllb_code
+            else target_language
+        )
+
+        return language_code, entry.get("name")
 
     @staticmethod
     def _get_required_artifact(

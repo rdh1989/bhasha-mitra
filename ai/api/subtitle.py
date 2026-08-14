@@ -39,6 +39,7 @@ from pydantic import BaseModel
 from ai.subtitle.models import (
     SubtitleRequest,
     SubtitleSegment,
+    SubtitleWord,
 )
 
 from ai.core.service_registry import ServiceRegistry
@@ -66,6 +67,46 @@ class SubtitleGenerationRequest(BaseModel):
     translation_path: str
     subtitle_format: str | None = None
     language: str | None = None
+
+
+# ---------------------------------------------------------------------------
+# Word timing
+# ---------------------------------------------------------------------------
+
+def _parse_subtitle_words(
+    raw_words: object,
+) -> list[SubtitleWord]:
+    """
+    Convert translation.json's "words" entries into SubtitleWord models.
+
+    Malformed entries are skipped rather than raising, so subtitle
+    generation can still gracefully fall back to whole-segment timing.
+    """
+
+    if not isinstance(raw_words, list):
+        return []
+
+    words: list[SubtitleWord] = []
+
+    for raw_word in raw_words:
+
+        if not isinstance(raw_word, dict):
+            continue
+
+        try:
+            start = float(raw_word["start"])
+            end = float(raw_word["end"])
+        except (KeyError, TypeError, ValueError):
+            continue
+
+        text = str(raw_word.get("word", "")).strip()
+
+        if not text:
+            continue
+
+        words.append(SubtitleWord(word=text, start=start, end=end))
+
+    return words
 
 
 # ---------------------------------------------------------------------------
@@ -213,6 +254,9 @@ def generate_subtitle(
                                 segment.get("text", ""),
                             )
                         ).strip(),
+                        words=_parse_subtitle_words(
+                            segment.get("words")
+                        ),
                     )
                 )
 

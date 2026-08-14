@@ -29,6 +29,25 @@ from typing import Any
 
 
 # ---------------------------------------------------------------------------
+# Word
+# ---------------------------------------------------------------------------
+
+@dataclass(slots=True)
+class ASRWord:
+    """
+    Represents one word-level timestamp within a segment.
+    """
+
+    word: str
+
+    start: float
+
+    end: float
+
+    confidence: float | None = None
+
+
+# ---------------------------------------------------------------------------
 # Segment
 # ---------------------------------------------------------------------------
 
@@ -47,6 +66,11 @@ class ASRSegment:
     text: str
 
     confidence: float | None = None
+
+    # Word-level timestamps, when the provider supports/enables them.
+    # Empty when unavailable so downstream consumers can fall back to
+    # segment-level timing without crashing.
+    words: list[ASRWord] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

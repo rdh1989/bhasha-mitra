@@ -57,13 +57,20 @@ class VideoExporter:
         dubbed_audio: Path,
         output_video: Path,
         subtitle_file: Path | None = None,
+        subtitle_language: str | None = None,
+        subtitle_title: str | None = None,
     ) -> Path:
         """
         Create the final translated video.
 
         The original video is retained as the video stream.
         Dubbed audio replaces the original audio.
-        Subtitle file is embedded as a subtitle stream when provided.
+        Subtitle file is embedded as a soft (selectable/toggleable) subtitle
+        stream when provided, never burned into the video frames.
+
+        subtitle_language/subtitle_title tag the muxed subtitle stream's
+        metadata (e.g. "mar"/"Marathi") and are ignored when subtitle_file
+        is None.
 
         The caller is responsible for supplying the configured
         output path.
@@ -183,9 +190,13 @@ class VideoExporter:
         if subtitle_file is not None:
 
             command += [
-                # MP4 subtitle format
+                # MP4 subtitle format (soft/selectable, not burned-in)
                 "-c:s",
                 "mov_text",
+                "-metadata:s:s:0",
+                f"language={subtitle_language or 'und'}",
+                "-metadata:s:s:0",
+                f"title={subtitle_title or 'Subtitles'}",
             ]
 
         command += [

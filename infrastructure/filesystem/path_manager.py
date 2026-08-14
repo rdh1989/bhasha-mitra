@@ -22,7 +22,7 @@ Output structure:
     <output_path>/
         <video_name>/
             <job_id>/
-                translated.mp4
+                final_dubbed.mp4
                 <video_name>.srt
                 files/
                     audio.wav
@@ -434,7 +434,7 @@ class PathManager:
 
         Always:
 
-            translated.mp4
+            final_dubbed.mp4
         """
 
         return (
@@ -442,7 +442,7 @@ class PathManager:
                 video_name,
                 job_id,
             )
-            / "translated.mp4"
+            / "final_dubbed.mp4"
         )
 
     def subtitle_path(

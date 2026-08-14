@@ -26,6 +26,7 @@ from typing import Any
 from ai.asr.models import (
     ASRResult,
     ASRSegment,
+    ASRWord,
 )
 
 
@@ -58,6 +59,7 @@ class ASRAdapter:
         end: float,
         text: str,
         confidence: float | None = None,
+        words: list[ASRWord] | None = None,
     ) -> ASRSegment:
         """
         Create framework ASR segment.
@@ -68,5 +70,25 @@ class ASRAdapter:
             start=start,
             end=end,
             text=text,
+            confidence=confidence,
+            words=words or [],
+        )
+
+    @staticmethod
+    def create_word(
+        *,
+        word: str,
+        start: float,
+        end: float,
+        confidence: float | None = None,
+    ) -> ASRWord:
+        """
+        Create framework ASR word.
+        """
+
+        return ASRWord(
+            word=word,
+            start=start,
+            end=end,
             confidence=confidence,
         )

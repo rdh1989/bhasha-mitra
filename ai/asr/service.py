@@ -18,6 +18,7 @@ Version:
 
 from __future__ import annotations
 
+import math
 import time
 
 from ai.asr.adapter import ASRAdapter
@@ -27,6 +28,7 @@ from ai.asr.models import (
     ASRRequest,
     ASRResult,
     ASRSegment,
+    ASRWord,
 )
 
 class ASRService:
@@ -116,6 +118,7 @@ class ASRService:
                     end=segment.end,
                     text=segment.text.strip(),
                     confidence=None,
+                    words=self._extract_words(segment),
                 )
             )
 
@@ -136,6 +139,66 @@ class ASRService:
                 "transcribe_kwargs": transcribe_kwargs,
             },
         )
+
+    @staticmethod
+    def _extract_words(
+        provider_segment,
+    ) -> list[ASRWord]:
+        """
+        Convert Faster-Whisper word timestamps into framework ASRWord
+        models. Faster-Whisper-specific objects must never leak past this
+        point.
+
+        Returns an empty list whenever word timestamps are unavailable or
+        malformed, so callers can gracefully fall back to segment-level
+        timing instead of crashing.
+        """
+
+        raw_words = getattr(provider_segment, "words", None) or []
+
+        words: list[ASRWord] = []
+
+        for raw_word in raw_words:
+
+            text = str(getattr(raw_word, "word", "") or "").strip()
+
+            if not text:
+                continue
+
+            start = getattr(raw_word, "start", None)
+            end = getattr(raw_word, "end", None)
+
+            if start is None or end is None:
+                continue
+
+            try:
+                start = float(start)
+                end = float(end)
+            except (TypeError, ValueError):
+                continue
+
+            if not (math.isfinite(start) and math.isfinite(end)):
+                continue
+
+            if end < start:
+                start, end = end, start
+
+            probability = getattr(raw_word, "probability", None)
+
+            words.append(
+                ASRWord(
+                    word=text,
+                    start=start,
+                    end=end,
+                    confidence=(
+                        float(probability)
+                        if probability is not None
+                        else None
+                    ),
+                )
+            )
+
+        return words
 
     def health_check(self) -> bool:
 
