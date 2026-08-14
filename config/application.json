@@ -1,4 +1,4 @@
 {
-    "output_path": "F:\\bhashamitra\\output",
-    "database_path": "F:\\bhashamitra\\database"
+    "output_path": "../output",
+    "database_path": "../database"
 }
