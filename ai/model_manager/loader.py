@@ -22,8 +22,10 @@ Version:
 from __future__ import annotations
 
 import importlib.machinery
+import logging
 import os
 import sys
+import time
 import types
 from contextlib import contextmanager
 from pathlib import Path
@@ -34,6 +36,9 @@ from ai.core.exceptions import (
     ModelNotFoundError,
 )
 from ai.model_manager.registry import ModelRegistry
+
+
+logger = logging.getLogger(__name__)
 
 
 @contextmanager
@@ -171,18 +176,26 @@ class ModelLoader:
 
             from faster_whisper import WhisperModel
 
-            # return WhisperModel(
-            #     str(model_path),
-            #     device="cpu",
-            #     compute_type="int8",
-            # )
+            started_at = time.monotonic()
+            logger.info(
+                "Loading Faster Whisper model | path=%s | size=%.1f MB",
+                model_path,
+                (model_path / "model.bin").stat().st_size / (1024 * 1024),
+            )
 
-            return WhisperModel(
+            whisper_model = WhisperModel(
                 str(model_path),
                 device="cpu",
                 compute_type="int8",
                 cpu_threads=os.cpu_count(),
             )
+
+            logger.info(
+                "Faster Whisper model loaded | path=%s | elapsed=%.1fs",
+                model_path,
+                time.monotonic() - started_at,
+            )
+            return whisper_model
 
         #
         # MarianMT
