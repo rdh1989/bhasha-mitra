@@ -73,6 +73,9 @@
 
 <body>
 
+{% if page == "login" %}
+{% block login_content %}{% endblock %}
+{% else %}
 <div class="app-container">
 
     <!-- ===========================================
@@ -109,11 +112,17 @@
     </div>
 
 </div>
+{% endif %}
 
 <!-- =======================================================
      Global Javascript
 ======================================================== -->
 
+{% if current_user %}
+<script>
+window.BhashaMitraSession = { timeoutMilliseconds: 15 * 60 * 1000 };
+</script>
+{% endif %}
 <script src="{{ url_for('static', path='js/app.js') }}"></script>
 
 <!-- =======================================================

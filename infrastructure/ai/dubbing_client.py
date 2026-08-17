@@ -39,6 +39,7 @@ from typing import Any
 
 import httpx
 
+from app.security import internal_api_headers
 
 logger = logging.getLogger(__name__)
 
@@ -168,6 +169,7 @@ class DubbingClient:
 
             response = httpx.post(
                 self._url,
+                headers=internal_api_headers(),
                 json=payload,
                 timeout=httpx.Timeout(
                     connect=30.0,

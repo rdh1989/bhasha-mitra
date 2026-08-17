@@ -35,6 +35,7 @@ import time
 
 import httpx
 
+from app.security import internal_api_headers
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +88,7 @@ class SubtitleClient:
 
             response = httpx.post(
                 self._url,
+                headers=internal_api_headers(),
                 json={
                     "translation_path": translation_path,
                     "subtitle_format": subtitle_format,

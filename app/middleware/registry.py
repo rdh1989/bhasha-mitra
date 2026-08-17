@@ -8,6 +8,11 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
+from app.security import SQLiteAuthRepository
+from infrastructure.configuration import configuration
+from infrastructure.filesystem.path_manager import PathManager
+
+from .authentication import AuthenticationMiddleware
 from .correlation import CorrelationIdMiddleware
 from .exceptions import ExceptionMiddleware
 from .logging import RequestLoggingMiddleware
@@ -36,3 +41,13 @@ def register_middlewares(app: FastAPI) -> None:
     app.add_middleware(RequestLoggingMiddleware)
     app.add_middleware(RequestTimingMiddleware)
     app.add_middleware(CorrelationIdMiddleware)
+
+    configuration.initialize()
+    auth_repository = SQLiteAuthRepository(
+        PathManager().database_path
+    )
+    app.state.auth_repository = auth_repository
+    app.add_middleware(
+        AuthenticationMiddleware,
+        repository=auth_repository,
+    )

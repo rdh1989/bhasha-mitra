@@ -9,99 +9,56 @@ Login | {{ app_name }}
       href="{{ url_for('static', path='css/login.css') }}">
 {% endblock %}
 
-{% block content %}
+{% block login_content %}
 
 <div class="login-page">
-
-    <!-- ==========================================================
-         Left Branding Panel
-    =========================================================== -->
-
-    <section class="login-banner">
-
-        <div class="banner-content">
-
-            <img
-                src="{{ url_for('static', path='images/logo.png') }}"
-                alt="{{ app_name }}"
-                class="banner-logo">
-
-            <h1 class="banner-title">
-
-                {{ app_name }}
-
-            </h1>
-
-            <p class="banner-text">
-
-                AI powered multilingual video translation platform.
-
-                Translate videos into Indian languages while preserving
-                subtitles, speech and context.
-
-            </p>
-
-            <div class="feature-list">
-
-                <div class="feature-item">
-                    <i class="fas fa-language"></i>
-                    <span>Supports multiple Indian languages</span>
+    <main class="login-shell">
+        <section class="login-brand" aria-label="{{ app_name }}">
+            <div class="brand-lockup">
+                <img
+                    src="{{ url_for('static', path='images/logo.png') }}"
+                    alt="{{ app_name }}"
+                    class="brand-logo">
+                <div>
+                    <span class="brand-kicker">Offline AI workspace</span>
+                    <h1>{{ app_name }}</h1>
+                    <p>One India. Many Languages.</p>
                 </div>
-
-                <div class="feature-item">
-                    <i class="fas fa-video"></i>
-                    <span>Video + Subtitle Translation</span>
-                </div>
-
-                <div class="feature-item">
-                    <i class="fas fa-microphone"></i>
-                    <span>AI Speech Recognition</span>
-                </div>
-
-                <div class="feature-item">
-                    <i class="fas fa-volume-up"></i>
-                    <span>Natural Voice Generation</span>
-                </div>
-
-                <div class="feature-item">
-                    <i class="fas fa-lock"></i>
-                    <span>Secure Local Processing</span>
-                </div>
-
             </div>
 
-        </div>
+            <div class="brand-message">
+                <span class="section-label">Secure access</span>
+                <h2>Your local translation workspace.</h2>
+                <p>Video, speech, subtitles and language models remain on this computer.</p>
+            </div>
 
-    </section>
+            <div class="trust-row">
+                <span><i class="fa-solid fa-shield-halved"></i> Local processing</span>
+                <span><i class="fa-solid fa-user-lock"></i> Role protected</span>
+            </div>
+        </section>
 
-    <!-- ==========================================================
-         Login Panel
-    =========================================================== -->
-
-    <section class="login-panel">
-
-        <div class="login-card">
-
-            <h1>
-
-                Welcome Back
-
-            </h1>
-
-            <p>
-
-                Sign in to continue using {{ app_name }}.
-
-            </p>
+        <section class="login-panel">
+            <div class="login-card">
+                <header class="login-heading">
+                    <span class="section-label">Account sign in</span>
+                    <h2>Welcome back</h2>
+                    <p>Enter your credentials to access {{ app_name }}.</p>
+                </header>
 
             {% if error %}
 
-            <div class="alert alert-danger">
-
+            <div class="login-alert" role="alert">
+                <i class="fa-solid fa-circle-exclamation"></i>
                 {{ error }}
-
             </div>
+            {% endif %}
 
+            {% if request.query_params.get('timeout') %}
+            <div class="login-alert login-alert-info" role="status">
+                <i class="fa-solid fa-clock"></i>
+                Your session expired after 15 minutes of inactivity.
+            </div>
             {% endif %}
 
             <form
@@ -109,104 +66,55 @@ Login | {{ app_name }}
                 action="/login"
                 class="login-form">
 
-                <div class="input-group">
+                <input type="hidden" name="next" value="{{ next_path }}">
 
-                    <label>Username</label>
-
-                    <input
-                        type="text"
-                        name="username"
-                        placeholder="Enter username"
-                        required
-                        autofocus>
-
-                    <i class="fas fa-user"></i>
-
+                <div class="field-group">
+                    <label for="username">User ID</label>
+                    <div class="field-control">
+                        <i class="fa-regular fa-user" aria-hidden="true"></i>
+                        <input id="username" type="text" name="username"
+                               placeholder="Enter your user ID" autocomplete="username"
+                               required autofocus>
+                    </div>
                 </div>
 
-                <div class="input-group">
-
-                    <label>Password</label>
-
-                    <input
-                        id="password"
-                        type="password"
-                        name="password"
-                        placeholder="Enter password"
-                        required>
-
-                    <i
-                        id="togglePassword"
-                        class="fas fa-eye"
-                        style="cursor:pointer;"></i>
-
-                </div>
-
-                <div class="login-options">
-
-                    <label class="checkbox">
-
-                        <input
-                            type="checkbox"
-                            name="remember_me">
-
-                        Remember Me
-
-                    </label>
-
-                    <a href="#">
-
-                        Forgot Password?
-
-                    </a>
-
+                <div class="field-group">
+                    <label for="password">Password</label>
+                    <div class="field-control">
+                        <i class="fa-solid fa-key" aria-hidden="true"></i>
+                        <input id="password" type="password" name="password"
+                               placeholder="Enter your password" autocomplete="current-password"
+                               required>
+                        <button id="togglePassword" class="password-toggle" type="button"
+                                aria-label="Show password" title="Show password">
+                            <i class="fa-regular fa-eye" aria-hidden="true"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <button
                     type="submit"
                     class="login-button">
 
-                    <i class="fas fa-sign-in-alt"></i>
-
-                    Login
-
+                    <span>Sign in</span>
+                    <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                 </button>
 
             </form>
 
-            <div class="login-divider">
-
-                OR
-
-            </div>
-
-            <a
-                href="/dashboard"
-                class="btn btn-secondary"
-                style="width:100%;">
-
-                <i class="fas fa-home"></i>
-
-                Back to Dashboard
-
-            </a>
-
             <div class="login-footer">
 
-                © {{ current_year }}
-
-                {{ app_name }}
-
-                <br><br>
-
-                AI Powered Video Translation Platform
-
+                <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                Protected by a 15-minute idle timeout
             </div>
+            </div>
+        </section>
+    </main>
 
-        </div>
-
-    </section>
-
+    <footer class="page-footer">
+        <span>© {{ current_year }} {{ app_name }}</span>
+        <span>Private. Offline. Secure.</span>
+    </footer>
 </div>
 
 {% endblock %}
@@ -218,16 +126,17 @@ Login | {{ app_name }}
 const togglePassword = document.getElementById("togglePassword");
 const password = document.getElementById("password");
 
-if (togglePassword) {
+if (togglePassword && password) {
 
     togglePassword.addEventListener("click", () => {
 
-        const type = password.type === "password" ? "text" : "password";
-
-        password.type = type;
-
-        togglePassword.classList.toggle("fa-eye");
-        togglePassword.classList.toggle("fa-eye-slash");
+        const showing = password.type === "text";
+        password.type = showing ? "password" : "text";
+        togglePassword.setAttribute("aria-label", showing ? "Show password" : "Hide password");
+        togglePassword.setAttribute("title", showing ? "Show password" : "Hide password");
+        const icon = togglePassword.querySelector("i");
+        icon.classList.toggle("fa-eye", showing);
+        icon.classList.toggle("fa-eye-slash", !showing);
 
     });
 

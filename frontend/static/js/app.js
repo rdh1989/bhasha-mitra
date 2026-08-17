@@ -27,6 +27,7 @@ class BhashaMitraApp {
         this.initializeSidebar();
         this.initializeNavigation();
         this.initializeTooltips();
+        this.initializeSessionTimeout();
 
         console.log("Bhasha Mitra UI Initialized");
 
@@ -112,6 +113,57 @@ class BhashaMitraApp {
             item.title = item.dataset.tooltip;
 
         });
+
+    }
+
+    initializeSessionTimeout() {
+
+        const session = window.BhashaMitraSession;
+
+        if (!session)
+            return;
+
+        let timeoutId;
+        let lastKeepAlive = 0;
+
+        const logout = async () => {
+
+            try {
+                await fetch("/logout", {
+                    method: "POST",
+                    credentials: "same-origin"
+                });
+            }
+            finally {
+                window.location.replace("/login?timeout=1");
+            }
+
+        };
+
+        const registerActivity = () => {
+
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(logout, session.timeoutMilliseconds);
+
+            const now = Date.now();
+            if (now - lastKeepAlive < 60_000)
+                return;
+
+            lastKeepAlive = now;
+            fetch("/api/v1/session/keep-alive", {
+                credentials: "same-origin"
+            }).then(response => {
+                if (response.status === 401)
+                    window.location.replace("/login?timeout=1");
+            });
+
+        };
+
+        ["pointerdown", "keydown", "scroll", "touchstart"].forEach(eventName => {
+            window.addEventListener(eventName, registerActivity, { passive: true });
+        });
+
+        registerActivity();
 
     }
 

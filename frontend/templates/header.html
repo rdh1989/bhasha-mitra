@@ -62,13 +62,19 @@
 
                 <span class="username">
 
-                    Admin
+                    {{ current_user.username }}
 
                 </span>
 
+                <small>{{ current_user.role | title }}</small>
+
             </div>
 
-            <i class="fa-solid fa-chevron-down"></i>
+            <form method="POST" action="/logout">
+                <button type="submit" class="header-icon" title="Log out">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </form>
 
         </div>
 

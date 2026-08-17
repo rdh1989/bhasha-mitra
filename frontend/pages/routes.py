@@ -14,14 +14,17 @@ Version : 1.0.0
 from datetime import datetime
 from pathlib import Path
 import shutil
+import sqlite3
 import subprocess
 
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
 import psutil
 
+from app.middleware.authentication import SESSION_COOKIE
+from app.security import ROLES, SQLiteAuthRepository
 from infrastructure.bootstrap.application_container import (
     ApplicationContainer,
 )
@@ -58,6 +61,7 @@ def template_context(request: Request, **kwargs):
         "request": request,
         "app_name": "Bhasha Mitra",
         "current_year": datetime.now().year,
+        "current_user": getattr(request.state, "user", None),
     }
 
     context.update(kwargs)
@@ -73,6 +77,10 @@ def _get_application_container(
         "application_container",
         None,
     )
+
+
+def _get_auth_repository(request: Request) -> SQLiteAuthRepository:
+    return request.app.state.auth_repository
 
 
 def _format_dashboard_timestamp(value) -> str:
@@ -342,18 +350,64 @@ async def login(request: Request):
         context=template_context(
             request,
             page="login",
+            next_path=request.query_params.get("next", "/dashboard"),
         ),
     )
 
 
 # =============================================================================
-# Login Submit (Demo)
+# Login Submit
 # =============================================================================
 
 @router.post("/login", response_class=HTMLResponse)
 async def login_submit(request: Request):
+    form = await request.form()
+    username = str(form.get("username", ""))
+    password = str(form.get("password", ""))
+    user = _get_auth_repository(request).authenticate(username, password)
+    next_path = str(form.get("next", "/dashboard"))
+    if not next_path.startswith("/") or next_path.startswith("//"):
+        next_path = "/dashboard"
 
-    return render_dashboard(request)
+    if user is None:
+        return templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context=template_context(
+                request,
+                page="login",
+                error="Invalid username or password.",
+                next_path=next_path,
+            ),
+            status_code=401,
+        )
+
+    token = _get_auth_repository(request).create_session(user.id)
+    response = RedirectResponse(next_path, status_code=303)
+    response.set_cookie(
+        SESSION_COOKIE,
+        token,
+        max_age=15 * 60,
+        httponly=True,
+        samesite="strict",
+        secure=False,
+    )
+    return response
+
+
+@router.post("/logout")
+async def logout(request: Request):
+    token = request.cookies.get(SESSION_COOKIE)
+    if token:
+        _get_auth_repository(request).delete_session(token)
+    response = RedirectResponse("/login", status_code=303)
+    response.delete_cookie(SESSION_COOKIE)
+    return response
+
+
+@router.get("/api/v1/session/keep-alive", status_code=204)
+async def keep_session_alive():
+    return Response(status_code=204)
 
 
 # =============================================================================
@@ -418,8 +472,62 @@ async def users_page(request: Request):
             request,
             page="users",
             page_title="Users",
+            users=_get_auth_repository(request).list_users(),
+            roles=ROLES,
         ),
     )
+
+
+@router.post("/users")
+async def create_user(request: Request):
+    form = await request.form()
+    username = str(form.get("username", "")).strip()
+    password = str(form.get("password", ""))
+    role = str(form.get("role", "user"))
+    error = None
+    try:
+        if len(password) < 8:
+            raise ValueError("Password must contain at least 8 characters.")
+        _get_auth_repository(request).create_user(username, password, role)
+    except (ValueError, sqlite3.IntegrityError) as exc:
+        error = "Username already exists." if isinstance(exc, sqlite3.IntegrityError) else str(exc)
+    if error:
+        return templates.TemplateResponse(
+            request=request,
+            name="users.html",
+            context=template_context(
+                request,
+                page="users",
+                page_title="Users",
+                users=_get_auth_repository(request).list_users(),
+                roles=ROLES,
+                error=error,
+            ),
+            status_code=400,
+        )
+    return RedirectResponse("/users", status_code=303)
+
+
+@router.post("/users/{user_id}/role")
+async def update_user_role(user_id: int, request: Request):
+    form = await request.form()
+    try:
+        _get_auth_repository(request).update_role(user_id, str(form.get("role", "")))
+    except ValueError as exc:
+        return templates.TemplateResponse(
+            request=request,
+            name="users.html",
+            context=template_context(
+                request,
+                page="users",
+                page_title="Users",
+                users=_get_auth_repository(request).list_users(),
+                roles=ROLES,
+                error=str(exc),
+            ),
+            status_code=400,
+        )
+    return RedirectResponse("/users", status_code=303)
 
 
 @router.get("/logs", response_class=HTMLResponse)

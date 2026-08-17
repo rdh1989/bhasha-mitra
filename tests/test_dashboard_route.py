@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 from fastapi import FastAPI
 from starlette.requests import Request
+from starlette.staticfiles import StaticFiles
 
 from domain.entities import TranslationJob
 from frontend.pages import routes
@@ -20,6 +21,11 @@ class FakeJobService:
 
 def _request_with_jobs(jobs):
     app = FastAPI()
+    app.mount(
+        "/static",
+        StaticFiles(directory="frontend/static"),
+        name="static",
+    )
     app.state.application_container = SimpleNamespace(
         job_service=FakeJobService(jobs)
     )
@@ -34,7 +40,12 @@ def _request_with_jobs(jobs):
         "server": ("testserver", 80),
         "scheme": "http",
     }
-    return Request(scope)
+    request = Request(scope)
+    request.state.user = SimpleNamespace(
+        username="admin",
+        role="admin",
+    )
+    return request
 
 
 def test_render_dashboard_uses_database_counts_and_recent_jobs():

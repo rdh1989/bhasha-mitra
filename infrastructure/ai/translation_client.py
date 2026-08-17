@@ -57,6 +57,7 @@ import time
 
 import httpx
 
+from app.security import internal_api_headers
 
 logger = logging.getLogger(__name__)
 
@@ -213,6 +214,7 @@ The endpoint parameters are sent as query parameters.
             #   query.target_language -> Field required
             response = httpx.post(
                 self._url,
+                headers=internal_api_headers(),
                 params={
                     "transcript_path": transcript_path,
                     "source_language": source_language,

@@ -26,6 +26,7 @@ import time
 
 import httpx
 
+from app.security import internal_api_headers
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +80,7 @@ class TranscriptClient:
 
             response = httpx.post(
                 self._url,
+                headers=internal_api_headers(),
                 json={
                     "audio_path": audio_path,
                 },

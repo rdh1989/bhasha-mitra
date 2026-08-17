@@ -19,10 +19,12 @@
             <span>Home</span>
         </a>
 
-        <a href="/upload" class="nav-item">
+        {% if current_user and current_user.role in ["admin", "operator"] %}
+        <a href="/upload" class="nav-item {% if page == 'upload' %}active{% endif %}">
             <i class="fa-solid fa-cloud-arrow-up"></i>
             <span>Upload Video</span>
         </a>
+        {% endif %}
 
         <a href="/translations" class="nav-item">
             <i class="fa-solid fa-file-lines"></i>
@@ -39,20 +41,22 @@
             <span>History</span>
         </a>
 
-        <a href="/settings" class="nav-item">
+        {% if current_user and current_user.role == "admin" %}
+        <a href="/settings" class="nav-item {% if page == 'settings' %}active{% endif %}">
             <i class="fa-solid fa-gear"></i>
             <span>Settings</span>
         </a>
 
-        <a href="/users" class="nav-item">
+        <a href="/users" class="nav-item {% if page == 'users' %}active{% endif %}">
             <i class="fa-solid fa-users"></i>
             <span>Users</span>
         </a>
 
-        <a href="/logs" class="nav-item">
+        <a href="/logs" class="nav-item {% if page == 'logs' %}active{% endif %}">
             <i class="fa-solid fa-chart-column"></i>
             <span>Logs</span>
         </a>
+        {% endif %}
 
         <a href="/languages" class="nav-item">
             <i class="fa-solid fa-globe"></i>
