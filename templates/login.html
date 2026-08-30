@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign in - Bhasha Mitra</title>
+  <link rel="icon" href="/static/logo.png" type="image/png" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body class="centered">
+  <form class="card login-card" method="post" action="/login">
+    <img src="/static/logo.png" alt="Bhasha Mitra" class="login-logo" />
+    <p class="muted">AI-powered video dubbing &middot; sign in to continue</p>
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    <label>Username
+      <input type="text" name="username" autocomplete="username" required autofocus />
+    </label>
+    <label>Password
+      <input type="password" name="password" autocomplete="current-password" required />
+    </label>
+    <button type="submit">Sign in</button>
+    <p class="hint">Default admin login: <code>admin</code> / <code>admin</code></p>
+  </form>
+</body>
+</html>

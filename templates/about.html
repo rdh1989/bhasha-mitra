@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}About - Bhasha Mitra{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>About Bhasha Mitra</h1>
+    <p class="muted">What this application does and how it works under the hood.</p>
+  </div>
+</header>
+
+<section class="card">
+  <h2>What it does</h2>
+  <p>
+    Bhasha Mitra takes a video, transcribes its speech, translates the text
+    into a target language, synthesizes natural-sounding speech in that
+    language, and re-combines it with the original video to produce a
+    dubbed video - entirely on your local machine's CPU, with no data
+    ever leaving your computer.
+  </p>
+</section>
+
+<section class="card">
+  <h2>The pipeline</h2>
+  <ol class="steps">
+    <li><strong>Speech recognition</strong> - faster-whisper (CTranslate2) transcribes the source audio and auto-detects its language.</li>
+    <li><strong>Translation</strong> - IndicTrans2 (English &rarr; Indic) converts the transcript to the target language.</li>
+    <li><strong>Speech synthesis</strong> - Indic Parler-TTS generates natural speech in the target language for each sentence.</li>
+    <li><strong>Re-assembly</strong> - the dubbed speech is time-aligned to the original segments and muxed back into the video.</li>
+  </ol>
+</section>
+
+<section class="card">
+  <h2>Translation direction &amp; language support</h2>
+  <p>
+    The bundled IndicTrans2 checkpoint only translates <strong>from English into
+    Indic languages</strong>. To still support routes like Marathi &rarr; Hindi or
+    Marathi &rarr; English, Bhasha Mitra uses the speech model's own built-in
+    speech-to-English translation as a pivot:
+  </p>
+  <ul>
+    <li>Source language = target language &rarr; no translation needed.</li>
+    <li>Source is English &rarr; translated directly into the target Indic language.</li>
+    <li>Target is English &rarr; the speech model translates the source speech to English directly.</li>
+    <li>Neither is English &rarr; the speech model translates to English first, then IndicTrans2 converts English &rarr; target.</li>
+  </ul>
+  <p class="muted">
+    A handful of very low-resource languages (Bodo, Dogri, Konkani, Maithili,
+    Manipuri, Santali, Odia) are not in the speech model's training data, so
+    they cannot be used as source audio, only as dubbing targets.
+  </p>
+</section>
+
+<section class="card">
+  <h2>Supported target languages</h2>
+  <div class="chip-list">
+    {% for lang in languages %}
+    <span class="chip">{{ lang.label }}</span>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="card">
+  <h2>Roles</h2>
+  <ul class="role-legend">
+    <li><span class="role-badge role-admin">admin</span> Full access, including user administration.</li>
+    <li><span class="role-badge role-operator">operator</span> Can submit and view translation jobs.</li>
+    <li><span class="role-badge role-user">user</span> Read-only access to the dashboard and job history.</li>
+  </ul>
+</section>
+{% endblock %}

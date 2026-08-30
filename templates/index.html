@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Video Dubbing Studio</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Video Dubbing Studio</h1>
+    <div class="topbar-right">
+      <span class="muted">Signed in as {{ username }}</span>
+      <a href="/logout">Log out</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>1. Upload video &amp; choose target language</h2>
+      <form id="upload-form">
+        <label>Video file
+          <input type="file" id="video" name="video" accept="video/*" required />
+        </label>
+        <label>Target language
+          <select id="target_lang" name="target_lang" required>
+            {% for lang in languages %}
+            <option value="{{ lang.code }}">{{ lang.label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <button type="submit" id="start-btn">Start Translation</button>
+      </form>
+      <p class="hint">
+        Source language is auto-detected from the audio. Only English &rarr; Indic
+        translation runs directly through IndicTrans2; other source languages are
+        first translated to English by the speech model, then (if needed) on to the
+        target Indic language.
+      </p>
+    </section>
+
+    <section class="card" id="status-card" hidden>
+      <h2>2. Progress</h2>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      <p id="status-stage" class="stage"></p>
+      <p id="status-detected" class="muted"></p>
+      <div id="status-error" class="error" hidden></div>
+      <details open>
+        <summary>Log</summary>
+        <pre id="status-log" class="log"></pre>
+      </details>
+    </section>
+
+    <section class="card" id="result-card" hidden>
+      <h2>3. Result</h2>
+      <video id="result-video" controls></video>
+      <p><a id="result-download" href="#" download>Download dubbed video</a></p>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

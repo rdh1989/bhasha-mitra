@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}User Administration - Bhasha Mitra{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>User Administration</h1>
+    <p class="muted">Manage local accounts and roles. Stored in the local SQLite database.</p>
+  </div>
+</header>
+
+<section class="card">
+  <h2>Add a user</h2>
+  <form id="create-user-form" class="inline-form">
+    <label>Username
+      <input type="text" name="username" required autocomplete="off" />
+    </label>
+    <label>Password
+      <input type="password" name="password" required autocomplete="new-password" />
+    </label>
+    <label>Role
+      <select name="role">
+        {% for role in roles %}
+        <option value="{{ role }}">{{ role }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit">Add user</button>
+  </form>
+  <div id="create-user-status"></div>
+</section>
+
+<section class="card">
+  <h2>Roles explained</h2>
+  <ul class="role-legend">
+    <li><span class="role-badge role-admin">admin</span> Full access: manage users and trigger/view jobs.</li>
+    <li><span class="role-badge role-operator">operator</span> Can trigger and view translation jobs, no user administration.</li>
+    <li><span class="role-badge role-user">user</span> Read-only: can view the dashboard and job history only.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>Existing users</h2>
+  <div class="table-wrap">
+    <table class="job-table" id="users-table">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th>Reset password</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="users-table-body">
+        {% for u in users %}
+        <tr data-user-row="{{ u.id }}">
+          <td>{{ u.username }}</td>
+          <td>
+            <select class="role-select" data-user-id="{{ u.id }}" {% if u.username == current_user.username %}disabled{% endif %}>
+              {% for role in roles %}
+              <option value="{{ role }}" {% if role == u.role %}selected{% endif %}>{{ role }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td>
+            <label class="switch">
+              <input type="checkbox" class="active-toggle" data-user-id="{{ u.id }}" {% if u.is_active %}checked{% endif %} {% if u.username == current_user.username %}disabled{% endif %} />
+              <span>{{ "Active" if u.is_active else "Disabled" }}</span>
+            </label>
+          </td>
+          <td>{{ u.created_at }}</td>
+          <td><input type="password" class="reset-password" data-user-id="{{ u.id }}" placeholder="New password" autocomplete="new-password" /></td>
+          <td class="row-actions">
+            <button class="link-btn" data-save-user="{{ u.id }}">Save</button>
+            {% if u.username != current_user.username %}
+            <button class="link-btn danger" data-delete-user="{{ u.id }}">Delete</button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/users.js"></script>
+{% endblock %}

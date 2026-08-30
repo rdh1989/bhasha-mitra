@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Help & Support - Bhasha Mitra{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>Help &amp; Support</h1>
+    <p class="muted">Quick answers to common questions.</p>
+  </div>
+</header>
+
+<section class="card">
+  <h2>Getting started</h2>
+  <ol class="steps">
+    <li>Go to the <a href="/dashboard">Dashboard</a>.</li>
+    <li>Choose one or more video files and a target language.</li>
+    <li>Click <strong>Start Translation</strong>. Each file becomes its own job.</li>
+    <li>Watch progress live in the "Recent jobs" table, or check <a href="/history">Job History</a> any time.</li>
+    <li>Once a job is <strong>Completed</strong>, click <strong>Download</strong> to get the dubbed video.</li>
+  </ol>
+</section>
+
+<section class="card">
+  <h2>Frequently asked questions</h2>
+
+  <details open>
+    <summary>Why is processing so slow?</summary>
+    <p>Everything runs on your computer's CPU (no cloud, no GPU required). Speech recognition and speech
+       synthesis are the most CPU-intensive steps; a short video can still take several minutes. Larger
+       videos take proportionally longer.</p>
+  </details>
+
+  <details>
+    <summary>Why did my job fail with a "language not supported" error?</summary>
+    <p>Some low-resource languages (e.g. Odia, Bodo, Konkani, Maithili, Manipuri, Santali, Dogri) can only
+       be used as a dubbing <em>target</em>, not as source audio, because the speech recognition model was
+       never trained on them. See the <a href="/about">About</a> page for the full list.</p>
+  </details>
+
+  <details>
+    <summary>Can I submit multiple videos at once?</summary>
+    <p>Yes. Select multiple files in the upload box on the Dashboard - each becomes its own job and they
+       are processed one after another automatically.</p>
+  </details>
+
+  <details>
+    <summary>I don't see the "Start Translation" form or "User Administration" link.</summary>
+    <p>Job submission requires the <strong>operator</strong> or <strong>admin</strong> role, and user
+       administration requires the <strong>admin</strong> role. The <strong>user</strong> role is
+       read-only by design. Ask an administrator to adjust your role if needed.</p>
+  </details>
+
+  <details>
+    <summary>I forgot my password.</summary>
+    <p>Ask an administrator to reset it from the <a href="/users">User Administration</a> page.</p>
+  </details>
+
+  <details>
+    <summary>Where are my files stored?</summary>
+    <p>Uploaded videos, generated audio, and dubbed outputs are stored locally under the application's
+       <code>uploads/</code> and <code>outputs/</code> folders. Nothing is uploaded to the internet, except
+       a one-time, small tokenizer download the first time the speech synthesis model runs.</p>
+  </details>
+</section>
+
+<section class="card">
+  <h2>Still stuck?</h2>
+  <p class="muted">
+    Check the application log file (<code>logs/app.log</code>) for detailed error messages, or contact
+    your system administrator.
+  </p>
+</section>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Bhasha Mitra{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>Dashboard</h1>
+    <p class="muted">Overview of your translation &amp; dubbing jobs.</p>
+  </div>
+</header>
+
+{% if forbidden %}
+<div class="banner banner-error">You don't have permission to access that page.</div>
+{% endif %}
+
+<section class="stat-grid">
+  <div class="stat-card">
+    <span class="stat-value" id="stat-total">{{ stats.total }}</span>
+    <span class="stat-label">Total Jobs</span>
+  </div>
+  <div class="stat-card stat-running">
+    <span class="stat-value" id="stat-running">{{ stats.running }}</span>
+    <span class="stat-label">In Progress</span>
+  </div>
+  <div class="stat-card stat-completed">
+    <span class="stat-value" id="stat-completed">{{ stats.completed }}</span>
+    <span class="stat-label">Completed</span>
+  </div>
+  <div class="stat-card stat-failed">
+    <span class="stat-value" id="stat-failed">{{ stats.failed }}</span>
+    <span class="stat-label">Failed</span>
+  </div>
+</section>
+
+{% if can_trigger_jobs %}
+<section class="card">
+  <h2>Start a new dubbing job</h2>
+  <p class="muted">
+    Select one or more videos and a target language, then click Start. Each
+    video becomes its own job and up to several jobs run in parallel -
+    you can queue as many as you like.
+  </p>
+  <form id="upload-form" novalidate>
+    <label>Video file(s)
+      <input type="file" id="video" name="video" accept="video/*" multiple required />
+    </label>
+    <label>Target language
+      <select id="target_lang" name="target_lang" required>
+        {% for lang in languages %}
+        <option value="{{ lang.code }}">{{ lang.label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit" id="start-btn">Start Translation</button>
+  </form>
+  <div id="upload-status"></div>
+  <p class="hint">
+    Source language is auto-detected from the audio. English &rarr; Indic
+    languages translate directly; other source languages are first converted
+    to English by the speech model, then on to the target language if needed.
+    See the <a href="/about">About</a> page for details.
+  </p>
+</section>
+{% else %}
+<section class="card">
+  <h2>Start a new dubbing job</h2>
+  <p class="muted">Your account has read-only access. Ask an admin or operator to submit translation jobs.</p>
+</section>
+{% endif %}
+
+<section class="card">
+  <div class="card-header-row">
+    <h2>Recent jobs</h2>
+    <a href="/history" class="link">View full history &rarr;</a>
+  </div>
+  <div class="table-wrap">
+    <table class="job-table" id="jobs-table">
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Target</th>
+          <th>Status</th>
+          <th>Progress</th>
+          <th>Submitted by</th>
+          <th>Created</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="jobs-table-body">
+        <tr><td colspan="7" class="muted">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>window.__LANGUAGE_LABELS__ = {{ languages_by_code | tojson }};</script>
+<script src="/static/jobs.js"></script>
+<script src="/static/app.js"></script>
+{% endblock %}
