@@ -1,0 +1,11 @@
+.venv/
+uploads/
+outputs/
+.cache/
+logs/
+data/
+__pycache__/
+*.pyc
+models/tts/_description_tokenizer_cache/
+models/
+dist/

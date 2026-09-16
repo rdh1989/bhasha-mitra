@@ -1,0 +1,27 @@
+{
+  "domain": "agriculture",
+  "language_pair": {"source": "mar_Deva", "target": "hin_Deva"},
+  "entries": [
+    {"source_term": "शेळीपालन", "source_variants": [], "target_term": "बकरी पालन", "target_variants": [], "category": "livestock.goat", "grammatical_information": "noun", "confidence": "high", "protection_allowed": true, "validation_allowed": true},
+    {"source_term": "शेळीपालक", "source_variants": [], "target_term": "बकरी पालक", "target_variants": [], "category": "livestock.goat.person", "grammatical_information": "noun", "confidence": "high", "protection_allowed": true, "validation_allowed": true},
+    {"source_term": "शेळी", "source_variants": [], "target_term": "बकरी", "target_variants": ["बकरियाँ"], "category": "livestock.goat", "grammatical_information": "noun", "confidence": "high", "protection_allowed": true, "validation_allowed": true},
+    {"source_term": "शेळ्या", "source_variants": [], "target_term": "बकरियाँ", "target_variants": ["बकरी"], "category": "livestock.goat", "grammatical_information": "plural noun", "confidence": "high", "protection_allowed": true, "validation_allowed": true},
+    {"source_term": "करडू", "source_variants": [], "target_term": "बकरी का बच्चा", "target_variants": [], "category": "livestock.goat.young", "grammatical_information": "noun", "confidence": "high", "protection_allowed": true, "validation_allowed": true},
+    {"source_term": "करडे", "source_variants": [], "target_term": "बकरी के बच्चे", "target_variants": [], "category": "livestock.goat.young", "grammatical_information": "plural noun", "confidence": "high", "protection_allowed": true, "validation_allowed": true},
+    {"source_term": "बोकड", "source_variants": [], "target_term": "बकरा", "target_variants": [], "category": "livestock.goat.male", "grammatical_information": "noun", "confidence": "high", "protection_allowed": true, "validation_allowed": true},
+    {"source_term": "वाडा", "source_variants": [], "target_term": "बकरी का बाड़ा", "target_variants": ["बकरी शेड"], "category": "agriculture.facility", "grammatical_information": "noun", "confidence": "high", "protection_allowed": true, "validation_allowed": true}
+  ],
+  "category_compatibility": {
+    "livestock.goat": ["livestock.goat", "livestock.goat.person", "livestock.goat.young", "livestock.goat.male", "agriculture.facility"],
+    "livestock.goat.young": ["livestock.goat.young", "livestock.goat"],
+    "livestock.goat.male": ["livestock.goat.male", "livestock.goat"],
+    "agriculture.facility": ["agriculture.facility"]
+  },
+  "target_category_terms": {
+    "livestock.sheep": ["भेड़", "भेड़ पालन"],
+    "livestock.cattle": ["गाय", "गौशाला", "बैल"],
+    "livestock.buffalo": ["भैंस"],
+    "livestock.poultry": ["चूजा", "मुर्गी"],
+    "livestock.fish": ["मछली", "मछलियों"]
+  }
+}

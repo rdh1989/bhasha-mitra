@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Bhasha Mitra{% endblock %}
+{% block content %}
+<div class="dashboard-page">
+<header class="page-header">
+  <div>
+    <div class="dashboard-kicker"><span class="dashboard-kicker-dot"></span> Local AI video dubbing</div>
+    <h1><span class="dashboard-title-mark" aria-hidden="true">✦</span> Dashboard</h1>
+    <p class="muted">Create and monitor local video dubbing jobs.</p>
+  </div>
+</header>
+
+{% if forbidden %}
+<div class="banner banner-error">You don't have permission to access that page.</div>
+{% endif %}
+
+<section class="stat-grid">
+  <div class="stat-card stat-secondary">
+    <div class="stat-card-top"><span class="metric-icon metric-icon-total" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h7"></path></svg></span></div>
+    <span class="stat-value" id="stat-total">{{ stats.total }}</span>
+    <span class="stat-label">Total jobs <small>All submitted work</small></span>
+  </div>
+  <div class="stat-card stat-running">
+    <div class="stat-card-top"><span class="metric-icon metric-icon-running" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l2.5 2"></path></svg></span></div>
+    <span class="stat-value" id="stat-running">{{ stats.running }}</span>
+    <span class="stat-label">In progress <small>Currently processing</small></span>
+  </div>
+  <div class="stat-card stat-completed">
+    <div class="stat-card-top"><span class="metric-icon metric-icon-completed" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4.5 4.5L19 7"></path></svg></span></div>
+    <span class="stat-value" id="stat-completed">{{ stats.completed }}</span>
+    <span class="stat-label">Completed <small>Ready to download</small></span>
+  </div>
+  <div class="stat-card stat-failed">
+    <div class="stat-card-top"><span class="metric-icon metric-icon-failed" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 4 21 20H3z"></path><path d="M12 9v5M12 17h.01"></path></svg></span></div>
+    <span class="stat-value" id="stat-failed">{{ stats.failed }}</span>
+    <span class="stat-label">Failed <small>Needs attention</small></span>
+  </div>
+  <div class="stat-card stat-cancelled">
+    <div class="stat-card-top"><span class="metric-icon metric-icon-cancelled" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7 7 17"></path></svg></span></div>
+    <span class="stat-value" id="stat-cancelled">{{ stats.cancelled }}</span>
+    <span class="stat-label">Cancelled <small>Stopped jobs</small></span>
+  </div>
+</section>
+
+{% if can_trigger_jobs %}
+<section class="card job-card">
+  <div class="job-card-header">
+    <div class="job-card-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="m8 5 10 7-10 7z"></path><path d="M4 5v14"></path></svg>
+    </div>
+    <div>
+      <h2>Start a new dubbing job</h2>
+      <p class="job-card-subtitle">Create a local dubbed version of your video.</p>
+    </div>
+  </div>
+  <p class="muted">
+    Choose a video stored on this computer. Files are read from their existing locations and are not uploaded.
+    Each selected video will run as a separate job.
+  </p>
+  <form id="upload-form" class="job-form">
+    <input type="hidden" id="video_paths" name="video_paths" />
+    <div class="file-selection" aria-labelledby="file-selection-label">
+      <span id="file-selection-label" class="field-label">Video <span class="required-mark" aria-hidden="true">*</span><span class="sr-only">required</span></span>
+      <div id="selected-files" class="selected-files" aria-live="polite" aria-atomic="true">
+        <p class="selected-files-empty">No video selected</p>
+      </div>
+      <button type="button" id="browse-btn" class="btn-secondary browse-button">
+        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H10l2 2h5.5A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5z"></path><path d="M4 9h16"></path></svg>
+        Browse files
+      </button>
+    </div>
+    <div class="language-grid">
+      <label for="source_lang"><span class="field-label">Source language <span class="required-mark" aria-hidden="true">*</span><span class="sr-only">required</span></span>
+        <select id="source_lang" name="source_lang" required>
+          <option value="" selected disabled>Select source language</option>
+          {% for lang in languages %}
+          <option value="{{ lang.code }}">{{ lang.label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label for="target_lang"><span class="field-label">Target language <span class="required-mark" aria-hidden="true">*</span><span class="sr-only">required</span></span>
+        <select id="target_lang" name="target_lang" required>
+          <option value="" selected disabled>Select target language</option>
+          {% for lang in languages %}
+          <option value="{{ lang.code }}">{{ lang.label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+    <button type="submit" id="start-btn" disabled>Start dubbing</button>
+  </form>
+  <div id="upload-status" class="status-region" aria-live="polite" aria-atomic="true"></div>
+  <p class="hint">Choose the language spoken in the video and the language for the dubbed speech. Some languages are available only as dubbing targets, not as source audio.</p>
+</section>
+
+<dialog id="file-browser-dialog" class="job-dialog file-browser-dialog" aria-labelledby="file-browser-title">
+  <div class="dialog-header">
+    <h3 class="dialog-title" id="file-browser-title">Choose video files</h3>
+    <button type="button" class="link-btn" id="fb-close">Close</button>
+  </div>
+  <p class="muted fb-current-path"></p>
+  <div class="fb-entries" id="fb-entries"></div>
+</dialog>
+{% else %}
+<section class="card">
+  <h2>Start a new dubbing job</h2>
+  <p class="muted">Your account has read-only access. Ask an admin or operator to submit translation jobs.</p>
+</section>
+{% endif %}
+
+<section class="card">
+  <div class="card-header-row">
+    <div class="section-heading"><span class="section-heading-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l2.5 2"></path></svg></span><div><h2>Recent jobs</h2><p>Your latest dubbing activity</p></div></div>
+    <a href="/history" class="link">View full history &rarr;</a>
+  </div>
+  <div class="table-wrap">
+    <table class="job-table" id="jobs-table">
+    <caption class="sr-only">Recent dubbing jobs</caption>
+      <thead>
+        <tr>
+          <th>Job ID</th>
+          <th>File</th>
+          <th>Target</th>
+          <th>Status</th>
+          <th>Progress</th>
+          <th>Submitted by</th>
+          <th>Created</th>
+          <th>Ended</th>
+          <th>Duration</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="jobs-table-body">
+        <tr><td colspan="10" class="loading-cell">Loading recent jobs...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<dialog id="job-dialog" class="job-dialog" aria-labelledby="dashboard-job-dialog-title">
+  <form method="dialog">
+    <div class="dialog-header">
+      <h3 class="dialog-title" id="dashboard-job-dialog-title">Job details</h3>
+      <button class="link-btn" formmethod="dialog">Close</button>
+    </div>
+    <div class="dialog-meta"></div>
+    <section class="dialog-locations" aria-labelledby="dashboard-location-title">
+      <h4 id="dashboard-location-title">File locations</h4>
+      <div class="dialog-location-row"><strong>Video input location</strong><code data-dialog-source-path>Unavailable in job details</code></div>
+      <div class="dialog-location-row"><strong>Video output location</strong><code data-dialog-output-path>Unavailable in job details</code></div>
+    </section>
+    <p class="dialog-loading muted" aria-live="polite" hidden>Loading job details...</p>
+    <p class="error dialog-error" role="alert" hidden></p>
+    <a class="dialog-download btn-secondary" download hidden>Download video</a>
+    <details class="dialog-section">
+      <summary>Technical details</summary>
+      <pre class="log dialog-log"></pre>
+    </details>
+  </form>
+</dialog>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.__LANGUAGE_LABELS__ = {{ languages_by_code | tojson }};
+  window.__CAN_TRIGGER_JOBS__ = {{ can_trigger_jobs | tojson }};
+</script>
+<script src="/static/jobs.js"></script>
+<script src="/static/filebrowser.js"></script>
+<script src="/static/app.js"></script>
+{% endblock %}

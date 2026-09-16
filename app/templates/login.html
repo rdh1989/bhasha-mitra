@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign in - Bhasha Mitra</title>
+  <link rel="icon" href="/static/logo.png" type="image/png" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body class="centered">
+  <main class="login-layout">
+  <form class="card login-card" method="post" action="/login">
+    <img src="/static/logo.png" alt="Bhasha Mitra" class="login-logo" />
+    <h1>Bhasha Mitra</h1>
+    <p class="muted">Local AI video dubbing</p>
+    {% if error %}<p class="error" role="alert">The username or password is incorrect.</p>{% endif %}
+    <label for="username">Username
+      <input id="username" type="text" name="username" autocomplete="username" required autofocus />
+    </label>
+    <label for="password">Password
+      <input id="password" type="password" name="password" autocomplete="current-password" required />
+    </label>
+    <button type="submit" id="login-submit">Sign in</button>
+  </form>
+  </main>
+  <script>
+    document.querySelector(".login-card")?.addEventListener("submit", (event) => {
+      const form = event.currentTarget;
+      const button = document.getElementById("login-submit");
+      if (button) {
+        button.disabled = true;
+        button.textContent = "Signing in...";
+      }
+      form.querySelectorAll("input").forEach((input) => { input.readOnly = true; });
+    });
+  </script>
+</body>
+</html>
