@@ -7,10 +7,10 @@ models already present in `models/`:
 |--------------|---------------------------------------------------------------|
 | Speech-to-text (segmentation + language ID) | `models/asr/faster_whisper/{tiny,small,medium}` (faster-whisper / CTranslate2) |
 | Speech-to-text (Indic transcript refinement) | `models/asr/indic-conformer-600m-multilingual` (AI4Bharat IndicConformer, ONNX) |
-| Translation (English → Indic) | `models/translation/indictrans2-en-indic-dist-200M` |
-| Translation (Indic → Indic) | `models/translation/indictrans2-indic-indic-dist-320M` |
-| Translation (Indic → English) | `models/translation/indictrans2-indic-en-dist-200M` |
-| Text-to-speech | `models/tts/indic-parler-tts` (Indic Parler-TTS)             |
+| Translation (English → Indic) | `models/translation/indictrans2-en-indic-1B` |
+| Translation (Indic → Indic) | `models/translation/indictrans2-indic-indic-1B` |
+| Translation (Indic → English) | `models/translation/indictrans2-indic-en-1B` |
+| Text-to-speech | `models/tts/piper-voices` (Piper, default) |
 
 Everything runs on CPU. Videos are never uploaded/copied - you submit the
 local path of an already-present video file and the app reads it directly
@@ -72,29 +72,167 @@ input in, better translation out). Falls back to Whisper's own text per
 segment (or entirely) if IndicConformer fails, or is disabled via
 `INDIC_ASR_ENABLED=false`.
 
-## One-time internet requirement
+## Windows Prerequisites
 
-Indic Parler-TTS needs a second tokenizer (for the natural-language voice
-"description" prompt) that is not bundled with the model: `google/flan-t5-large`'s
-tokenizer. On first run the app downloads just that tokenizer (a few MB, not
-model weights) from the Hugging Face Hub and caches it under
-`models/tts/_description_tokenizer_cache/` so every subsequent run is fully
-offline. If you need this to be 100% offline from the very first run, copy a
-`flan-t5-large` tokenizer folder there yourself before starting the app.
+### Supported environment
 
-## Setup
+The current working environment is Windows 11 x64 with CPython 3.13.9 and
+64-bit AMD64 Python. Use 64-bit Windows and 64-bit Python; the exact minimum
+Windows release and minimum CPU model were not independently verified. The
+application is configured for CPU execution: `torch==2.13.0+cpu`, the CPU
+`onnxruntime` package, and CTranslate2 `int8` ASR by default. A CUDA GPU and
+NVIDIA driver are not required by the current setup.
+
+Python package installation requires internet access (or an internal package
+mirror). Runtime does not call a cloud API and is intended to work offline
+once the local model assets are present. The repository's model directories
+must be copied or checked out separately if they are not included in the clone.
+
+### Microsoft Visual C++ Redistributable
+
+The native Windows wheels used by Torch and related packages contain compiled
+extensions but do not bundle every Microsoft C/C++ runtime DLL. The current
+machine has the Microsoft Visual C++ 2015-2022 x64 Redistributable, reported as
+version `14.51.36247`. This is evidence for the required runtime generation,
+not a verified minimum version. Exact minimum version not verified; install
+the currently supported Microsoft Visual C++ Redistributable for Visual Studio
+2015-2022, x64, from Microsoft's official download page:
+<https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist>.
+
+This runtime is needed to run the source-installed native wheels, especially
+Torch/CTranslate2. Visual Studio Build Tools are **not required to run** the
+current application or to install the available wheels. They are only needed
+if pip cannot use a compatible wheel and must compile a native package from
+source, or when developing native extensions. `build.py` separately copies
+the build machine's MSVC DLLs into a PyInstaller distribution when those DLLs
+are available; that does not remove the source-environment prerequisite.
+
+Check a machine before installing:
+
+```powershell
+Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*', 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*' |
+  Where-Object { $_.DisplayName -like '*Visual C++*Redistributable*' } |
+  Select-Object DisplayName, DisplayVersion
+where.exe vcruntime140.dll
+where.exe msvcp140.dll
+```
+
+The `where.exe` commands can be empty even when the runtime is registered;
+registry evidence and a successful Torch import are more useful checks.
+
+### FFmpeg
+
+No separate system-wide FFmpeg installation is required. The application first
+uses the repository-provided `models/third_party/ffmpeg/*/bin/ffmpeg.exe` when
+present. If that directory is absent, it falls back to the FFmpeg executable
+bundled by `imageio-ffmpeg==0.6.0`. `ffprobe.exe` is also present in the
+repository-provided build, but application media operations invoke FFmpeg.
+
+### Git
+
+Git is required to clone the repository. It is not a Python runtime dependency.
+
+## Clean Windows setup
+
+1. Install 64-bit CPython 3.13, the supported Microsoft VC++ Redistributable,
+   and Git.
+2. Clone the repository and open PowerShell in its root directory.
+3. Create and activate the environment:
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\pip install -r requirements.txt
+.\.venv\Scripts\Activate.ps1
+python --version
+python -m pip --version
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
-(Torch is best installed separately from the CPU wheel index if the default
-`pip install torch` in requirements.txt pulls a CUDA build for your platform:
-`pip install torch --index-url https://download.pytorch.org/whl/cpu`.)
+The CPU Torch pin is `torch==2.13.0+cpu`. If the configured package index
+cannot resolve that local-version wheel, install from the official PyTorch CPU
+index before installing the remaining requirements:
 
-No system-wide `ffmpeg`/`ffprobe` install is required — the app uses the
-ffmpeg binary bundled by the `imageio-ffmpeg` package.
+```powershell
+python -m pip install torch==2.13.0+cpu --index-url https://download.pytorch.org/whl/cpu
+python -m pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+```
+
+4. Ensure the local model assets exist under `models/`:
+
+```text
+models/asr/faster_whisper/medium/
+models/asr/indic-conformer-600m-multilingual/
+models/translation/indictrans2-en-indic-1B/
+models/translation/indictrans2-indic-indic-1B/
+models/translation/indictrans2-indic-en-1B/
+models/tts/piper-voices/
+```
+
+Python packages and AI model files are separate dependencies. Model files are
+not installed by pip and are not listed in `requirements.txt`. The default
+configuration expects the paths above and does not download these models at
+runtime. `INDIC_ASR_ENABLED=false` is the current default; the IndicConformer
+files are still required when that refinement is enabled.
+
+5. Verify the installation without loading model weights:
+
+```powershell
+python -m pip check
+python -c "import torch; print(torch.__version__); print(torch.cuda.is_available()); print(torch.version.cuda)"
+python -c "import fastapi, numpy, onnxruntime, soundfile, transformers; print(fastapi.__version__); print(numpy.__version__); print(onnxruntime.__version__); print(soundfile.__version__); print(transformers.__version__)"
+python -c "import app.main, launcher; print('Bhasha Mitra imports OK')"
+```
+
+6. Start the development server:
+
+```powershell
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+Startup loads the configured local models and can take several minutes. Open
+`http://localhost:8000`. Runtime does not require internet for the default
+Piper path, but package installation and acquisition of missing model assets
+do require access to the relevant sources.
+
+## Dependency roles
+
+`requirements.txt` contains exact versions for application runtime packages
+and the PyInstaller build tools used by `build.py`. The tests use Python's
+standard-library `unittest`; pytest is not part of the current environment.
+Standard-library modules such as SQLite, pathlib, threading, and subprocess
+are intentionally not listed. TensorBoard, OCR packages, GPU runtimes,
+Parler-TTS, and unrelated installed packages are intentionally excluded.
+
+The default TTS backend is Piper. The older Parler backend is conditional and
+is not reproducible from the normal requirements file because the current
+installation was made from Git with `--no-deps`; its training-only declared
+dependencies are not used by the default application path.
+
+## Windows troubleshooting
+
+### DLL load failed or WinError 1114
+
+First verify 64-bit Python, `torch==2.13.0+cpu`, and the x64 VC++
+Redistributable. Check `python -c "import torch; print(torch.__version__)"`.
+If that fails, inspect the missing DLL named by the traceback and reinstall
+the supported x64 VC++ Redistributable. A CPU without the AVX2 capability used
+by the current Torch wheel is another possible hardware limitation; this was
+not solved by changing Python dependencies.
+
+### Torch or ONNX Runtime import failure
+
+Confirm that `python -m pip --version` points into `.venv`, that Python is
+64-bit, and that `python -m pip check` reports no broken requirements. This
+project uses `onnxruntime`, not `onnxruntime-gpu`; do not substitute the GPU
+package. Recreate the venv only after preserving the reported error, since
+changing package versions would no longer reproduce the current environment.
+
+### FFmpeg not found
+
+Confirm `models/third_party/ffmpeg/*/bin/ffmpeg.exe` exists. If it does not,
+verify that `imageio-ffmpeg` is installed and that
+`python -c "import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())"`
+returns an executable path. A separate FFmpeg installation is not required.
 
 ## Run
 
@@ -102,11 +240,12 @@ ffmpeg binary bundled by the `imageio-ffmpeg` package.
 .\.venv\Scripts\python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-All three models (ASR, translation, TTS) are loaded into memory once at
-startup - the server won't finish starting (or accept requests) until all
-three are ready, which can take 20s-1min+ depending on your CPU and whether
-the TTS description tokenizer still needs its one-time download. Every job
-afterwards reuses these already-loaded models instead of reloading them.
+The application attempts to preload ASR, translation, Indic ASR, and TTS
+engines at startup. Model loading can take 20s-1min+ depending on your CPU
+and available memory. Individual preload failures are logged and do not
+necessarily prevent the server from starting; the affected model may fail
+again when a job needs it. Successfully loaded engines are reused by jobs
+instead of being reloaded for every request.
 
 Open http://localhost:8000 and sign in with `admin` / `admin` (this seeds a
 one-time default admin account in the SQLite database on first run - manage

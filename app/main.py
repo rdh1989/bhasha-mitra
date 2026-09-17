@@ -33,6 +33,8 @@ from app.auth import (
     require_role_page,
 )
 from app.config import (
+    ALLOWED_AUDIO_EXTENSIONS,
+    ALLOWED_TEXT_EXTENSIONS,
     ALLOWED_VIDEO_EXTENSIONS,
     ASR_COMPUTE_TYPE,
     ASR_CPU_THREADS,
@@ -64,7 +66,7 @@ from app.models.indic_asr import IndicASREngine
 from app.models.piper_tts import PiperTTSEngine
 from app.models.translate import TranslationEngine
 from app.models.tts import TTSEngine
-from app.pipeline import run_pipeline
+from app.pipeline import run_audio_pipeline, run_pipeline, run_text_pipeline, translate_text
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -306,13 +308,15 @@ def help_page(request: Request):
 # --------------------------------------------------------------------------
 
 @app.get("/api/browse")
-def browse_filesystem(request: Request, path: str = ""):
+def browse_filesystem(request: Request, path: str = "", kind: str = "video"):
     """Backs the dashboard's video file picker - lets an operator/admin
     browse this machine's filesystem and pick a full path without ever
     uploading the file."""
     require_api_role(request, *JOB_TRIGGER_ROLES)
+    if kind not in ("video", "audio", "text"):
+        raise HTTPException(status_code=400, detail="Browse kind must be 'video', 'audio', or 'text'.")
     try:
-        return list_directory(path or None)
+        return list_directory(path or None, kind=kind)
     except (FileNotFoundError, NotADirectoryError, PermissionError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -321,6 +325,23 @@ class CreateJobsRequest(BaseModel):
     video_paths: list[str]
     source_lang: str
     target_lang: str
+
+
+class CreateAudioJobsRequest(BaseModel):
+    audio_paths: list[str]
+    source_lang: str
+    target_lang: str
+
+
+class TranslateTextRequest(BaseModel):
+    text: str = ""
+    text_path: str | None = None
+    source_lang: str
+    target_lang: str
+
+
+class CreateTextJobRequest(TranslateTextRequest):
+    pass
 
 
 @app.post("/api/jobs")
@@ -374,6 +395,118 @@ def create_jobs(request: Request, payload: CreateJobsRequest):
     return {"job_ids": job_ids}
 
 
+@app.post("/api/audio/jobs")
+def create_audio_jobs(request: Request, payload: CreateAudioJobsRequest):
+    user = require_api_role(request, *JOB_TRIGGER_ROLES)
+    valid_codes = {lang.code for lang in LANGUAGES}
+    if payload.source_lang not in ASR_PROVIDER_BY_LANGUAGE:
+        raise HTTPException(status_code=400, detail="No ASR is configured for the selected source language.")
+    if payload.target_lang not in valid_codes:
+        raise HTTPException(status_code=400, detail="Unknown target language.")
+    raw_paths = [path.strip().strip('"') for path in payload.audio_paths if path.strip()]
+    if not raw_paths:
+        raise HTTPException(status_code=400, detail="No audio paths provided.")
+
+    job_ids: list[str] = []
+    for raw_path in raw_paths:
+        audio_path = Path(raw_path)
+        if not audio_path.is_absolute():
+            raise HTTPException(status_code=400, detail=f"'{raw_path}' must be an absolute path.")
+        suffix = audio_path.suffix.lower()
+        if suffix not in ALLOWED_AUDIO_EXTENSIONS:
+            raise HTTPException(status_code=400, detail=f"Unsupported file type '{suffix}' for '{raw_path}'.")
+        if not audio_path.is_file():
+            raise HTTPException(status_code=400, detail=f"File not found: '{raw_path}'.")
+        audio_path = audio_path.resolve()
+        job = job_manager.create(
+            source_lang=payload.source_lang, target_lang=payload.target_lang,
+            filename=audio_path.name, source_path=str(audio_path), username=user["username"],
+        )
+        job_manager.update(job.id, message="Queued for processing.")
+        job_manager.submit(
+            run_audio_pipeline, job.id, str(audio_path), payload.source_lang, payload.target_lang,
+            job_manager, asr_engine, translation_engine, translation_indic_engine,
+            translation_indic_en_engine, tts_engine,
+        )
+        job_ids.append(job.id)
+    return {"job_ids": job_ids}
+
+
+@app.post("/api/text/translate")
+def translate_text_request(request: Request, payload: TranslateTextRequest):
+    require_api_role(request, *JOB_TRIGGER_ROLES)
+    text = payload.text.strip()
+    if payload.text_path:
+        text_path = Path(payload.text_path.strip().strip('"'))
+        if not text_path.is_absolute():
+            raise HTTPException(status_code=400, detail="Text path must be absolute.")
+        if text_path.suffix.lower() not in ALLOWED_TEXT_EXTENSIONS:
+            raise HTTPException(status_code=400, detail="Only .txt files are supported.")
+        if not text_path.is_file():
+            raise HTTPException(status_code=400, detail=f"File not found: '{payload.text_path}'.")
+        try:
+            text = text_path.read_text(encoding="utf-8").strip()
+        except UnicodeDecodeError as exc:
+            raise HTTPException(status_code=400, detail="TXT files must be UTF-8 encoded.") from exc
+    if not text:
+        raise HTTPException(status_code=400, detail="Text is required.")
+    valid_codes = {lang.code for lang in LANGUAGES}
+    if payload.source_lang not in valid_codes:
+        raise HTTPException(status_code=400, detail="Unknown source language.")
+    if payload.target_lang not in valid_codes:
+        raise HTTPException(status_code=400, detail="Unknown target language.")
+    try:
+        translated_text = translate_text(
+            text, payload.source_lang, payload.target_lang,
+            translation_engine, translation_indic_engine, translation_indic_en_engine,
+        )
+    except (RuntimeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"translated_text": translated_text}
+
+
+@app.post("/api/text/jobs")
+def create_text_job(request: Request, payload: CreateTextJobRequest):
+    user = require_api_role(request, *JOB_TRIGGER_ROLES)
+    text = payload.text.strip()
+    text_path = None
+    if payload.text_path:
+        text_path = Path(payload.text_path.strip().strip('"'))
+        if not text_path.is_absolute():
+            raise HTTPException(status_code=400, detail="Text path must be absolute.")
+        if text_path.suffix.lower() not in ALLOWED_TEXT_EXTENSIONS:
+            raise HTTPException(status_code=400, detail="Only .txt files are supported.")
+        if not text_path.is_file():
+            raise HTTPException(status_code=400, detail=f"File not found: '{payload.text_path}'.")
+    if not text and text_path is None:
+        raise HTTPException(status_code=400, detail="Text is required.")
+    valid_codes = {lang.code for lang in LANGUAGES}
+    if payload.source_lang not in valid_codes:
+        raise HTTPException(status_code=400, detail="Unknown source language.")
+    if payload.target_lang not in valid_codes:
+        raise HTTPException(status_code=400, detail="Unknown target language.")
+
+    job = job_manager.create(
+        source_lang=payload.source_lang,
+        target_lang=payload.target_lang,
+        filename=text_path.name if text_path else "typed-text.txt",
+        source_path=str(text_path) if text_path else "",
+        username=user["username"],
+    )
+    if text_path is None:
+        input_path = OUTPUTS_DIR / "typed-text" / job.id / "input.txt"
+        input_path.parent.mkdir(parents=True, exist_ok=True)
+        input_path.write_text(text, encoding="utf-8")
+        job_manager.update(job.id, source_path=str(input_path))
+        text_path = input_path
+    job_manager.update(job.id, message="Queued for processing.")
+    job_manager.submit_text(
+        run_text_pipeline, job.id, str(text_path), payload.source_lang, payload.target_lang,
+        job_manager, translation_engine, translation_indic_engine, translation_indic_en_engine,
+    )
+    return {"job_id": job.id}
+
+
 @app.post("/api/jobs/{job_id}/retry")
 def retry_job(request: Request, job_id: str):
     require_api_role(request, *JOB_TRIGGER_ROLES)
@@ -391,10 +524,17 @@ def retry_job(request: Request, job_id: str):
     job = job_manager.retry(job_id)
     if job is None:
         raise HTTPException(status_code=409, detail="Job could not be requeued")
-    job_manager.submit(
-        run_pipeline, job.id, str(source_path), job.source_lang, job.target_lang, job_manager, asr_engine,
-        translation_engine, translation_indic_engine, translation_indic_en_engine, tts_engine,
-    )
+    if source_path.suffix.lower() in ALLOWED_TEXT_EXTENSIONS:
+        job_manager.submit_text(
+            run_text_pipeline, job.id, str(source_path), job.source_lang, job.target_lang,
+            job_manager, translation_engine, translation_indic_engine, translation_indic_en_engine,
+        )
+    else:
+        pipeline = run_audio_pipeline if source_path.suffix.lower() in ALLOWED_AUDIO_EXTENSIONS else run_pipeline
+        job_manager.submit(
+            pipeline, job.id, str(source_path), job.source_lang, job.target_lang, job_manager, asr_engine,
+            translation_engine, translation_indic_engine, translation_indic_en_engine, tts_engine,
+        )
     return {"job_id": job.id, "message": job.message}
 
 
@@ -462,6 +602,10 @@ def get_output(request: Request, job_id: str):
         logger.warning("Output requested but not available for job %s", job_id)
         raise HTTPException(status_code=404, detail="Output not available")
     logger.info("Serving output video for job %s", job_id)
+    if Path(job.output_path).suffix.lower() == ".wav":
+        return FileResponse(job.output_path, media_type="audio/wav", filename=f"dubbed_{Path(job.filename).stem}.wav")
+    if Path(job.output_path).suffix.lower() == ".txt":
+        return FileResponse(job.output_path, media_type="text/plain", filename=f"translated_{Path(job.filename).stem}.txt")
     return FileResponse(job.output_path, media_type="video/mp4", filename=f"dubbed_{job.filename}.mp4")
 
 

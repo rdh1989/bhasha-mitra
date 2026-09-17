@@ -102,6 +102,7 @@ class JobManager:
         self._condition = threading.Condition(self._lock)
         self._queue = deque()
         self._active_jobs = 0
+        self._active_text_jobs = 0
         self._max_translation_jobs = max_translation_jobs
         self._memory_policy = memory_policy or get_memory_policy()
         self._shutdown_requested = False
@@ -171,7 +172,9 @@ class JobManager:
             job = self._jobs.get(job_id)
             if job is None:
                 return None
-            if job.done or job.cancel_requested:
+            if job.cancel_requested or job.stage == "cancelled":
+                return job
+            if job.done:
                 return None
             job.cancel_requested = True
             if job.stage == "queued":
@@ -180,6 +183,11 @@ class JobManager:
                 job.ended_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
                 job.duration_seconds = round(time.time() - job.created_at, 1)
                 job.message = "Cancelled."
+                self._queue = deque(
+                    queued for queued in self._queue
+                    if not queued[2] or queued[2][0] != job_id
+                )
+                self._condition.notify_all()
             else:
                 job.stage = "cancelling"
                 job.message = "Cancellation requested; stopping at the next safe checkpoint."
@@ -224,6 +232,8 @@ class JobManager:
                 return
             if job.done and job.cancel_requested:
                 return
+            if job.cancel_requested and kwargs.get("stage") == "completed":
+                kwargs = {"stage": "cancelled", "done": True, "message": "Cancelled.", "output_path": None}
             if kwargs.get("done") and not job.done:
                 # First time this job finishes (completed or failed) - record
                 # when it ended and how long the whole run took.
@@ -245,7 +255,13 @@ class JobManager:
 
     def submit(self, fn, *args, **kwargs) -> None:
         with self._condition:
-            self._queue.append((fn, args, kwargs))
+            self._queue.append((False, fn, args, kwargs))
+            self._condition.notify_all()
+
+    def submit_text(self, fn, *args, **kwargs) -> None:
+        """Queue text work in its single reserved admission slot."""
+        with self._condition:
+            self._queue.append((True, fn, args, kwargs))
             self._condition.notify_all()
 
     @property
@@ -257,6 +273,11 @@ class JobManager:
     def queued_job_count(self) -> int:
         with self._lock:
             return len(self._queue)
+
+    @property
+    def active_text_job_count(self) -> int:
+        with self._lock:
+            return self._active_text_jobs
 
     def shutdown(self) -> None:
         """Cancel all work without waiting for long native model calls.
@@ -281,26 +302,40 @@ class JobManager:
     def _dispatch(self) -> None:
         while True:
             with self._condition:
-                while not self._shutdown_requested and (
-                    not self._queue or self._active_jobs >= self._max_translation_jobs
-                ):
+                while not self._shutdown_requested and not self._next_admissible_job():
                     self._condition.wait()
                 if self._shutdown_requested:
                     return
                 if not self._memory_policy.can_start_translation_job():
                     self._condition.wait(timeout=1.0)
                     continue
-                fn, args, kwargs = self._queue.popleft()
-                self._active_jobs += 1
-            thread = threading.Thread(target=self._run_admitted, args=(fn, args, kwargs), daemon=True)
+                is_text, fn, args, kwargs = self._next_admissible_job()
+                self._queue.remove((is_text, fn, args, kwargs))
+                if is_text:
+                    self._active_text_jobs += 1
+                else:
+                    self._active_jobs += 1
+            thread = threading.Thread(target=self._run_admitted, args=(is_text, fn, args, kwargs), daemon=True)
             thread.start()
 
-    def _run_admitted(self, fn, args, kwargs) -> None:
+    def _next_admissible_job(self):
+        for job in self._queue:
+            is_text, *_rest = job
+            if is_text and self._active_text_jobs < 1:
+                return job
+            if not is_text and self._active_jobs < self._max_translation_jobs:
+                return job
+        return None
+
+    def _run_admitted(self, is_text, fn, args, kwargs) -> None:
         try:
             self._run_safely(fn, *args, **kwargs)
         finally:
             with self._condition:
-                self._active_jobs -= 1
+                if is_text:
+                    self._active_text_jobs -= 1
+                else:
+                    self._active_jobs -= 1
                 self._condition.notify_all()
 
     @staticmethod

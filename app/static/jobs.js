@@ -119,7 +119,7 @@ function jobRowHtml(job, { allowDelete = false, allowDetails = false, allowRetry
   if (allowDetails) {
     actions.push(`<button class="link-btn" data-details-job="${jobId}" aria-label="View details for ${filename}">Details</button>`);
   }
-  if (job.stage === "completed" && job.output_path) {
+  if (job.stage === "completed" && job.has_output) {
     actions.push(`<a href="/media/output/${jobId}" class="link" download aria-label="Download ${filename}">Download</a>`);
   }
   if (job.error) {

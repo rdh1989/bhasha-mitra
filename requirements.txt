@@ -8,7 +8,7 @@ pydantic==2.13.4
 starlette==1.6.0
 psutil==7.2.2
 
-# ASR and model runtime
+# AI/ML runtime
 faster-whisper==1.2.1
 ctranslate2==4.8.1
 onnxruntime==1.29.0
@@ -23,21 +23,22 @@ accelerate==1.14.0
 sentencepiece==0.2.2
 IndicTransToolkit==1.1.1
 
-# Text-to-speech
-# app.main imports both TTS engine modules; keep this exact installed Git
-# revision even though Piper is the default engine.
-parler-tts @ git+https://github.com/huggingface/parler-tts.git@d108732cd57788ec86bc857d99a6cabd66663d68
+# Speech / TTS (Piper is the current default engine)
 piper-tts==1.7.0
 
 # Audio and media
 soundfile==0.14.0
 imageio-ffmpeg==0.6.0
 
-# Build/package tool used by build.py. build.py also installs it on demand,
-# but pinning it here makes a fresh development/build environment reproducible.
+# Build/package dependencies used by build.py
+Pillow==12.3.0
 PyInstaller==6.22.2
 
-# torch==2.13.0+cpu is the CPU-only wheel used by the current Windows .venv.
-# Install this requirement with the PyTorch CPU wheel index when the default
-# package index does not expose local-version CPU wheels:
+# The active environment uses the CPU-only torch wheel. If the configured
+# package index cannot resolve this local-version pin, install with:
 # python -m pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+
+# Optional legacy Parler-TTS is intentionally excluded: the active app
+# defaults to Piper, and the current Parler-TTS install was made with
+# --no-deps from Git revision d108732cd57788ec86bc857d99a6cabd66663d68.
+# Tests use unittest from the standard library; pytest is not installed.

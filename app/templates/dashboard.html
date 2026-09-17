@@ -43,6 +43,12 @@
 </section>
 
 {% if can_trigger_jobs %}
+<div class="translation-tabs" role="tablist" aria-label="Translation mode">
+  <button type="button" role="tab" id="video-tab" aria-selected="true" aria-controls="video-panel" data-translation-tab="video">Video Translation</button>
+  <button type="button" role="tab" id="audio-tab" aria-selected="false" aria-controls="audio-panel" data-translation-tab="audio">Audio Translation</button>
+  <button type="button" role="tab" id="text-tab" aria-selected="false" aria-controls="text-panel" data-translation-tab="text">Text Translation</button>
+</div>
+<div id="video-panel" role="tabpanel" aria-labelledby="video-tab" data-translation-panel="video">
 <section class="card job-card">
   <div class="job-card-header">
     <div class="job-card-icon" aria-hidden="true">
@@ -64,7 +70,7 @@
       <div id="selected-files" class="selected-files" aria-live="polite" aria-atomic="true">
         <p class="selected-files-empty">No video selected</p>
       </div>
-      <button type="button" id="browse-btn" class="btn-secondary browse-button">
+      <button type="button" id="browse-btn" class="btn-secondary browse-button" data-browse-kind="video" data-paths-input="video_paths" data-selected-files="selected-files">
         <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H10l2 2h5.5A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5z"></path><path d="M4 9h16"></path></svg>
         Browse files
       </button>
@@ -92,6 +98,56 @@
   <div id="upload-status" class="status-region" aria-live="polite" aria-atomic="true"></div>
   <p class="hint">Choose the language spoken in the video and the language for the dubbed speech. Some languages are available only as dubbing targets, not as source audio.</p>
 </section>
+</div>
+
+<div id="audio-panel" role="tabpanel" aria-labelledby="audio-tab" data-translation-panel="audio" hidden>
+<section class="card job-card">
+  <div class="job-card-header"><div class="job-card-icon" aria-hidden="true">Audio</div><div><h2>Translate audio</h2><p class="job-card-subtitle">Create a dubbed audio track from a local audio file.</p></div></div>
+  <p class="hint">Supported: MP3, WAV, AAC, M4A, FLAC, WMA, OGG</p>
+  <form id="audio-form" class="job-form">
+    <input type="hidden" id="audio_paths" name="audio_paths" />
+    <div class="file-selection" aria-labelledby="audio-selection-label">
+      <span id="audio-selection-label" class="field-label">Audio <span class="required-mark" aria-hidden="true">*</span></span>
+      <div id="selected-audio-files" class="selected-files" aria-live="polite" aria-atomic="true"><p class="selected-files-empty">No audio selected</p></div>
+      <button type="button" id="browse-audio-btn" class="btn-secondary browse-button" data-browse-kind="audio" data-paths-input="audio_paths" data-selected-files="selected-audio-files">Browse files</button>
+    </div>
+    <div class="language-grid">
+      <label for="audio_source_lang"><span class="field-label">Source language <span class="required-mark" aria-hidden="true">*</span></span><select id="audio_source_lang" required><option value="" selected disabled>Select source language</option>{% for lang in languages %}<option value="{{ lang.code }}">{{ lang.label }}</option>{% endfor %}</select></label>
+      <label for="audio_target_lang"><span class="field-label">Target language <span class="required-mark" aria-hidden="true">*</span></span><select id="audio_target_lang" required><option value="" selected disabled>Select target language</option>{% for lang in languages %}<option value="{{ lang.code }}">{{ lang.label }}</option>{% endfor %}</select></label>
+    </div>
+    <button type="submit" id="audio-start-btn" disabled>Translate audio</button>
+  </form>
+  <div id="audio-status" class="status-region" aria-live="polite" aria-atomic="true"></div>
+</section>
+</div>
+
+<div id="text-panel" role="tabpanel" aria-labelledby="text-tab" data-translation-panel="text" hidden>
+<section class="card job-card">
+  <div class="job-card-header"><div class="job-card-icon" aria-hidden="true">Text</div><div><h2>Translate text</h2><p class="job-card-subtitle">Translate text directly between supported languages.</p></div></div>
+  <form id="text-form" class="job-form">
+    <div class="text-input-tabs" role="tablist" aria-label="Text input method">
+      <button type="button" role="tab" aria-selected="true" data-text-input-tab="direct">Enter Text</button>
+      <button type="button" role="tab" aria-selected="false" data-text-input-tab="file">Upload TXT</button>
+    </div>
+    <div data-text-input-panel="direct"><label for="text-input"><span class="field-label">Text <span class="required-mark" aria-hidden="true">*</span></span><textarea id="text-input" placeholder="Type or paste text here..."></textarea></label></div>
+    <div data-text-input-panel="file" hidden>
+      <input type="hidden" id="text_paths" name="text_paths" />
+      <div class="file-selection" aria-labelledby="text-selection-label">
+        <span id="text-selection-label" class="field-label">TXT file <span class="required-mark" aria-hidden="true">*</span></span>
+        <div id="selected-text-files" class="selected-files" aria-live="polite" aria-atomic="true"><p class="selected-files-empty">No text file selected</p></div>
+        <button type="button" id="browse-text-btn" class="btn-secondary browse-button" data-browse-kind="text" data-paths-input="text_paths" data-selected-files="selected-text-files">Browse TXT</button>
+      </div>
+    </div>
+    <div class="language-grid">
+      <label for="text_source_lang"><span class="field-label">Source language <span class="required-mark" aria-hidden="true">*</span></span><select id="text_source_lang" required><option value="" selected disabled>Select source language</option>{% for lang in languages %}<option value="{{ lang.code }}">{{ lang.label }}</option>{% endfor %}</select></label>
+      <label for="text_target_lang"><span class="field-label">Target language <span class="required-mark" aria-hidden="true">*</span></span><select id="text_target_lang" required><option value="" selected disabled>Select target language</option>{% for lang in languages %}<option value="{{ lang.code }}">{{ lang.label }}</option>{% endfor %}</select></label>
+    </div>
+    <button type="submit" id="text-start-btn">Translate text</button>
+  </form>
+  <div id="text-status" class="status-region" aria-live="polite" aria-atomic="true"></div>
+  <div id="text-result" class="text-result" hidden><div class="field-label">Translated Text</div><p id="translated-text"></p><button type="button" id="copy-translation-btn" class="btn-secondary">Copy</button><a id="download-translation-btn" class="btn-secondary text-download" download hidden>Download TXT</a></div>
+</section>
+</div>
 
 <dialog id="file-browser-dialog" class="job-dialog file-browser-dialog" aria-labelledby="file-browser-title">
   <div class="dialog-header">
@@ -167,6 +223,6 @@
   window.__CAN_TRIGGER_JOBS__ = {{ can_trigger_jobs | tojson }};
 </script>
 <script src="/static/jobs.js"></script>
-<script src="/static/filebrowser.js"></script>
-<script src="/static/app.js"></script>
+<script src="/static/filebrowser.js?v=translation-tabs-2"></script>
+<script src="/static/app.js?v=translation-tabs-2"></script>
 {% endblock %}

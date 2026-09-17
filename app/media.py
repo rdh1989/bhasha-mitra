@@ -68,7 +68,7 @@ def time_stretch_audio(in_path: str, out_path: str, speed_factor: float) -> None
 def mux_video_with_audio(video_path: str, audio_path: str, out_path: str, subtitle_path: str | None = None) -> None:
     inputs = ["-i", video_path, "-i", audio_path]
     maps = ["-map", "0:v:0", "-map", "1:a:0"]
-    codecs = ["-c:v", "copy", "-c:a", "aac", "-b:a", "192k"]
+    codecs = ["-c:v", "libx264", "-c:a", "aac", "-b:a", "192k"]
     if subtitle_path:
         # Embedded as a soft (selectable) subtitle track - no video re-encode
         # needed, so muxing stays fast and lossless for the picture.

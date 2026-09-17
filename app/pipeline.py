@@ -17,6 +17,7 @@ import re
 import threading
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Union
 
 import numpy as np
@@ -74,6 +75,7 @@ logger = logging.getLogger(__name__)
 _SEGMENT_FORMAT = "quality-v4"
 _MAX_MERGED_SEGMENT_DURATION = 15.0
 _MAX_MERGED_SEGMENT_GAP = 1.0
+_TRANSLATION_BATCH_SIZE = 4
 
 
 @dataclass
@@ -246,6 +248,7 @@ def run_pipeline(
                 target_language=target_code,
                 segment_format=_SEGMENT_FORMAT,
             )
+        jobs.raise_if_cancelled(job_id)
         if not final_segments:
             raise RuntimeError("Translation produced no usable text to synthesize.")
         diagnostic_results = []
@@ -285,6 +288,7 @@ def run_pipeline(
         diagnostics_text = json.dumps(diagnostics_payload, ensure_ascii=False, indent=2)
         (work_dir / "translation_diagnostics.json").write_text(diagnostics_text, encoding="utf-8")
         (work_dir / "translation_quality_diagnostics.json").write_text(diagnostics_text, encoding="utf-8")
+        jobs.raise_if_cancelled(job_id)
 
         dubbed_audio_path = work_dir / "dubbed_audio.wav"
         if dubbed_audio_path.is_file():
@@ -298,18 +302,22 @@ def run_pipeline(
         jobs.raise_if_cancelled(job_id)
 
         jobs.update(job_id, stage="muxing_video", progress=0.85, message="Generating subtitles...")
+        jobs.raise_if_cancelled(job_id)
         subtitle_path = work_dir / "subtitles.srt"
         try:
             subtitle_path.write_text(build_srt(final_segments), encoding="utf-8")
         except Exception as exc:
             raise RuntimeError(f"Failed to generate subtitles: {exc}") from exc
+        jobs.raise_if_cancelled(job_id)
 
         jobs.update(job_id, stage="muxing_video", progress=0.9, message="Combining dubbed audio and subtitles with the original video...")
+        jobs.raise_if_cancelled(job_id)
         output_path = work_dir / f"{job_id}.mp4"
         try:
             mux_video_with_audio(str(video_path), str(dubbed_audio_path), str(output_path), subtitle_path=str(subtitle_path))
         except Exception as exc:
             raise RuntimeError(f"Failed to combine dubbed audio with video: {exc}") from exc
+        jobs.raise_if_cancelled(job_id)
 
         jobs.update(
             job_id, stage="completed", progress=1.0, done=True,
@@ -328,6 +336,141 @@ def run_pipeline(
         heartbeat.join(timeout=1)
 
 
+def run_audio_pipeline(
+    job_id: str,
+    audio_input_path: str,
+    source_code: str,
+    target_code: str,
+    jobs: JobManager,
+    asr: ASREngine,
+    translator: TranslationEngine,
+    translator_indic: TranslationEngine,
+    translator_indic_en: TranslationEngine,
+    tts: "Union[TTSEngine, PiperTTSEngine]",
+) -> None:
+    """Create a time-aligned dubbed WAV from a local audio source."""
+    work_dir = OUTPUTS_DIR / Path(audio_input_path).stem / job_id
+    work_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        jobs.raise_if_cancelled(job_id)
+        target_lang = LANGUAGES_BY_CODE[target_code]
+        audio_path = work_dir / "audio.wav"
+        jobs.update(job_id, stage="extracting_audio", progress=0.02, message="Preparing audio...")
+        extract_audio(audio_input_path, str(audio_path))
+        jobs.raise_if_cancelled(job_id)
+
+        jobs.update(job_id, stage="transcribing", progress=0.05, message="Transcribing speech...")
+        base_result = asr.transcribe(
+            str(audio_path), source_language=source_code, task="transcribe",
+            progress_cb=lambda fraction: jobs.update(job_id, progress=0.05 + 0.30 * fraction),
+        )
+        if not base_result.segments:
+            raise RuntimeError("No speech was detected in the audio track.")
+        base_result.segments = _merge_asr_segments(
+            _drop_hallucinated_segments(job_id, jobs, base_result.segments, source_code)
+        )
+        if not base_result.segments:
+            raise RuntimeError("No usable speech was detected in the audio track.")
+        jobs.update(
+            job_id,
+            detected_source_lang=source_code,
+            detected_source_lang_prob=base_result.language_probability,
+            message=f"Detected source language '{source_code}' ({base_result.language_probability:.0%} confidence).",
+        )
+        final_segments = _translate(
+            job_id, jobs, translator, translator_indic, translator_indic_en,
+            base_result, source_code, target_code, target_lang,
+        )
+        if not final_segments:
+            raise RuntimeError("Translation produced no usable text to synthesize.")
+        jobs.raise_if_cancelled(job_id)
+        jobs.update(
+            job_id, stage="synthesizing_speech", progress=0.55,
+            message=f"Synthesizing {len(final_segments)} speech segment(s)...",
+        )
+        dubbed_audio_path = _synthesize_and_align(
+            job_id, jobs, tts, target_lang, audio_path, final_segments, work_dir
+        )
+        jobs.raise_if_cancelled(job_id)
+        jobs.update(
+            job_id, stage="completed", progress=1.0, done=True,
+            message="Done! Dubbed audio is ready.", output_path=str(dubbed_audio_path),
+        )
+        logger.info("Job %s: audio pipeline completed successfully -> %s", job_id, dubbed_audio_path)
+    except JobCancelled:
+        logger.info("Job %s: audio cancellation completed", job_id)
+        jobs.mark_cancelled(job_id)
+    except Exception as exc:  # noqa: BLE001 - surface all failures to the UI
+        logger.exception("Job %s: audio pipeline failed", job_id)
+        jobs.update(job_id, stage="failed", done=True, error=str(exc), message=f"Failed: {exc}")
+
+
+def run_text_pipeline(
+    job_id: str,
+    text_path: str,
+    source_code: str,
+    target_code: str,
+    jobs: JobManager,
+    translator: TranslationEngine,
+    translator_indic: TranslationEngine,
+    translator_indic_en: TranslationEngine,
+) -> None:
+    """Translate one persisted text input and write its translated TXT output."""
+    work_dir = OUTPUTS_DIR / Path(text_path).stem / job_id
+    work_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        jobs.raise_if_cancelled(job_id)
+        jobs.update(job_id, stage="translating", progress=0.05, message="Reading text input...")
+        text = Path(text_path).read_text(encoding="utf-8").strip()
+        if not text:
+            raise RuntimeError("Text is required.")
+        target_lang = LANGUAGES_BY_CODE[target_code]
+        base_result = SimpleNamespace(segments=[Segment(start=0.0, end=1.0, text=text)])
+        translated = _translate(
+            job_id, jobs, translator, translator_indic, translator_indic_en,
+            base_result, source_code, target_code, target_lang,
+        )
+        jobs.raise_if_cancelled(job_id)
+        if not translated or not translated[0][2]:
+            raise RuntimeError("Translation produced no usable text.")
+        output_path = work_dir / "translated.txt"
+        jobs.raise_if_cancelled(job_id)
+        output_path.write_text(translated[0][2], encoding="utf-8")
+        jobs.raise_if_cancelled(job_id)
+        jobs.update(
+            job_id, stage="completed", progress=1.0, done=True,
+            message="Done! Translated text is ready.", output_path=str(output_path),
+        )
+        logger.info("Job %s: text pipeline completed successfully -> %s", job_id, output_path)
+    except JobCancelled:
+        logger.info("Job %s: text cancellation completed", job_id)
+        jobs.mark_cancelled(job_id)
+    except Exception as exc:  # noqa: BLE001 - surface all failures to the UI
+        logger.exception("Job %s: text pipeline failed", job_id)
+        jobs.update(job_id, stage="failed", done=True, error=str(exc), message=f"Failed: {exc}")
+
+
+def translate_text(
+    text: str,
+    source_code: str,
+    target_code: str,
+    translator: TranslationEngine,
+    translator_indic: TranslationEngine,
+    translator_indic_en: TranslationEngine,
+) -> str:
+    """Translate one text input through the same routing and quality path as media jobs."""
+    target_lang = LANGUAGES_BY_CODE[target_code]
+    result = SimpleNamespace(segments=[Segment(start=0.0, end=1.0, text=text)])
+    silent_jobs = SimpleNamespace(update=lambda *args, **kwargs: None)
+    translated = _translate(
+        "text", silent_jobs, translator, translator_indic, translator_indic_en,
+        result, source_code, target_code, target_lang,
+    )
+    if not translated or not translated[0][2]:
+        raise RuntimeError("Translation produced no usable text.")
+    return translated[0][2]
+
+
 def _translate_with_heartbeat(job_id, jobs, engine, texts, **translate_kwargs):
     """Runs engine.translate() on a background thread and logs a status
     message every 60s while it's still running, so a long (or hung, e.g. the
@@ -339,7 +482,22 @@ def _translate_with_heartbeat(job_id, jobs, engine, texts, **translate_kwargs):
     def _worker() -> None:
         for attempt in range(2):
             try:
-                result["value"] = engine.translate(texts, **translate_kwargs)
+                translated = []
+                for start in range(0, len(texts), _TRANSLATION_BATCH_SIZE):
+                    jobs.raise_if_cancelled(job_id)
+                    batch = texts[start:start + _TRANSLATION_BATCH_SIZE]
+                    batch_result = engine.translate(batch, **translate_kwargs)
+                    jobs.raise_if_cancelled(job_id)
+                    if len(batch_result) != len(batch):
+                        raise RuntimeError(
+                            f"Translation batch result count mismatch: inputs={len(batch)} outputs={len(batch_result)}"
+                        )
+                    translated.extend(batch_result)
+                result["value"] = translated
+                result["retry_count"] = attempt
+                return
+            except JobCancelled as exc:
+                result["error"] = exc
                 result["retry_count"] = attempt
                 return
             except Exception as exc:  # noqa: BLE001 - re-raised on caller's thread below
@@ -561,6 +719,8 @@ def _translate(job_id, jobs, translator, translator_indic, translator_indic_en, 
         texts = [c.source_text for c in translation_contexts]
         try:
             translated = _translate_with_heartbeat(job_id, jobs, translator, texts, tgt_lang=target_lang.flores_code)
+        except JobCancelled:
+            raise
         except Exception as exc:
             raise RuntimeError(f"Text translation failed: {exc}") from exc
         return _filter_context_translations(job_id, jobs, translation_contexts, context_segments, translated)
@@ -580,9 +740,12 @@ def _translate(job_id, jobs, translator, translator_indic, translator_indic_en, 
                 english_texts = _translate_with_heartbeat(
                     job_id, jobs, translator_indic_en, texts, tgt_lang="eng_Latn", src_lang=source_lang.flores_code
                 )
+                jobs.raise_if_cancelled(job_id)
                 translated = _translate_with_heartbeat(
                     job_id, jobs, translator, english_texts, tgt_lang=target_lang.flores_code
                 )
+            except JobCancelled:
+                raise
             except Exception as exc:
                 raise RuntimeError(f"Text translation failed: {exc}") from exc
             return _filter_context_translations(job_id, jobs, translation_contexts, context_segments, translated)
@@ -597,6 +760,8 @@ def _translate(job_id, jobs, translator, translator_indic, translator_indic_en, 
             translated = _translate_with_heartbeat(
                 job_id, jobs, translator_indic, texts, tgt_lang=target_lang.flores_code, src_lang=source_lang.flores_code
             )
+        except JobCancelled:
+            raise
         except Exception as exc:
             raise RuntimeError(f"Text translation failed: {exc}") from exc
         translated = _restore_protected_contexts(translated, term_replacements)
@@ -616,6 +781,8 @@ def _translate(job_id, jobs, translator, translator_indic, translator_indic_en, 
         translated = _translate_with_heartbeat(
             job_id, jobs, translator_indic_en, texts, tgt_lang="eng_Latn", src_lang=source_lang.flores_code
         )
+    except JobCancelled:
+        raise
     except Exception as exc:
         raise RuntimeError(f"Text translation failed: {exc}") from exc
     return _filter_context_translations(job_id, jobs, translation_contexts, context_segments, translated)
@@ -838,6 +1005,7 @@ def _write_segments_json(path: Path, segments, **extra) -> None:
 
 
 def _synthesize_and_align(job_id, jobs, tts, target_lang, audio_path, final_segments, work_dir):
+    jobs.raise_if_cancelled(job_id)
     info = sf.info(str(audio_path))
     total_duration = info.frames / info.samplerate
     sr = tts.sampling_rate_for(target_lang)
@@ -869,10 +1037,11 @@ def _synthesize_and_align(job_id, jobs, tts, target_lang, audio_path, final_segm
 
     # Synthesize at the configured natural Piper rate first. Timing allocation
     # must use measured waveform duration, not the source ASR window.
-    natural_audio = [
-        np.asarray(tts.synthesize(text, target_lang, voice_index=0), dtype=np.float32)
-        for _, _, text, _ in units
-    ]
+    natural_audio = []
+    for _, _, text, _ in units:
+        jobs.raise_if_cancelled(job_id)
+        natural_audio.append(np.asarray(tts.synthesize(text, target_lang, voice_index=0), dtype=np.float32))
+        jobs.raise_if_cancelled(job_id)
     timing_plan = _plan_tts_timing(units, [len(audio) / sr for audio in natural_audio], sr)
 
     segments_dir = work_dir / "segments"

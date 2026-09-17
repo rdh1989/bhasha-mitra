@@ -9,3 +9,5 @@ __pycache__/
 models/tts/_description_tokenizer_cache/
 models/
 dist/
+diagnostics/
+tests/

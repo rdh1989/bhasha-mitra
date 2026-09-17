@@ -11,7 +11,7 @@ import os
 import string
 from pathlib import Path
 
-from app.config import ALLOWED_VIDEO_EXTENSIONS
+from app.config import ALLOWED_AUDIO_EXTENSIONS, ALLOWED_TEXT_EXTENSIONS, ALLOWED_VIDEO_EXTENSIONS
 
 
 def _windows_drives() -> list[dict]:
@@ -23,9 +23,16 @@ def _windows_drives() -> list[dict]:
     return drives
 
 
-def list_directory(path: str | None) -> dict:
+def list_directory(path: str | None, kind: str = "video") -> dict:
     """Returns {"path", "parent", "entries"} for the given directory, or the
     list of drives (Windows) / filesystem root (other OSes) when path is empty."""
+    extensions = {
+        "video": ALLOWED_VIDEO_EXTENSIONS,
+        "audio": ALLOWED_AUDIO_EXTENSIONS,
+        "text": ALLOWED_TEXT_EXTENSIONS,
+    }.get(kind)
+    if extensions is None:
+        raise ValueError(f"Unsupported browse kind: {kind}")
     if not path:
         if os.name == "nt":
             return {"path": "", "parent": None, "entries": _windows_drives()}
@@ -44,7 +51,7 @@ def list_directory(path: str | None) -> dict:
             try:
                 if entry.is_dir():
                     dirs.append({"name": entry.name, "path": str(entry), "is_dir": True})
-                elif entry.suffix.lower() in ALLOWED_VIDEO_EXTENSIONS:
+                elif entry.suffix.lower() in extensions:
                     files.append({"name": entry.name, "path": str(entry), "is_dir": False})
             except OSError:
                 continue  # inaccessible entry (permissions, broken symlink, etc.)

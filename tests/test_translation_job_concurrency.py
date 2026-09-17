@@ -82,6 +82,62 @@ class TranslationJobConcurrencyTests(unittest.TestCase):
         finally:
             manager.shutdown()
 
+    def test_queued_cancel_removes_job_before_worker_runs(self):
+        manager = self.make_manager(maximum=1)
+        release = threading.Event()
+        second_started = threading.Event()
+        try:
+            first = manager.create("en", "mr", "first.mp4", "first.mp4")
+            second = manager.create("en", "mr", "second.mp4", "second.mp4")
+
+            manager.submit(lambda _job_id: release.wait(2), first.id)
+            self.wait_for(lambda: manager.active_job_count == 1)
+            manager.submit(lambda _job_id: second_started.set(), second.id)
+            self.wait_for(lambda: manager.queued_job_count == 1)
+
+            cancelled = manager.request_cancel(second.id)
+            self.assertIsNotNone(cancelled)
+            self.assertEqual(cancelled.stage, "cancelled")
+            self.assertTrue(cancelled.done)
+            self.assertEqual(0, manager.queued_job_count)
+
+            release.set()
+            time.sleep(0.05)
+            self.assertFalse(second_started.is_set())
+        finally:
+            release.set()
+            manager.shutdown()
+
+    def test_repeated_cancel_requests_are_idempotent_for_running_job(self):
+        manager = self.make_manager(maximum=1)
+        try:
+            job = manager.create("en", "mr", "video.mp4", "video.mp4")
+            job.stage = "translating"
+            first = manager.request_cancel(job.id)
+            second = manager.request_cancel(job.id)
+
+            self.assertIs(first, second)
+            self.assertEqual("cancelling", second.stage)
+            self.assertFalse(second.done)
+        finally:
+            manager.shutdown()
+
+    def test_late_completion_update_cannot_overwrite_cancelled_job(self):
+        manager = self.make_manager(maximum=1)
+        try:
+            job = manager.create("en", "mr", "video.mp4", "video.mp4")
+            job.stage = "translating"
+            manager.request_cancel(job.id)
+            manager.update(job.id, stage="completed", done=True, output_path="out.mp4", message="Done!")
+            state = manager.get(job.id)
+
+            self.assertEqual("cancelled", state.stage)
+            self.assertTrue(state.done)
+            self.assertIsNone(state.output_path)
+            self.assertEqual("Cancelled.", state.message)
+        finally:
+            manager.shutdown()
+
     def test_active_count_never_exceeds_configured_maximum(self):
         manager = self.make_manager(maximum=2)
         release = threading.Event()

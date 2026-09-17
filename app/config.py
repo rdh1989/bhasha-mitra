@@ -234,7 +234,9 @@ def _load_or_create_session_secret() -> str:
 
 SESSION_SECRET = _load_or_create_session_secret()
 
-ALLOWED_VIDEO_EXTENSIONS = {".mp4", ".mkv", ".mov", ".avi", ".webm", ".m4v"}
+ALLOWED_VIDEO_EXTENSIONS = {".mp4", ".mkv", ".mov", ".avi", ".webm", ".m4v", ".wmv", ".flv"}
+ALLOWED_AUDIO_EXTENSIONS = {".wav", ".mp3", ".m4a", ".aac", ".flac", ".ogg", ".wma"}
+ALLOWED_TEXT_EXTENSIONS = {".txt"}
 
 
 @dataclass(frozen=True)
