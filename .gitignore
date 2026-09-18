@@ -11,3 +11,4 @@ models/
 dist/
 diagnostics/
 tests/
+build/
