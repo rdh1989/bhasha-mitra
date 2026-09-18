@@ -6,6 +6,10 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+APP_NAME = "Bhasha Mitra"
+APP_VERSION = "1.1.0"
+APP_BUILD = os.environ.get("BHASHAMITRA_APP_BUILD", "DEV")
+
 if getattr(sys, "frozen", False):
     # Running as a PyInstaller-built exe (see build.py): large local assets
     # (models/data/outputs/logs/uploads) are never bundled into the exe, so

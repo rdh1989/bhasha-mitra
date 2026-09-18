@@ -1,17 +1,18 @@
 {% extends "base.html" %}
-{% block title %}About - Bhasha Mitra{% endblock %}
+{% block title %}About - {{ app_name }}{% endblock %}
 {% block content %}
 <header class="page-header">
   <div>
-    <h1>About Bhasha Mitra</h1>
+    <h1>About {{ app_name }}</h1>
     <p class="muted">Local AI video dubbing for supported Indian languages.</p>
+    <p class="muted">Version {{ app_version }} · Build {{ app_build }}</p>
   </div>
 </header>
 
 <section class="card">
   <h2>What Bhasha Mitra does</h2>
   <p>
-    Bhasha Mitra takes a video, understands its speech, translates the content
+    {{ app_name }} takes a video, understands its speech, translates the content
     into a target language, synthesizes natural-sounding speech in that
     language, and re-combines it with the original video to produce a
     dubbed video - entirely on your local machine's CPU, with no data
@@ -34,7 +35,7 @@
   <p>
     The bundled IndicTrans2 checkpoint only translates <strong>from English into
     Indic languages</strong>. To still support routes like Marathi &rarr; Hindi or
-    Marathi &rarr; English, Bhasha Mitra uses the speech model's own built-in
+    Marathi &rarr; English, {{ app_name }} uses the speech model's own built-in
     speech-to-English translation as a pivot:
   </p>
   <ul>

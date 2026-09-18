@@ -24,10 +24,13 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 
+from app.config import APP_NAME, APP_VERSION
+
 ROOT = Path(__file__).resolve().parent
-APP_NAME = "BhashMitra"
+PACKAGE_NAME = "BhashMitra"
 SEP = ";" if sys.platform == "win32" else ":"
 
 # torch's own wheel does NOT bundle these itself - a machine without the
@@ -113,15 +116,39 @@ def _vc_runtime_binary_args() -> list[str]:
     return args
 
 
+def _build_date() -> str:
+    return datetime.now().strftime("%d%m%Y")
+
+
+def _build_metadata_runtime_hook(build_value: str) -> Path:
+    hook_path = ROOT / "build" / "pyi_app_build.py"
+    hook_path.parent.mkdir(parents=True, exist_ok=True)
+    hook_path.write_text(
+        "import os\n"
+        f"os.environ['BHASHAMITRA_APP_BUILD'] = {build_value!r}\n",
+        encoding="utf-8",
+    )
+    return hook_path
+
+
 def main() -> None:
     _ensure_pyinstaller()
+    build_value = _build_date()
+    runtime_hook = _build_metadata_runtime_hook(build_value)
+
+    print(APP_NAME)
+    print(f"Version: {APP_VERSION}")
+    print(f"Build: {build_value}")
+    print()
 
     args = [
-        "--name", APP_NAME,
+        "--name", PACKAGE_NAME,
         "--onedir",
         "--console",  # keep the console visible so startup/model-load progress and errors are seen
         "--noconfirm",
         "--clean",
+        "--specpath", str(ROOT / "build"),
+        "--runtime-hook", str(runtime_hook),
         "--add-data", f"{ROOT / 'app' / 'static'}{SEP}app/static",
         "--add-data", f"{ROOT / 'app' / 'templates'}{SEP}app/templates",
         "--add-data", f"{ROOT / 'app' / '_stubs'}{SEP}app/_stubs",
@@ -137,7 +164,7 @@ def main() -> None:
 
     PyInstaller.__main__.run(args)
 
-    exe_path = ROOT / "dist" / APP_NAME / f"{APP_NAME}.exe"
+    exe_path = ROOT / "dist" / PACKAGE_NAME / f"{PACKAGE_NAME}.exe"
     print()
     print(f"Build complete: {exe_path}")
     print(

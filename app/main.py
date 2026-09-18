@@ -36,6 +36,9 @@ from app.config import (
     ALLOWED_AUDIO_EXTENSIONS,
     ALLOWED_TEXT_EXTENSIONS,
     ALLOWED_VIDEO_EXTENSIONS,
+    APP_BUILD,
+    APP_NAME,
+    APP_VERSION,
     ASR_COMPUTE_TYPE,
     ASR_CPU_THREADS,
     ASR_MODEL_DIR,
@@ -73,7 +76,7 @@ logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent
 
-app = FastAPI(title="Bhasha Mitra - AI Video Dubbing")
+app = FastAPI(title=f"{APP_NAME} - AI Video Dubbing")
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET, same_site="lax", https_only=False)
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
@@ -104,6 +107,7 @@ tts_engine = PiperTTSEngine(PIPER_VOICES_DIR) if TTS_ENGINE == "piper" else TTSE
 logger.info("TTS engine: %s", TTS_ENGINE)
 logger.info("Translation model size: %s", TRANSLATION_MODEL_SIZE)
 logger.info("Indic ASR decoding: %s", INDIC_ASR_DECODING)
+logger.info("%s version %s build %s", APP_NAME, APP_VERSION, APP_BUILD)
 
 
 @app.exception_handler(Exception)
@@ -196,7 +200,16 @@ def unload_models_on_shutdown() -> None:
 def _nav_context(request: Request) -> dict:
     """Common template context (current user + nav visibility) for every page."""
     user = current_user(request)
-    return {"current_user": user, "can_trigger_jobs": user and user["role"] in JOB_TRIGGER_ROLES, "is_admin": user and user["role"] == ROLE_ADMIN}
+    return {
+        **_app_metadata(),
+        "current_user": user,
+        "can_trigger_jobs": user and user["role"] in JOB_TRIGGER_ROLES,
+        "is_admin": user and user["role"] == ROLE_ADMIN,
+    }
+
+
+def _app_metadata() -> dict:
+    return {"app_name": APP_NAME, "app_version": APP_VERSION, "app_build": APP_BUILD}
 
 
 def _language_labels() -> dict:
@@ -218,7 +231,7 @@ def _public_user(row) -> dict:
 def login_page(request: Request):
     if is_logged_in(request):
         return RedirectResponse(url="/dashboard", status_code=303)
-    return templates.TemplateResponse(request, "login.html", {"error": None})
+    return templates.TemplateResponse(request, "login.html", {**_app_metadata(), "error": None})
 
 
 @app.post("/login")
@@ -232,7 +245,7 @@ def login_submit(request: Request, username: str = Form(...), password: str = Fo
         return RedirectResponse(url="/dashboard", status_code=303)
     logger.warning("Login failed for user '%s' from %s", username, client_host)
     return templates.TemplateResponse(
-        request, "login.html", {"error": "Invalid username or password"}, status_code=401
+        request, "login.html", {**_app_metadata(), "error": "Invalid username or password"}, status_code=401
     )
 
 
