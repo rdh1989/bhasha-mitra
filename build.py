@@ -14,29 +14,32 @@ Usage
 Build Output
 ------------
 Each build is isolated under a date-specific directory using the current
-date in DDMMYYYY format:
+date in DDMMYYYY format. The PyInstaller onedir output is written directly
+under that directory (no intermediate build/ or dist/ directories remain in
+the final release):
 
     releases/
     └── DDMMYYYY/
-        ├── build/
-        │   ├── BhashMitra/
-        │   ├── bhashmitra.ico
-        │   ├── pyi_app_build.py
+        ├── BhashMitra/
+        │   ├── BhashMitra.exe
         │   └── ...
-        │
-        └── dist/
-            └── BhashMitra/
-                ├── BhashMitra.exe
-                └── ...
+        ├── RELEASE_NOTES.md
+        └── BUILD_METADATA.json
 
 Example for 18 September 2026:
 
     releases/
     └── 18092026/
-        ├── build/
-        └── dist/
-            └── BhashMitra/
-                └── BhashMitra.exe
+        ├── BhashMitra/
+        │   └── BhashMitra.exe
+        ├── RELEASE_NOTES.md
+        └── BUILD_METADATA.json
+
+PyInstaller still requires a work directory for its intermediate artifacts
+(spec file, generated icon, runtime hook, etc.). This temporary workspace is
+created under releases/DDMMYYYY/_build/ and is deleted automatically once
+the build succeeds and BhashMitra.exe has been verified. If the build fails,
+_build/ is kept so the failure can be investigated.
 
 The large runtime asset directories are intentionally NOT bundled by
 PyInstaller:
@@ -74,7 +77,7 @@ Example:
     Build   : 18092026
 
 The build value is injected into the frozen application through a temporary
-PyInstaller runtime hook generated under releases/DDMMYYYY/build.
+PyInstaller runtime hook generated under releases/DDMMYYYY/_build.
 
 Application Entry Point
 -----------------------
@@ -82,7 +85,15 @@ launcher.py
 
 Final Executable
 ----------------
-releases/DDMMYYYY/dist/BhashMitra/BhashMitra.exe
+releases/DDMMYYYY/BhashMitra/BhashMitra.exe
+
+Release Metadata
+----------------
+On a successful build, two additional files are generated alongside the
+application directory:
+
+    releases/DDMMYYYY/BUILD_METADATA.json
+    releases/DDMMYYYY/RELEASE_NOTES.md
 
 Important
 ---------
@@ -94,7 +105,9 @@ normally be excluded from Git source control.
 
 from __future__ import annotations
 
+import json
 import os
+import shutil
 import subprocess
 import sys
 from datetime import datetime
@@ -126,11 +139,18 @@ def _build_date() -> str:
 
 BUILD_VALUE = _build_date()
 
-# Every build run gets its own date-specific directory.
+# Every build run gets its own date-specific directory. The final
+# application (BhashMitra/BhashMitra.exe) lives directly under this
+# directory - there is no intermediate build/ or dist/ directory.
 RELEASES_DIR = ROOT / "releases" / BUILD_VALUE
 
-BUILD_DIR = RELEASES_DIR / "build"
-DIST_DIR = RELEASES_DIR / "dist"
+# Temporary PyInstaller work area (spec file, generated icon, runtime hook,
+# etc.). Removed automatically after a successful, verified build.
+BUILD_DIR = RELEASES_DIR / "_build"
+
+# PyInstaller writes its --onedir output directly here, producing
+# releases/DDMMYYYY/BhashMitra/ instead of releases/DDMMYYYY/dist/BhashMitra/.
+DIST_DIR = RELEASES_DIR
 
 
 # =============================================================================
@@ -297,6 +317,82 @@ def _build_metadata_runtime_hook(build_value: str) -> Path:
     return hook_path
 
 
+def _write_build_metadata() -> Path:
+    """Write BUILD_METADATA.json describing this release."""
+
+    metadata = {
+        "application": APP_NAME,
+        "version": APP_VERSION,
+        "build": BUILD_VALUE,
+        "build_date": datetime.now().strftime("%Y-%m-%d"),
+        "packaging": "onedir",
+        "entry_point": "launcher.py",
+        "executable": f"{PACKAGE_NAME}/{PACKAGE_NAME}.exe",
+    }
+
+    metadata_path = RELEASES_DIR / "BUILD_METADATA.json"
+    metadata_path.write_text(
+        json.dumps(metadata, indent=4) + "\n",
+        encoding="utf-8",
+    )
+
+    return metadata_path
+
+
+def _write_release_notes() -> Path:
+    """Write RELEASE_NOTES.md describing this release."""
+
+    build_date = datetime.now().strftime("%Y-%m-%d")
+
+    content = (
+        "# Bhasha Mitra Release Notes\n"
+        "\n"
+        "## Release Information\n"
+        "\n"
+        f"- Application: {APP_NAME}\n"
+        f"- Version: {APP_VERSION}\n"
+        f"- Build: {BUILD_VALUE}\n"
+        f"- Build Date: {build_date}\n"
+        "- Packaging: onedir\n"
+        f"- Executable: {PACKAGE_NAME}/{PACKAGE_NAME}.exe\n"
+        "\n"
+        "## Changes\n"
+        "\n"
+        "- Add release-specific changes here.\n"
+        "- Add bug fixes, enhancements, model changes, UI changes, and other\n"
+        "  user-visible changes for this build.\n"
+        "\n"
+        "## Build Artifact\n"
+        "\n"
+        f"    {PACKAGE_NAME}/{PACKAGE_NAME}.exe\n"
+        "\n"
+        "## Runtime Assets\n"
+        "\n"
+        "These directories remain outside the PyInstaller bundle and must be\n"
+        "copied or kept alongside the built application:\n"
+        "\n"
+        "- models/\n"
+        "- data/\n"
+        "- outputs/\n"
+        "- logs/\n"
+        "- uploads/\n"
+    )
+
+    notes_path = RELEASES_DIR / "RELEASE_NOTES.md"
+    notes_path.write_text(content, encoding="utf-8")
+
+    return notes_path
+
+
+def _print_build_failed() -> None:
+    print()
+    print("=" * 60)
+    print("BUILD FAILED")
+    print("=" * 60)
+    print(f"Temporary build files preserved for inspection at: {BUILD_DIR}")
+    print("=" * 60)
+
+
 # =============================================================================
 # Main Build Process
 # =============================================================================
@@ -306,7 +402,8 @@ def main() -> None:
 
     _ensure_pyinstaller()
 
-    # Ensure the current release build directory exists.
+    # Ensure the release directory and temporary build workspace exist.
+    RELEASES_DIR.mkdir(parents=True, exist_ok=True)
     BUILD_DIR.mkdir(parents=True, exist_ok=True)
 
     # Generate the build metadata runtime hook.
@@ -396,7 +493,15 @@ def main() -> None:
 
     import PyInstaller.__main__
 
-    PyInstaller.__main__.run(args)
+    try:
+        PyInstaller.__main__.run(args)
+    except SystemExit as exc:
+        if exc.code not in (0, None):
+            _print_build_failed()
+            raise
+    except BaseException:
+        _print_build_failed()
+        raise
 
     # ---------------------------------------------------------------------
     # Final executable
@@ -408,6 +513,20 @@ def main() -> None:
         / f"{PACKAGE_NAME}.exe"
     )
 
+    if not exe_path.exists():
+        _print_build_failed()
+        raise RuntimeError(
+            "PyInstaller build did not produce the expected executable: "
+            f"{exe_path}"
+        )
+
+    # The executable has been verified - generate the release metadata/notes
+    # and remove the temporary PyInstaller work directory.
+    metadata_path = _write_build_metadata()
+    notes_path = _write_release_notes()
+
+    shutil.rmtree(BUILD_DIR, ignore_errors=True)
+
     print()
     print("=" * 60)
     print("BUILD COMPLETE")
@@ -416,6 +535,8 @@ def main() -> None:
     print(f"Version     : {APP_VERSION}")
     print(f"Build       : {BUILD_VALUE}")
     print(f"EXE         : {exe_path}")
+    print(f"Metadata    : {metadata_path}")
+    print(f"Notes       : {notes_path}")
     print()
     print(
         "Before running the packaged application, ensure these folders "
