@@ -100,6 +100,8 @@ def init_db() -> None:
                     progress REAL NOT NULL DEFAULT 0,
                     message TEXT,
                     error TEXT,
+                    error_stage TEXT,
+                    user_message TEXT,
                     output_path TEXT,
                     logs TEXT,
                     done INTEGER NOT NULL DEFAULT 0,
@@ -119,6 +121,8 @@ def init_db() -> None:
                 ("cancel_requested", "INTEGER NOT NULL DEFAULT 0"),
                 ("ended_at", "TEXT"),
                 ("duration_seconds", "REAL"),
+                ("error_stage", "TEXT"),
+                ("user_message", "TEXT"),
             ):
                 if column not in existing_columns:
                     conn.execute(f"ALTER TABLE jobs ADD COLUMN {column} {ddl_type}")
@@ -260,6 +264,8 @@ def update_job_row(job_id: str, **fields) -> None:
         "detected_source_lang": "detected_source_lang",
         "detected_source_lang_prob": "detected_source_lang_prob",
         "error": "error",
+        "error_stage": "error_stage",
+        "user_message": "user_message",
         "output_path": "output_path",
         "logs": "logs",
         "done": "done",

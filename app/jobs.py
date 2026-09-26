@@ -39,6 +39,12 @@ class JobState:
     detected_source_lang: str | None = None
     detected_source_lang_prob: float | None = None
     error: str | None = None
+    # Pipeline stage the job was in when it failed (e.g. "muxing_video") and a
+    # stable, user-safe sentence for it - kept alongside `error` (the full
+    # technical exception text) so the UI can show a clean summary while
+    # still exposing the complete diagnostic text in the Details view.
+    error_stage: str | None = None
+    user_message: str | None = None
     output_path: str | None = None
     logs: list[str] = field(default_factory=list)
     done: bool = False
@@ -54,13 +60,17 @@ class JobState:
             "target_lang": self.target_lang,
             "filename": self.filename,
             "username": self.username,
+            "source_path": self.source_path or None,
+            "output_path": self.output_path or None,
             "stage": self.stage,
             "progress": round(self.progress, 4),
             "message": self.message,
             "detected_source_lang": self.detected_source_lang,
             "detected_source_lang_prob": self.detected_source_lang_prob,
             "error": self.error,
-            "has_output": self.output_path is not None,
+            "error_stage": self.error_stage,
+            "user_message": self.user_message,
+            "has_output": bool(self.output_path),
             "logs": self.logs[-200:],
             "done": self.done,
             "cancel_requested": self.cancel_requested,
@@ -71,12 +81,14 @@ class JobState:
     @classmethod
     def from_db_row(cls, row) -> "JobState":
         logs = row["logs"].split("\n") if row["logs"] else []
+        source_path = row["source_path"] if "source_path" in row.keys() else ""
+        output_path = row["output_path"] if "output_path" in row.keys() else None
         return cls(
             id=row["id"],
             source_lang=row["source_lang"] or "",
             target_lang=row["target_lang"],
             filename=row["filename"],
-            source_path=row["source_path"] or "",
+            source_path=source_path or "",
             username=row["username"],
             stage=row["stage"],
             progress=row["progress"] or 0.0,
@@ -84,7 +96,9 @@ class JobState:
             detected_source_lang=row["detected_source_lang"],
             detected_source_lang_prob=row["detected_source_lang_prob"],
             error=row["error"],
-            output_path=row["output_path"],
+            error_stage=row["error_stage"],
+            user_message=row["user_message"],
+            output_path=output_path,
             logs=logs,
             done=bool(row["done"]),
             cancel_requested=bool(row["cancel_requested"]),
@@ -143,6 +157,8 @@ class JobManager:
             job.progress = 0.0
             job.message = "Retry queued; resuming from saved work."
             job.error = None
+            job.error_stage = None
+            job.user_message = None
             job.output_path = None
             job.done = False
             job.cancel_requested = False
@@ -157,6 +173,8 @@ class JobManager:
             progress=0.0,
             message=job.message,
             error=None,
+            error_stage=None,
+            user_message=None,
             output_path=None,
             done=False,
             cancel_requested=False,

@@ -77,6 +77,44 @@ _MAX_MERGED_SEGMENT_DURATION = 15.0
 _MAX_MERGED_SEGMENT_GAP = 1.0
 _TRANSLATION_BATCH_SIZE = 4
 
+# Stable, user-safe failure sentence per pipeline stage - shown on the job
+# card/details popup instead of the raw technical exception (see _fail_job).
+# Keys are the same `stage` ids already passed to jobs.update() throughout
+# this module; the frontend (app/static/jobs.js) maps these same ids to a
+# short display label (e.g. "muxing_video" -> "Video Muxing").
+_STAGE_FAILURE_MESSAGES = {
+    "extracting_audio": "Failed to extract audio from the video.",
+    "transcribing": "Speech recognition failed.",
+    "translating": "Translation failed.",
+    "synthesizing_speech": "Failed to generate dubbed speech.",
+    "generating_subtitles": "Failed to generate subtitles.",
+    "muxing_video": "Failed to combine dubbed audio with video.",
+    "processing_onscreen_text": "Failed to translate on-screen text.",
+}
+_DEFAULT_FAILURE_MESSAGE = "The job failed. See technical details for more information."
+
+
+def _user_message_for_stage(stage: str | None) -> str:
+    return _STAGE_FAILURE_MESSAGES.get(stage or "", _DEFAULT_FAILURE_MESSAGE)
+
+
+def _fail_job(jobs: JobManager, job_id: str, exc: Exception) -> None:
+    """Mark a job failed with a structured, two-level error payload.
+
+    `stage` becomes "failed" (existing contract every caller already relies
+    on for retry/filtering), so the pipeline stage active at failure time is
+    captured separately as `error_stage`, paired with a stable `user_message`
+    for the main job card. The full technical exception is preserved
+    unchanged in `error` for the Details popup - never truncated or dropped.
+    """
+    current = jobs.get(job_id)
+    failed_stage = current.stage if current is not None else None
+    jobs.update(
+        job_id, stage="failed", done=True, error=str(exc),
+        error_stage=failed_stage, user_message=_user_message_for_stage(failed_stage),
+        message=f"Failed: {exc}",
+    )
+
 
 @dataclass
 class SpeechEvent:
@@ -291,6 +329,7 @@ def run_pipeline(
         jobs.raise_if_cancelled(job_id)
 
         dubbed_audio_path = work_dir / "dubbed_audio.wav"
+        jobs.update(job_id, output_path=str(dubbed_audio_path))
         if dubbed_audio_path.is_file():
             jobs.update(job_id, stage="synthesizing_speech", progress=0.85, message="Reusing synthesized speech from previous attempt.")
         else:
@@ -301,7 +340,7 @@ def run_pipeline(
             dubbed_audio_path = _synthesize_and_align(job_id, jobs, tts, target_lang, audio_path, final_segments, work_dir)
         jobs.raise_if_cancelled(job_id)
 
-        jobs.update(job_id, stage="muxing_video", progress=0.85, message="Generating subtitles...")
+        jobs.update(job_id, stage="generating_subtitles", progress=0.85, message="Generating subtitles...")
         jobs.raise_if_cancelled(job_id)
         subtitle_path = work_dir / "subtitles.srt"
         try:
@@ -313,6 +352,7 @@ def run_pipeline(
         jobs.update(job_id, stage="muxing_video", progress=0.9, message="Combining dubbed audio and subtitles with the original video...")
         jobs.raise_if_cancelled(job_id)
         output_path = work_dir / f"{job_id}.mp4"
+        jobs.update(job_id, output_path=str(output_path))
         try:
             mux_video_with_audio(str(video_path), str(dubbed_audio_path), str(output_path), subtitle_path=str(subtitle_path))
         except Exception as exc:
@@ -330,7 +370,7 @@ def run_pipeline(
         jobs.mark_cancelled(job_id)
     except Exception as exc:  # noqa: BLE001 - surface all failures to the UI
         logger.exception("Job %s: pipeline failed", job_id)
-        jobs.update(job_id, stage="failed", done=True, error=str(exc), message=f"Failed: {exc}")
+        _fail_job(jobs, job_id, exc)
     finally:
         heartbeat_stop.set()
         heartbeat.join(timeout=1)
@@ -384,9 +424,13 @@ def run_audio_pipeline(
         if not final_segments:
             raise RuntimeError("Translation produced no usable text to synthesize.")
         jobs.raise_if_cancelled(job_id)
+        dubbed_audio_path = work_dir / "dubbed_audio.wav"
         jobs.update(
-            job_id, stage="synthesizing_speech", progress=0.55,
+            job_id,
+            stage="synthesizing_speech",
+            progress=0.55,
             message=f"Synthesizing {len(final_segments)} speech segment(s)...",
+            output_path=str(dubbed_audio_path),
         )
         dubbed_audio_path = _synthesize_and_align(
             job_id, jobs, tts, target_lang, audio_path, final_segments, work_dir
@@ -402,7 +446,7 @@ def run_audio_pipeline(
         jobs.mark_cancelled(job_id)
     except Exception as exc:  # noqa: BLE001 - surface all failures to the UI
         logger.exception("Job %s: audio pipeline failed", job_id)
-        jobs.update(job_id, stage="failed", done=True, error=str(exc), message=f"Failed: {exc}")
+        _fail_job(jobs, job_id, exc)
 
 
 def run_text_pipeline(
@@ -434,6 +478,7 @@ def run_text_pipeline(
         if not translated or not translated[0][2]:
             raise RuntimeError("Translation produced no usable text.")
         output_path = work_dir / "translated.txt"
+        jobs.update(job_id, output_path=str(output_path))
         jobs.raise_if_cancelled(job_id)
         output_path.write_text(translated[0][2], encoding="utf-8")
         jobs.raise_if_cancelled(job_id)
@@ -447,7 +492,7 @@ def run_text_pipeline(
         jobs.mark_cancelled(job_id)
     except Exception as exc:  # noqa: BLE001 - surface all failures to the UI
         logger.exception("Job %s: text pipeline failed", job_id)
-        jobs.update(job_id, stage="failed", done=True, error=str(exc), message=f"Failed: {exc}")
+        _fail_job(jobs, job_id, exc)
 
 
 def translate_text(

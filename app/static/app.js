@@ -256,7 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       if (job.stage !== "completed" || !job.has_output) {
         status.className = "status-region error";
-        status.textContent = job.error || job.message || "Text translation failed.";
+        status.textContent = job.user_message || "Text translation failed.";
         textJobId = null;
         return;
       }

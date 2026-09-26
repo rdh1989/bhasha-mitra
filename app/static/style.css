@@ -455,6 +455,7 @@ details p { margin: 0.6rem 0 0; color: var(--muted); }
 .dialog-location-row strong { color: var(--muted); font-size: 0.82rem; }
 .dialog-location-row code { display: block; max-width: 100%; overflow-x: auto; padding: 0.6rem 0.7rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--panel-2); color: var(--text); font: 0.78rem/1.4 "Consolas", monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
 .dialog-loading { margin: var(--space-4) 0 0; }
+.dialog-error-heading { margin: var(--space-4) 0 0.35rem; font-size: 0.9rem; color: var(--muted); }
 .dialog-section { margin-top: var(--space-4); }
 .dialog-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-5); }
 

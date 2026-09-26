@@ -8,6 +8,7 @@ const STAGE_META = {
   translating: { label: "Translating speech", cls: "status-running" },
   synthesizing_speech: { label: "Generating dubbed speech", cls: "status-running" },
   processing_onscreen_text: { label: "Translating on-screen text", cls: "status-running" },
+  generating_subtitles: { label: "Generating subtitles", cls: "status-running" },
   muxing_video: { label: "Finalizing video", cls: "status-running" },
   completed: { label: "Completed", cls: "status-completed" },
   failed: { label: "Failed", cls: "status-failed" },
@@ -16,6 +17,38 @@ const STAGE_META = {
 
 function stageMeta(stage) {
   return STAGE_META[stage] || { label: stage, cls: "status-queued" };
+}
+
+// Friendly display name for the pipeline stage a job failed in
+// (job.error_stage, set by the backend - see app/pipeline.py's _fail_job).
+// Mirrors STAGE_META's stage ids but uses the plain nouns requested for the
+// "<Stage> - Failed" summary rather than STAGE_META's present-progressive labels.
+const FAILURE_STAGE_LABELS = {
+  extracting_audio: "Audio Extraction",
+  transcribing: "Speech Recognition",
+  translating: "Translation",
+  synthesizing_speech: "Voice Generation",
+  generating_subtitles: "Subtitle Generation",
+  muxing_video: "Video Muxing",
+  processing_onscreen_text: "On-Screen Text Translation",
+};
+
+function failureStageLabel(errorStage) {
+  return FAILURE_STAGE_LABELS[errorStage] || "Processing";
+}
+
+// Shown in the Details popup when an older job predates structured error
+// fields (job.user_message is null) - never the raw technical error.
+const _DEFAULT_DETAILS_USER_MESSAGE = "The job failed. See technical details below.";
+
+// Status badge text: "<Stage> - Failed" for failed jobs (using the
+// structured error_stage field, never the raw technical error), otherwise
+// the normal stage label.
+function jobStatusLabel(job) {
+  if (job.stage === "failed") {
+    return `${failureStageLabel(job.error_stage)} - Failed`;
+  }
+  return stageMeta(job.stage).label;
 }
 
 function languageLabel(code) {
@@ -122,9 +155,6 @@ function jobRowHtml(job, { allowDelete = false, allowDetails = false, allowRetry
   if (job.stage === "completed" && job.has_output) {
     actions.push(`<a href="/media/output/${jobId}" class="link" download aria-label="Download ${filename}">Download</a>`);
   }
-  if (job.error) {
-    actions.push(`<span class="error-inline" title="${escapeHtml(job.error)}">${escapeHtml(job.error)}</span>`);
-  }
   if (allowRetry && (job.stage === "failed" || job.stage === "cancelled")) {
     actions.push(`<button class="link-btn" data-retry-job="${jobId}" aria-label="Retry ${filename}">Retry</button>`);
   }
@@ -139,7 +169,7 @@ function jobRowHtml(job, { allowDelete = false, allowDetails = false, allowRetry
       <td data-label="Job ID" class="mono ellipsis" title="${jobId}">${escapeHtml(String(job.id).slice(0, 8))}</td>
       <td data-label="Video" class="ellipsis" title="${filename}"><strong>${filename}</strong></td>
       <td data-label="Target">${escapeHtml(languageLabel(job.target_lang))}</td>
-      <td data-label="Status"><span class="status-badge ${meta.cls}">${meta.label}</span></td>
+      <td data-label="Status"><span class="status-badge ${meta.cls}">${escapeHtml(jobStatusLabel(job))}</span></td>
       <td data-label="Progress">
         <div class="mini-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="${escapeHtml(meta.label)} progress"><div class="mini-progress-fill" style="width:${pct}%"></div></div>
         <span class="mini-progress-text">${pct}%${job.done ? "" : formatElapsed(job.created_at) ? ` · ${escapeHtml(formatElapsed(job.created_at))}` : ""}</span>
@@ -237,6 +267,7 @@ function bindDetailsButtons(tbody, dialogEl) {
     btn.setAttribute("aria-busy", "true");
     const loading = dialogEl.querySelector(".dialog-loading");
     const metaEl = dialogEl.querySelector(".dialog-meta");
+    const errorHeadingEl = dialogEl.querySelector(".dialog-error-heading");
     const errorEl = dialogEl.querySelector(".dialog-error");
     const download = dialogEl.querySelector(".dialog-download");
     const logEl = dialogEl.querySelector(".dialog-log");
@@ -245,6 +276,7 @@ function bindDetailsButtons(tbody, dialogEl) {
     dialogEl.querySelector(".dialog-title").textContent = "Loading job details...";
     metaEl.textContent = "";
     loading.hidden = false;
+    if (errorHeadingEl) errorHeadingEl.hidden = true;
     errorEl.hidden = true;
     download.hidden = true;
     logEl.textContent = "";
@@ -256,34 +288,41 @@ function bindDetailsButtons(tbody, dialogEl) {
       if (!res.ok) throw new Error("Job details could not be loaded.");
       const job = await res.json();
       const meta = stageMeta(job.stage);
+      const isFailed = job.stage === "failed";
       const detailRows = [
         ["Job ID", job.id],
         ["Video", job.filename],
         ["Source", job.source_lang ? languageLabel(job.source_lang) : null],
         ["Detected source", job.detected_source_lang],
         ["Target", job.target_lang ? languageLabel(job.target_lang) : null],
-        ["Status", meta.label],
+        isFailed ? ["Stage", failureStageLabel(job.error_stage)] : null,
+        ["Status", isFailed ? "Failed" : meta.label],
+        isFailed ? ["User Message", job.user_message || _DEFAULT_DETAILS_USER_MESSAGE] : null,
         ["Progress", job.progress != null ? `${Math.round(Number(job.progress) * 100)}%` : null],
-        ["Current stage", job.stage],
+        !isFailed ? ["Current stage", job.stage] : null,
         ["Created", job.created_at ? formatDate(job.created_at) : null],
         ["Started", job.started_at ? formatDate(job.started_at) : null],
         ["Ended", job.ended_at ? formatDate(job.ended_at) : null],
         ["Duration", job.duration_seconds != null ? formatDuration(job.duration_seconds) : null],
-      ].filter(([, value]) => value != null && value !== "");
+      ].filter((row) => row != null && row[1] != null && row[1] !== "");
       dialogEl.querySelector(".dialog-title").textContent = job.filename || "Job details";
       metaEl.innerHTML = detailRows.map(([label, value]) => `<div class="dialog-detail-row"><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value)}</span></div>`).join("");
       errorEl.textContent = job.error || "";
       errorEl.hidden = !job.error;
+      if (errorHeadingEl) errorHeadingEl.hidden = !job.error;
       logEl.textContent = Array.isArray(job.logs) ? job.logs.join("\n") : "";
-      if (sourcePathEl) sourcePathEl.textContent = job.source_path || "Unavailable in job details";
-      if (outputPathEl) outputPathEl.textContent = job.output_path || "Unavailable in job details";
+      const inputPath = job.input_path ?? job.source_path ?? null;
+      const outputPath = job.output_path ?? null;
+      if (sourcePathEl) sourcePathEl.textContent = inputPath || "Unavailable in job details";
+      if (outputPathEl) outputPathEl.textContent = outputPath || "Unavailable in job details";
       if (download) {
-        download.hidden = !(job.stage === "completed" && job.output_path);
+        download.hidden = !(job.stage === "completed" && outputPath);
         download.href = `/media/output/${encodeURIComponent(job.id)}`;
         download.setAttribute("aria-label", `Download ${job.filename || "video"}`);
       }
     } catch (error) {
       loading.hidden = true;
+      if (errorHeadingEl) errorHeadingEl.hidden = true;
       errorEl.textContent = error.message || "Job details could not be loaded.";
       errorEl.hidden = false;
       showNotification(errorEl.textContent, "error");
