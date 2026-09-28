@@ -188,7 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
       event.preventDefault();
       const text = input.value.trim();
       const textPath = textPaths.value.trim();
-      if (!source.value || !target.value || (inputMode === "direct" ? !text : !textPath)) return;
+      if (!target.value || (inputMode === "direct" ? !text : !textPath)) return;
       start.disabled = true;
       result.hidden = true;
       status.className = "status-region muted";
@@ -199,7 +199,7 @@ document.addEventListener("DOMContentLoaded", () => {
           body: JSON.stringify({
             text: inputMode === "direct" ? text : "",
             text_path: inputMode === "file" ? textPath : null,
-            source_lang: source.value,
+            source_lang: source.value || null,
             target_lang: target.value,
           }),
         });

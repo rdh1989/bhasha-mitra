@@ -1,12 +1,12 @@
 # Bhasha Mitra - AI Video Dubbing (local, CPU-only)
 
-A local web app that dubs videos into another language using only the
-models already present in `models/`:
+A local web app that dubs videos into another language using local model
+assets under the sibling `models/` directory:
 
 | Stage        | Model                                                        |
 |--------------|---------------------------------------------------------------|
-| Speech-to-text (segmentation + language ID) | `models/asr/faster_whisper/{tiny,small,medium}` (faster-whisper / CTranslate2) |
-| Speech-to-text (Indic transcript refinement) | `models/asr/indic-conformer-600m-multilingual` (AI4Bharat IndicConformer, ONNX) |
+| Speech-to-text | `models/asr/faster_whisper/{tiny,small,medium}` (faster-whisper / CTranslate2) |
+| Indic speech-to-text | `models/asr/indic-conformer-600m-multilingual` (AI4Bharat IndicConformer, ONNX) |
 | Translation (English → Indic) | `models/translation/indictrans2-en-indic-1B` |
 | Translation (Indic → Indic) | `models/translation/indictrans2-indic-indic-1B` |
 | Translation (Indic → English) | `models/translation/indictrans2-indic-en-1B` |
@@ -33,7 +33,34 @@ from disk. The web UI (FastAPI) has:
 | `operator` | Submit jobs and view history. No user administration. |
 | `user` | Read-only: view the dashboard and job history only. |
 
-All users and all job history are stored in `data/app.db` (SQLite).
+All users and job history are stored in `data/app.db` (SQLite).
+
+## Runtime directories
+
+Runtime folders are siblings of the application directory's parent. In
+development and packaged execution, model assets must be supplied under the
+sibling `models/` directory. A packaged release places the
+executable in `BhashaMitra/` and creates these directories beside it:
+
+```text
+config/   app.json, models.json, languages.json
+models/   asr/, translation/, tts/, third_party/
+data/     app.db
+output/
+logs/     app.log
+cache/
+```
+
+Configuration JSON is copied from the checked-in `config_defaults/` files
+only when an external copy does not exist, preserving later edits. Model
+assets are not copied by the build script and must be provisioned under
+`models/` for a packaged release.
+
+On first startup from an existing installation, the contents of its legacy
+`data/`, `outputs/`, `logs/`, and `.cache/` directories are moved into the
+corresponding external folders. Persisted job paths that pointed into the old
+outputs folder are updated without changing the SQLite schema. A conflicting
+destination file stops startup rather than overwriting either copy.
 
 ## Translation routing
 
@@ -66,15 +93,13 @@ Whisper is only used for fast segmentation and language detection. When the
 detected source language is one of the 22 languages AI4Bharat's
 IndicConformer supports, each Whisper-timed clip is re-transcribed with that
 specialized model instead - it's ONNX-based (fast on CPU) and produces more
-accurate, native-script text than Whisper's general-purpose decoder for
-Indic speech, which then also improves translation quality downstream (better
-input in, better translation out). Falls back to Whisper's own text per
-segment (or entirely) if IndicConformer fails, or is disabled via
-`INDIC_ASR_ENABLED=false`.
+accurate, native-script text than Whisper's general-purpose decoder for Indic
+speech, which then also improves translation quality downstream (better input
+in, better translation out). Falls back to Whisper's own text per segment (or
+entirely) if IndicConformer fails, or is disabled via
+`config/models.json` under `asr.indic.enabled`.
 
 ## Windows Prerequisites
-
-### Supported environment
 
 The current working environment is Windows 11 x64 with CPython 3.13.9 and
 64-bit AMD64 Python. Use 64-bit Windows and 64-bit Python; the exact minimum
@@ -123,7 +148,7 @@ registry evidence and a successful Torch import are more useful checks.
 ### FFmpeg
 
 No separate system-wide FFmpeg installation is required. The application first
-uses the repository-provided `models/third_party/ffmpeg/*/bin/ffmpeg.exe` when
+uses `models/third_party/ffmpeg/*/bin/ffmpeg.exe` when
 present. If that directory is absent, it falls back to the FFmpeg executable
 bundled by `imageio-ffmpeg==0.6.0`. `ffprobe.exe` is also present in the
 repository-provided build, but application media operations invoke FFmpeg.
@@ -157,7 +182,8 @@ python -m pip install torch==2.13.0+cpu --index-url https://download.pytorch.org
 python -m pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 
-4. Ensure the local model assets exist under `models/`:
+4. For a packaged release, ensure the model assets exist under
+  `models/`. The packaged model layout is:
 
 ```text
 models/asr/faster_whisper/medium/
@@ -259,7 +285,7 @@ jobs) instead of an upload - the source video is read in place and never
 copied. Every job writes its intermediate and final files under:
 
 ```
-outputs/<video-file-stem>/<job-id>/
+output/<video-file-stem>/<job-id>/
   audio.wav             # extracted source audio
   transcript.json        # source-language segments (start, end, text) after ASR
   translation.json       # translated segments (start, end, text) used for TTS/subtitles
@@ -277,31 +303,40 @@ whole video. They're embedded as a soft/selectable subtitle track (`mov_text`)
 in the output MP4, so no video re-encoding is needed and the track can be
 toggled on/off in players that support it.
 
-The `outputs/<video-file-stem>/` folder is reused (not recreated) across
+The `output/<video-file-stem>/` folder is reused (not recreated) across
 multiple runs of the same source video - each run just gets its own
 `<job-id>` subfolder underneath it.
 
-## Configuration (environment variables)
+## Configuration
+
+AI model providers, model sizes, model directories, language/provider
+mappings, and TTS voice mappings are authoritative in the external JSON files
+under `config/`. Environment variables do not override those AI
+model settings. External JSON takes precedence over bundled defaults; bundled
+defaults are used only to create missing external files on first launch.
+
+Text translation uses the pinned `langdetect` dependency to detect the source
+language when no source override is supplied. Low-confidence or unsupported
+detection fails clearly; selecting a source language manually remains
+available as an override.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `ASR_MODEL_SIZE` | `small` | `tiny` / `small` / `medium` faster-whisper model to use |
-| `ASR_COMPUTE_TYPE` | `int8` | CTranslate2 compute type (int8 is fastest on CPU) |
 | `MAX_CONCURRENT_JOBS` | `5` | Max number of translation jobs processed in parallel |
 | `ASR_CPU_THREADS` | all cores | CPU threads faster-whisper uses per job |
 | `ASR_NUM_WORKERS` | `MAX_CONCURRENT_JOBS` | Concurrent transcribe() calls CTranslate2 can serve on the shared ASR model |
 | `TORCH_NUM_THREADS` | all cores | Global PyTorch intra-op thread cap (translation + TTS models) |
-| `INDIC_ASR_ENABLED` | `true` | Re-transcribe Indic-language segments with IndicConformer for higher quality |
-| `INDIC_ASR_DECODING` | `ctc` | `ctc` (fast) or `rnnt` decoding strategy for IndicConformer |
-| `TRANSLATION_MODEL_SIZE` | `1B` | `1B` for the best observed speed and translation quality, or `dist` for a smaller memory footprint |
 | `APP_USERNAME` / `APP_PASSWORD` | `admin` / `admin` | Login credentials |
 | `SESSION_SECRET` | random per process restart | Set a fixed value to keep sessions alive across restarts |
 
+Each capability uses an `active_model` plus a `models` object. To add another
+checkpoint supported by an existing wrapper, add its enabled catalog entry,
+place its files under `models/`, and select it with `active_model`.
+No Python change or executable rebuild is required.
 ## Notes on quality / performance
 
 - CPU inference is slow: expect several minutes of processing per minute of
-  video, dominated by `medium` ASR and the TTS pass. Use `ASR_MODEL_SIZE=small`
-  or `tiny` for faster (less accurate) transcription.
+  video, dominated by the configured ASR model and the TTS pass.
 - Dubbed speech is time-stretched per sentence/segment to roughly fit the
   original segment's duration (via ffmpeg `atempo`) for reasonable sync; this
   is not frame-accurate lip-sync.

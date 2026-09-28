@@ -204,8 +204,7 @@ def plan_translation_contexts(events, *, max_events=3, max_characters=1200, max_
         ambiguous = len(text.split()) == 1 and not _SENTENCE_END.search(text)
         status = "AMBIGUOUS_CONTEXT" if ambiguous else "OK"
         decision = "AMBIGUOUS" if ambiguous else "KEEP_STANDALONE"
-        if not add([index], "SINGLE_EVENT_CONTEXT", status, decision, signals):
-            unsafe_boundaries += 1
+        add([index], "SINGLE_EVENT_CONTEXT", status, decision, signals)
         index += 1
 
     diagnostics = {

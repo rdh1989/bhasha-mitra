@@ -76,6 +76,8 @@ _SEGMENT_FORMAT = "quality-v4"
 _MAX_MERGED_SEGMENT_DURATION = 15.0
 _MAX_MERGED_SEGMENT_GAP = 1.0
 _TRANSLATION_BATCH_SIZE = 4
+_SENTENCE_SPLIT = re.compile(r"(?<=[.!?।！？])\s+")
+_PARAGRAPH_SPLIT = re.compile(r"\n\s*\n")
 
 # Stable, user-safe failure sentence per pipeline stage - shown on the job
 # card/details popup instead of the raw technical exception (see _fail_job).
@@ -406,11 +408,25 @@ def run_audio_pipeline(
         )
         if not base_result.segments:
             raise RuntimeError("No speech was detected in the audio track.")
+        _write_segments_json(
+            work_dir / "raw_transcript.json",
+            base_result.segments,
+            language=source_code,
+            language_probability=base_result.language_probability,
+            segment_format="raw-v1",
+        )
         base_result.segments = _merge_asr_segments(
             _drop_hallucinated_segments(job_id, jobs, base_result.segments, source_code)
         )
         if not base_result.segments:
             raise RuntimeError("No usable speech was detected in the audio track.")
+        _write_segments_json(
+            work_dir / "transcript.json",
+            base_result.segments,
+            language=source_code,
+            language_probability=base_result.language_probability,
+            segment_format=_SEGMENT_FORMAT,
+        )
         jobs.update(
             job_id,
             detected_source_lang=source_code,
@@ -423,6 +439,13 @@ def run_audio_pipeline(
         )
         if not final_segments:
             raise RuntimeError("Translation produced no usable text to synthesize.")
+        _write_segments_json(
+            work_dir / "translation.json",
+            final_segments,
+            source_language=source_code,
+            target_language=target_code,
+            segment_format=_SEGMENT_FORMAT,
+        )
         jobs.raise_if_cancelled(job_id)
         dubbed_audio_path = work_dir / "dubbed_audio.wav"
         jobs.update(
@@ -469,18 +492,19 @@ def run_text_pipeline(
         if not text:
             raise RuntimeError("Text is required.")
         target_lang = LANGUAGES_BY_CODE[target_code]
-        base_result = SimpleNamespace(segments=[Segment(start=0.0, end=1.0, text=text)])
+        base_result = SimpleNamespace(segments=_chunk_text_segments(text))
         translated = _translate(
             job_id, jobs, translator, translator_indic, translator_indic_en,
             base_result, source_code, target_code, target_lang,
         )
         jobs.raise_if_cancelled(job_id)
-        if not translated or not translated[0][2]:
+        translated_text = _join_translated_segments(translated)
+        if not translated_text:
             raise RuntimeError("Translation produced no usable text.")
         output_path = work_dir / "translated.txt"
         jobs.update(job_id, output_path=str(output_path))
         jobs.raise_if_cancelled(job_id)
-        output_path.write_text(translated[0][2], encoding="utf-8")
+        output_path.write_text(translated_text, encoding="utf-8")
         jobs.raise_if_cancelled(job_id)
         jobs.update(
             job_id, stage="completed", progress=1.0, done=True,
@@ -505,15 +529,57 @@ def translate_text(
 ) -> str:
     """Translate one text input through the same routing and quality path as media jobs."""
     target_lang = LANGUAGES_BY_CODE[target_code]
-    result = SimpleNamespace(segments=[Segment(start=0.0, end=1.0, text=text)])
+    result = SimpleNamespace(segments=_chunk_text_segments(text))
     silent_jobs = SimpleNamespace(update=lambda *args, **kwargs: None)
     translated = _translate(
         "text", silent_jobs, translator, translator_indic, translator_indic_en,
         result, source_code, target_code, target_lang,
     )
-    if not translated or not translated[0][2]:
+    translated_text = _join_translated_segments(translated)
+    if not translated_text:
         raise RuntimeError("Translation produced no usable text.")
-    return translated[0][2]
+    return translated_text
+
+
+def _chunk_text_segments(text: str, max_characters: int = TRANSLATION_CONTEXT_MAX_CHARS) -> list[Segment]:
+    """Split text into ordered, planner-sized segments without changing content."""
+    if len(text) <= max_characters:
+        return [Segment(start=0.0, end=1.0, text=text)]
+
+    chunks: list[str] = []
+    start = 0
+    while start < len(text):
+        end = min(start + max_characters, len(text))
+        if end == len(text):
+            chunks.append(text[start:end])
+            break
+
+        window = text[start:end]
+        paragraph_matches = list(_PARAGRAPH_SPLIT.finditer(window))
+        if paragraph_matches:
+            cut = paragraph_matches[-1].end()
+        else:
+            sentence_matches = list(_SENTENCE_SPLIT.finditer(window))
+            if sentence_matches:
+                cut = sentence_matches[-1].end()
+            else:
+                whitespace = max((index for index, character in enumerate(window) if character.isspace()), default=-1)
+                cut = whitespace + 1 if whitespace >= 0 else max_characters
+
+        if cut <= 0:
+            cut = max_characters
+        chunks.append(text[start:start + cut])
+        start += cut
+
+    return [Segment(start=0.0, end=1.0, text=chunk) for chunk in chunks]
+
+
+def _join_translated_segments(translated) -> str:
+    return " ".join(
+        str(segment[2]).strip()
+        for segment in translated
+        if len(segment) >= 3 and str(segment[2]).strip()
+    ).strip()
 
 
 def _translate_with_heartbeat(job_id, jobs, engine, texts, **translate_kwargs):

@@ -23,31 +23,50 @@
 <section class="card">
   <h2>The pipeline</h2>
   <ol class="steps">
-    <li><strong>Speech recognition</strong> - faster-whisper (CTranslate2) transcribes the source audio and auto-detects its language.</li>
-    <li><strong>Translation</strong> - IndicTrans2 (English &rarr; Indic) converts the transcript to the target language.</li>
-    <li><strong>Speech synthesis</strong> - Indic Parler-TTS generates natural speech in the target language for each sentence.</li>
+    <li><strong>Speech recognition</strong> - the configured Faster-Whisper or IndicConformer model transcribes the source audio.</li>
+    <li><strong>Translation</strong> - the configured route translates English &rarr; Indic, Indic &rarr; Indic, or Indic &rarr; English.</li>
+    <li><strong>Speech synthesis</strong> - the active Piper or Parler model generates speech in the target language for each segment.</li>
     <li><strong>Re-assembly</strong> - the dubbed speech is time-aligned to the original segments and muxed back into the video.</li>
   </ol>
 </section>
 
 <section class="card">
+  <h2>Configurable AI models</h2>
+  <p>
+    AI model catalogs are stored outside the application in
+    <code>config/models.json</code>. Each catalog supports multiple
+    configured models, enabled or disabled entries, and an externally selected
+    active model.
+  </p>
+  <ul>
+    <li><strong>ASR</strong> - separate English and Indic model catalogs.</li>
+    <li><strong>Translation</strong> - independent catalogs for English &rarr; Indic, Indic &rarr; Indic, and Indic &rarr; English.</li>
+    <li><strong>TTS</strong> - a model catalog for Piper and Parler engines, preserving Piper voice mappings.</li>
+  </ul>
+  <p class="muted">
+    Selecting another model supported by an existing engine requires only an
+    external JSON change and application restart; rebuilding the EXE is not
+    required. Model assets remain under the external
+    <code>models/</code> directory.
+  </p>
+</section>
+
+<section class="card">
   <h2>Translation direction &amp; language support</h2>
   <p>
-    The bundled IndicTrans2 checkpoint only translates <strong>from English into
-    Indic languages</strong>. To still support routes like Marathi &rarr; Hindi or
-    Marathi &rarr; English, {{ app_name }} uses the speech model's own built-in
-    speech-to-English translation as a pivot:
+    {{ app_name }} uses dedicated configured translation models for each
+    supported route:
   </p>
   <ul>
     <li>Source language = target language &rarr; no translation needed.</li>
-    <li>Source is English &rarr; translated directly into the target Indic language.</li>
-    <li>Target is English &rarr; the speech model translates the source speech to English directly.</li>
-    <li>Neither is English &rarr; the speech model translates to English first, then IndicTrans2 converts English &rarr; target.</li>
+    <li>Source is English &rarr; the English-to-Indic catalog translates directly to the target Indic language.</li>
+    <li>Source and target are Indic &rarr; the Indic-to-Indic catalog translates directly.</li>
+    <li>Target is English &rarr; the Indic-to-English catalog translates directly.</li>
   </ul>
   <p class="muted">
-    A handful of very low-resource languages (Bodo, Dogri, Konkani, Maithili,
-    Manipuri, Santali, Odia) are not in the speech model's training data, so
-    they cannot be used as source audio, only as dubbing targets.
+    Text translation can automatically detect a source language when no manual
+    source override is supplied. Low-confidence or unsupported detection is
+    rejected clearly.
   </p>
 </section>
 

@@ -21,67 +21,84 @@ from app import db
 from app.auth import (
     JOB_TRIGGER_ROLES,
     ROLE_ADMIN,
-    ROLES,
-    SESSION_ROLE_KEY,
     SESSION_USER_KEY,
-    authenticate,
     current_user,
     is_logged_in,
     require_api_auth,
     require_api_role,
     require_login_page,
-    require_role_page,
 )
 from app.config import (
     ALLOWED_AUDIO_EXTENSIONS,
     ALLOWED_TEXT_EXTENSIONS,
     ALLOWED_VIDEO_EXTENSIONS,
+    APPLICATION_DIR,
     APP_BUILD,
     APP_NAME,
     APP_VERSION,
     ASR_COMPUTE_TYPE,
     ASR_CPU_THREADS,
+    ASR_MODEL_ESTIMATED_SIZE_GB,
+    ASR_MODEL_ID,
     ASR_MODEL_DIR,
     ASR_NUM_WORKERS,
     ASR_PROVIDER_BY_LANGUAGE,
     INDIC_ASR_DECODING,
     INDIC_ASR_ENABLED,
     INDIC_ASR_MODEL_DIR,
+    INDIC_ASR_MODEL_ESTIMATED_SIZE_GB,
+    INDIC_ASR_MODEL_ID,
     LANGUAGES,
+    LANGUAGES_BY_CODE,
     MAX_CONCURRENT_JOBS,
     MAX_PARALLEL_TRANSLATION_JOBS,
     OUTPUTS_DIR,
+    RUNTIME_ROOT,
     PIPER_VOICES_DIR,
     SESSION_SECRET,
     TORCH_NUM_THREADS,
     TRANSLATION_INDIC_EN_MODEL_DIR,
+    TRANSLATION_INDIC_EN_MODEL_ESTIMATED_SIZE_GB,
+    TRANSLATION_INDIC_EN_MODEL_ID,
     TRANSLATION_INDIC_INDIC_MODEL_DIR,
+    TRANSLATION_INDIC_INDIC_MODEL_ESTIMATED_SIZE_GB,
+    TRANSLATION_INDIC_INDIC_MODEL_ID,
+    TRANSLATION_MODEL_ESTIMATED_SIZE_GB,
+    TRANSLATION_MODEL_ID,
     TRANSLATION_MODEL_DIR,
-    TRANSLATION_MODEL_SIZE,
     TTS_ENGINE,
+    TTS_MODEL_ESTIMATED_SIZE_GB,
+    TTS_MODEL_ID,
+    TTS_PIPER_ENGINE,
     TTS_MODEL_DIR,
 )
 from app.fs_browse import list_directory
 from app.jobs import JobManager
 from app.logging_config import setup_logging
+from app.media import MediaProbeError, probe_media
 from app.models.asr import ASREngine
 from app.models.indic_asr import IndicASREngine
 from app.models.piper_tts import PiperTTSEngine
 from app.models.translate import TranslationEngine
 from app.models.tts import TTSEngine
 from app.pipeline import run_audio_pipeline, run_pipeline, run_text_pipeline, translate_text
+from app.text_language import detect_text_language
+from app.user_mgmt.router import router as user_mgmt_router
 
 setup_logging()
 logger = logging.getLogger(__name__)
+logger.info("Runtime root: %s", RUNTIME_ROOT)
 
 BASE_DIR = Path(__file__).resolve().parent
 
 app = FastAPI(title=f"{APP_NAME} - AI Video Dubbing")
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET, same_site="lax", https_only=False)
+app.include_router(user_mgmt_router)
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 db.init_db()
+db.migrate_job_paths(RUNTIME_ROOT / "outputs", OUTPUTS_DIR)
 db.fail_interrupted_jobs()
 
 try:
@@ -95,17 +112,40 @@ job_manager = JobManager(
     max_workers=MAX_CONCURRENT_JOBS,
     max_translation_jobs=MAX_PARALLEL_TRANSLATION_JOBS,
 )
-indic_asr_engine = IndicASREngine(INDIC_ASR_MODEL_DIR, decoding=INDIC_ASR_DECODING)
+indic_asr_engine = IndicASREngine(
+    INDIC_ASR_MODEL_DIR,
+    decoding=INDIC_ASR_DECODING,
+    model_id=INDIC_ASR_MODEL_ID,
+    estimated_model_size_gb=INDIC_ASR_MODEL_ESTIMATED_SIZE_GB,
+)
 asr_engine = ASREngine(
     ASR_MODEL_DIR, compute_type=ASR_COMPUTE_TYPE, cpu_threads=ASR_CPU_THREADS, num_workers=ASR_NUM_WORKERS,
-    indic_asr=indic_asr_engine,
+    indic_asr=indic_asr_engine, model_id=ASR_MODEL_ID, estimated_model_size_gb=ASR_MODEL_ESTIMATED_SIZE_GB,
 )
-translation_engine = TranslationEngine(TRANSLATION_MODEL_DIR)
-translation_indic_engine = TranslationEngine(TRANSLATION_INDIC_INDIC_MODEL_DIR)
-translation_indic_en_engine = TranslationEngine(TRANSLATION_INDIC_EN_MODEL_DIR)
-tts_engine = PiperTTSEngine(PIPER_VOICES_DIR) if TTS_ENGINE == "piper" else TTSEngine(TTS_MODEL_DIR)
+translation_engine = TranslationEngine(
+    TRANSLATION_MODEL_DIR, model_id=TRANSLATION_MODEL_ID,
+    estimated_model_size_gb=TRANSLATION_MODEL_ESTIMATED_SIZE_GB,
+)
+translation_indic_engine = TranslationEngine(
+    TRANSLATION_INDIC_INDIC_MODEL_DIR, model_id=TRANSLATION_INDIC_INDIC_MODEL_ID,
+    estimated_model_size_gb=TRANSLATION_INDIC_INDIC_MODEL_ESTIMATED_SIZE_GB,
+)
+translation_indic_en_engine = TranslationEngine(
+    TRANSLATION_INDIC_EN_MODEL_DIR, model_id=TRANSLATION_INDIC_EN_MODEL_ID,
+    estimated_model_size_gb=TRANSLATION_INDIC_EN_MODEL_ESTIMATED_SIZE_GB,
+)
+tts_engine = (
+    PiperTTSEngine(
+        PIPER_VOICES_DIR, model_id=TTS_MODEL_ID,
+        estimated_model_size_gb=TTS_MODEL_ESTIMATED_SIZE_GB,
+    )
+    if TTS_ENGINE == TTS_PIPER_ENGINE
+    else TTSEngine(
+        TTS_MODEL_DIR, model_id=TTS_MODEL_ID,
+        estimated_model_size_gb=TTS_MODEL_ESTIMATED_SIZE_GB,
+    )
+)
 logger.info("TTS engine: %s", TTS_ENGINE)
-logger.info("Translation model size: %s", TRANSLATION_MODEL_SIZE)
 logger.info("Indic ASR decoding: %s", INDIC_ASR_DECODING)
 logger.info("%s version %s build %s", APP_NAME, APP_VERSION, APP_BUILD)
 
@@ -137,7 +177,7 @@ def load_models_on_startup() -> None:
         ("translation (en-indic)", translation_engine),
         ("translation (indic-indic)", translation_indic_engine),
         ("translation (indic-en)", translation_indic_en_engine),
-        ("Indic ASR refinement", indic_asr_engine),
+        ("Indic ASR refinement", indic_asr_engine if INDIC_ASR_ENABLED else None),
         ("TTS", tts_engine),
     ):
         if engine is None:
@@ -174,7 +214,7 @@ def unload_models_on_shutdown() -> None:
         ("translation (en-indic)", translation_engine),
         ("translation (indic-indic)", translation_indic_engine),
         ("translation (indic-en)", translation_indic_en_engine),
-        ("Indic ASR refinement", indic_asr_engine),
+        ("Indic ASR refinement", indic_asr_engine if INDIC_ASR_ENABLED else None),
         ("TTS", tts_engine),
     ):
         if engine is None:
@@ -216,46 +256,6 @@ def _language_labels() -> dict:
     return {lang.code: lang.label for lang in LANGUAGES}
 
 
-def _public_user(row) -> dict:
-    """Never expose password_hash (even hashed) to API clients."""
-    data = dict(row)
-    data.pop("password_hash", None)
-    return data
-
-
-# --------------------------------------------------------------------------
-# Auth
-# --------------------------------------------------------------------------
-
-@app.get("/login", response_class=HTMLResponse)
-def login_page(request: Request):
-    if is_logged_in(request):
-        return RedirectResponse(url="/dashboard", status_code=303)
-    return templates.TemplateResponse(request, "login.html", {**_app_metadata(), "error": None})
-
-
-@app.post("/login")
-def login_submit(request: Request, username: str = Form(...), password: str = Form(...)):
-    client_host = request.client.host if request.client else "unknown"
-    user = authenticate(username, password)
-    if user is not None:
-        request.session[SESSION_USER_KEY] = user["username"]
-        request.session[SESSION_ROLE_KEY] = user["role"]
-        logger.info("Login succeeded for user '%s' (role=%s) from %s", username, user["role"], client_host)
-        return RedirectResponse(url="/dashboard", status_code=303)
-    logger.warning("Login failed for user '%s' from %s", username, client_host)
-    return templates.TemplateResponse(
-        request, "login.html", {**_app_metadata(), "error": "Invalid username or password"}, status_code=401
-    )
-
-
-@app.get("/logout")
-def logout(request: Request):
-    logger.info("User '%s' logged out", request.session.get(SESSION_USER_KEY))
-    request.session.clear()
-    return RedirectResponse(url="/login", status_code=303)
-
-
 # --------------------------------------------------------------------------
 # Pages
 # --------------------------------------------------------------------------
@@ -289,15 +289,6 @@ def history_page(request: Request):
         request, "history.html",
         {**_nav_context(request), "languages": LANGUAGES, "languages_by_code": _language_labels()},
     )
-
-
-@app.get("/users", response_class=HTMLResponse)
-def users_page(request: Request):
-    redirect = require_role_page(request, ROLE_ADMIN)
-    if redirect:
-        return redirect
-    users = [_public_user(row) for row in db.list_users()]
-    return templates.TemplateResponse(request, "users.html", {**_nav_context(request), "users": users, "roles": ROLES})
 
 
 @app.get("/about", response_class=HTMLResponse)
@@ -349,12 +340,24 @@ class CreateAudioJobsRequest(BaseModel):
 class TranslateTextRequest(BaseModel):
     text: str = ""
     text_path: str | None = None
-    source_lang: str
+    source_lang: str | None = None
     target_lang: str
 
 
 class CreateTextJobRequest(TranslateTextRequest):
     pass
+
+
+def _resolve_text_source_language(text: str, source_lang: str | None) -> tuple[str, float | None]:
+    valid_codes = set(LANGUAGES_BY_CODE)
+    if source_lang:
+        if source_lang not in valid_codes:
+            raise HTTPException(status_code=400, detail="Unknown source language.")
+        return source_lang, None
+    try:
+        return detect_text_language(text, valid_codes)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/api/jobs")
@@ -380,12 +383,17 @@ def create_jobs(request: Request, payload: CreateJobsRequest):
         video_path = Path(raw_path)
         if not video_path.is_absolute():
             raise HTTPException(status_code=400, detail=f"'{raw_path}' must be an absolute path.")
-        suffix = video_path.suffix.lower()
-        if suffix not in ALLOWED_VIDEO_EXTENSIONS:
-            raise HTTPException(status_code=400, detail=f"Unsupported file type '{suffix}' for '{raw_path}'.")
         if not video_path.is_file():
             raise HTTPException(status_code=400, detail=f"File not found: '{raw_path}'.")
         video_path = video_path.resolve()
+        try:
+            media = probe_media(video_path)
+        except MediaProbeError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        if not media.has_audio:
+            raise HTTPException(status_code=400, detail="Input media does not contain an audio stream.")
+        if not media.has_video:
+            raise HTTPException(status_code=400, detail="Audio-only input must be submitted through audio translation.")
 
         job = job_manager.create(
             source_lang=payload.source_lang,
@@ -425,12 +433,15 @@ def create_audio_jobs(request: Request, payload: CreateAudioJobsRequest):
         audio_path = Path(raw_path)
         if not audio_path.is_absolute():
             raise HTTPException(status_code=400, detail=f"'{raw_path}' must be an absolute path.")
-        suffix = audio_path.suffix.lower()
-        if suffix not in ALLOWED_AUDIO_EXTENSIONS:
-            raise HTTPException(status_code=400, detail=f"Unsupported file type '{suffix}' for '{raw_path}'.")
         if not audio_path.is_file():
             raise HTTPException(status_code=400, detail=f"File not found: '{raw_path}'.")
         audio_path = audio_path.resolve()
+        try:
+            media = probe_media(audio_path)
+        except MediaProbeError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        if not media.has_audio:
+            raise HTTPException(status_code=400, detail="Input media does not contain an audio stream.")
         job = job_manager.create(
             source_lang=payload.source_lang, target_lang=payload.target_lang,
             filename=audio_path.name, source_path=str(audio_path), username=user["username"],
@@ -463,19 +474,24 @@ def translate_text_request(request: Request, payload: TranslateTextRequest):
             raise HTTPException(status_code=400, detail="TXT files must be UTF-8 encoded.") from exc
     if not text:
         raise HTTPException(status_code=400, detail="Text is required.")
+    resolved_source_lang, detected_confidence = _resolve_text_source_language(text, payload.source_lang)
     valid_codes = {lang.code for lang in LANGUAGES}
-    if payload.source_lang not in valid_codes:
-        raise HTTPException(status_code=400, detail="Unknown source language.")
     if payload.target_lang not in valid_codes:
         raise HTTPException(status_code=400, detail="Unknown target language.")
     try:
         translated_text = translate_text(
-            text, payload.source_lang, payload.target_lang,
+            text, resolved_source_lang, payload.target_lang,
             translation_engine, translation_indic_engine, translation_indic_en_engine,
         )
     except (RuntimeError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return {"translated_text": translated_text}
+    response = {"translated_text": translated_text}
+    if detected_confidence is not None:
+        response.update({
+            "detected_source_lang": resolved_source_lang,
+            "detected_source_lang_prob": detected_confidence,
+        })
+    return response
 
 
 @app.post("/api/text/jobs")
@@ -494,18 +510,34 @@ def create_text_job(request: Request, payload: CreateTextJobRequest):
     if not text and text_path is None:
         raise HTTPException(status_code=400, detail="Text is required.")
     valid_codes = {lang.code for lang in LANGUAGES}
-    if payload.source_lang not in valid_codes:
-        raise HTTPException(status_code=400, detail="Unknown source language.")
     if payload.target_lang not in valid_codes:
         raise HTTPException(status_code=400, detail="Unknown target language.")
 
+    detection_text = text
+    if payload.source_lang is None and text_path is not None:
+        try:
+            detection_text = text_path.read_text(encoding="utf-8").strip()
+        except UnicodeDecodeError as exc:
+            raise HTTPException(status_code=400, detail="TXT files must be UTF-8 encoded.") from exc
+        if not detection_text:
+            raise HTTPException(status_code=400, detail="Text is required.")
+    resolved_source_lang, detected_confidence = _resolve_text_source_language(
+        detection_text, payload.source_lang
+    )
+
     job = job_manager.create(
-        source_lang=payload.source_lang,
+        source_lang=resolved_source_lang,
         target_lang=payload.target_lang,
         filename=text_path.name if text_path else "typed-text.txt",
         source_path=str(text_path) if text_path else "",
         username=user["username"],
     )
+    if detected_confidence is not None:
+        job_manager.update(
+            job.id,
+            detected_source_lang=resolved_source_lang,
+            detected_source_lang_prob=detected_confidence,
+        )
     if text_path is None:
         input_path = OUTPUTS_DIR / "typed-text" / job.id / "input.txt"
         input_path.parent.mkdir(parents=True, exist_ok=True)
@@ -514,10 +546,16 @@ def create_text_job(request: Request, payload: CreateTextJobRequest):
         text_path = input_path
     job_manager.update(job.id, message="Queued for processing.")
     job_manager.submit_text(
-        run_text_pipeline, job.id, str(text_path), payload.source_lang, payload.target_lang,
+        run_text_pipeline, job.id, str(text_path), resolved_source_lang, payload.target_lang,
         job_manager, translation_engine, translation_indic_engine, translation_indic_en_engine,
     )
-    return {"job_id": job.id}
+    response = {"job_id": job.id}
+    if detected_confidence is not None:
+        response.update({
+            "detected_source_lang": resolved_source_lang,
+            "detected_source_lang_prob": detected_confidence,
+        })
+    return response
 
 
 @app.post("/api/jobs/{job_id}/retry")
@@ -543,7 +581,11 @@ def retry_job(request: Request, job_id: str):
             job_manager, translation_engine, translation_indic_engine, translation_indic_en_engine,
         )
     else:
-        pipeline = run_audio_pipeline if source_path.suffix.lower() in ALLOWED_AUDIO_EXTENSIONS else run_pipeline
+        try:
+            media = probe_media(source_path)
+        except MediaProbeError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        pipeline = run_pipeline if media.has_video else run_audio_pipeline
         job_manager.submit(
             pipeline, job.id, str(source_path), job.source_lang, job.target_lang, job_manager, asr_engine,
             translation_engine, translation_indic_engine, translation_indic_en_engine, tts_engine,
@@ -622,6 +664,21 @@ def get_output(request: Request, job_id: str):
     return FileResponse(job.output_path, media_type="video/mp4", filename=f"dubbed_{job.filename}.mp4")
 
 
+@app.get("/media/artifact/{job_id}/{artifact_name}")
+def get_job_artifact(request: Request, job_id: str, artifact_name: str):
+    require_api_auth(request)
+    if artifact_name not in {"raw_transcript.json", "transcript.json", "translation.json"}:
+        raise HTTPException(status_code=404, detail="Artifact not available")
+    job = job_manager.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    artifact_path = OUTPUTS_DIR / Path(job.filename).stem / job_id / artifact_name
+    if not artifact_path.is_file():
+        logger.warning("Artifact requested but not available for job %s: %s", job_id, artifact_name)
+        raise HTTPException(status_code=404, detail="Artifact not available")
+    return FileResponse(artifact_path, media_type="application/json", filename=artifact_name)
+
+
 @app.websocket("/ws/{job_id}")
 async def job_status_ws(websocket: WebSocket, job_id: str):
     if not is_logged_in(websocket):
@@ -651,72 +708,3 @@ async def job_status_ws(websocket: WebSocket, job_id: str):
     finally:
         if websocket.application_state != WebSocketState.DISCONNECTED:
             await websocket.close()
-
-
-# --------------------------------------------------------------------------
-# User administration API (admin only)
-# --------------------------------------------------------------------------
-
-def _ensure_not_last_admin(user_row, demoting: bool = False, deactivating: bool = False, deleting: bool = False) -> None:
-    if user_row["role"] != ROLE_ADMIN:
-        return
-    if not (demoting or deactivating or deleting):
-        return
-    if db.count_admins(exclude_id=user_row["id"]) == 0:
-        raise HTTPException(status_code=400, detail="Cannot remove the last remaining admin account.")
-
-
-@app.get("/api/users")
-def api_list_users(request: Request):
-    require_api_role(request, ROLE_ADMIN)
-    return {"items": [_public_user(row) for row in db.list_users()]}
-
-
-@app.post("/api/users")
-def api_create_user(request: Request, username: str = Form(...), password: str = Form(...), role: str = Form(...)):
-    require_api_role(request, ROLE_ADMIN)
-    username = username.strip()
-    if not username or not password:
-        raise HTTPException(status_code=400, detail="Username and password are required.")
-    if role not in ROLES:
-        raise HTTPException(status_code=400, detail="Invalid role.")
-    if db.get_user_by_username(username) is not None:
-        raise HTTPException(status_code=409, detail=f"User '{username}' already exists.")
-    user = db.create_user(username, password, role)
-    logger.info("User '%s' (role=%s) created by admin '%s'", username, role, request.session.get(SESSION_USER_KEY))
-    return _public_user(user)
-
-
-@app.put("/api/users/{user_id}")
-def api_update_user(
-    request: Request,
-    user_id: int,
-    role: str | None = Form(None),
-    is_active: bool | None = Form(None),
-    password: str | None = Form(None),
-):
-    require_api_role(request, ROLE_ADMIN)
-    row = db.get_user_by_id(user_id)
-    if row is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    if role is not None and role not in ROLES:
-        raise HTTPException(status_code=400, detail="Invalid role.")
-    _ensure_not_last_admin(row, demoting=(role is not None and role != ROLE_ADMIN), deactivating=(is_active is False))
-    db.update_user(user_id, role=role, is_active=is_active, password=password or None)
-    logger.info("User '%s' updated by admin '%s'", row["username"], request.session.get(SESSION_USER_KEY))
-    return _public_user(db.get_user_by_id(user_id))
-
-
-@app.delete("/api/users/{user_id}")
-def api_delete_user(request: Request, user_id: int):
-    actor = require_api_role(request, ROLE_ADMIN)
-    row = db.get_user_by_id(user_id)
-    if row is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    if row["username"] == actor["username"]:
-        raise HTTPException(status_code=400, detail="You cannot delete your own account while logged in.")
-    _ensure_not_last_admin(row, deleting=True)
-    db.delete_user(user_id)
-    logger.info("User '%s' deleted by admin '%s'", row["username"], actor["username"])
-    return {"ok": True}
-

@@ -128,6 +128,9 @@ textarea:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
 
 .sidebar-footer { border-top: 1px solid var(--border); padding-top: 0.9rem; margin-top: 0.5rem; }
 
+.profile-menu { position: relative; }
+.profile-menu summary { list-style: none; cursor: pointer; }
+.profile-menu summary::-webkit-details-marker { display: none; }
 .user-chip { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.6rem; }
 .user-avatar {
   width: 34px; height: 34px; border-radius: 50%;
@@ -135,8 +138,11 @@ textarea:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
   color: #0b0e1a; font-weight: 700; display: flex; align-items: center; justify-content: center;
 }
 .user-name { font-size: 0.85rem; font-weight: 600; }
-.logout-link { font-size: 0.8rem; text-decoration: none; color: var(--muted); }
-.logout-link:hover { color: var(--error); }
+.profile-menu-panel { position: absolute; left: 0; right: 0; bottom: calc(100% + 0.5rem); z-index: 5; padding: 0.65rem; border: 1px solid var(--border); border-radius: 0.65rem; background: var(--surface); box-shadow: 0 12px 28px rgba(17, 24, 39, 0.14); }
+.profile-menu-title { padding: 0.25rem 0.45rem 0.45rem; color: var(--muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.profile-menu-link { display: block; padding: 0.45rem; color: var(--text); font-size: 0.82rem; text-decoration: none; border-radius: 0.4rem; }
+.profile-menu-link:hover { background: rgba(17, 24, 39, 0.05); }
+.profile-menu-logout { color: var(--error); }
 
 .main-content { flex: 1 1 auto; min-width: 0; width: 100%; max-width: 1180px; min-height: 100vh; min-height: 100dvh; padding: var(--space-6) clamp(1rem, 3vw, 2.75rem); }
 .main-content-wide { max-width: none; }

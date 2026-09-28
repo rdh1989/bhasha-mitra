@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -39,8 +40,9 @@ class MultimediaTranslationTests(unittest.TestCase):
             (root / "notes.txt").touch()
             audio_names = {entry["name"] for entry in list_directory(directory, "audio")["entries"]}
             video_names = {entry["name"] for entry in list_directory(directory, "video")["entries"]}
-        self.assertEqual(audio_names, {f"audio{suffix.upper()}" for suffix in ALLOWED_AUDIO_EXTENSIONS})
-        self.assertEqual(video_names, {"video.mp4"})
+        expected_media = {f"audio{suffix.upper()}" for suffix in ALLOWED_AUDIO_EXTENSIONS} | {"video.mp4", "notes.txt"}
+        self.assertEqual(audio_names, expected_media)
+        self.assertEqual(video_names, expected_media)
 
     def test_audio_pipeline_sets_wav_output(self):
         jobs = FakeJobs()
@@ -58,8 +60,49 @@ class MultimediaTranslationTests(unittest.TestCase):
                     SimpleNamespace(transcribe=lambda *_args, **_kwargs: transcript),
                     object(), object(), object(), object(),
                 )
+            work_dir = Path(directory) / "input" / "job"
+            raw_payload = json.loads((work_dir / "raw_transcript.json").read_text(encoding="utf-8"))
+            transcript_payload = json.loads((work_dir / "transcript.json").read_text(encoding="utf-8"))
+            translation_payload = json.loads((work_dir / "translation.json").read_text(encoding="utf-8"))
+        self.assertEqual(raw_payload["segment_format"], "raw-v1")
+        self.assertEqual(raw_payload["segments"][0]["text"], "hello")
+        self.assertEqual(transcript_payload["segment_format"], "quality-v4")
+        self.assertEqual(transcript_payload["segments"][0]["text"], "hello")
+        self.assertEqual(translation_payload["segment_format"], "quality-v4")
+        self.assertEqual(translation_payload["segments"][0]["text"], "translated")
         self.assertEqual(jobs.updates[-1]["output_path"], str(output))
         self.assertTrue(jobs.updates[-1]["output_path"].endswith("dubbed_audio.wav"))
+
+    def test_audio_pipeline_failed_asr_writes_no_transcript_artifacts(self):
+        jobs = FakeJobs()
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "input.mp3"
+            source.touch()
+            asr = SimpleNamespace(transcribe=lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("ASR failed")))
+            with patch("app.pipeline.OUTPUTS_DIR", Path(directory)), \
+                 patch("app.pipeline.extract_audio"), \
+                 patch("app.pipeline._fail_job") as fail_job:
+                run_audio_pipeline("job", str(source), "en", "hi", jobs, asr, object(), object(), object(), object())
+            work_dir = Path(directory) / "input" / "job"
+            self.assertFalse((work_dir / "raw_transcript.json").exists())
+            self.assertFalse((work_dir / "transcript.json").exists())
+            self.assertFalse((work_dir / "translation.json").exists())
+            fail_job.assert_called_once()
+
+    def test_audio_artifact_endpoint_serves_transcript_json(self):
+        from app import main
+
+        request = SimpleNamespace(session={"user": "operator", "role": "operator"})
+        job = SimpleNamespace(filename="input.mp3")
+        with tempfile.TemporaryDirectory() as directory:
+            artifact = Path(directory) / "input" / "job" / "transcript.json"
+            artifact.parent.mkdir(parents=True)
+            artifact.write_text("{}", encoding="utf-8")
+            manager = SimpleNamespace(get=lambda _job_id: job)
+            with patch.object(main, "OUTPUTS_DIR", Path(directory)), patch.object(main, "job_manager", manager):
+                response = main.get_job_artifact(request, "job", "transcript.json")
+            self.assertEqual(response.media_type, "application/json")
+            self.assertEqual(Path(response.path), artifact)
 
     def test_audio_job_creation_and_text_validation(self):
         from app import main
@@ -73,7 +116,8 @@ class MultimediaTranslationTests(unittest.TestCase):
                 update=lambda *_args, **_kwargs: None,
                 submit=lambda *_args, **_kwargs: None,
             )
-            with patch.object(main, "job_manager", fake_manager):
+            with patch.object(main, "job_manager", fake_manager), \
+                 patch.object(main, "probe_media", return_value=SimpleNamespace(has_audio=True, has_video=False)):
                 response = main.create_audio_jobs(request, main.CreateAudioJobsRequest(
                     audio_paths=[str(source)], source_lang="en", target_lang="hi"
                 ))
@@ -116,6 +160,73 @@ class MultimediaTranslationTests(unittest.TestCase):
                 main.translate_text_request(request, main.TranslateTextRequest(
                     text_path=str(root / "source.csv"), source_lang="en", target_lang="hi"
                 ))
+
+    def test_text_translation_auto_detects_english_and_indic(self):
+        from app import main
+
+        request = SimpleNamespace(session={"user": "operator", "role": "operator"})
+        with patch.object(main, "translate_text", return_value="translated") as translate:
+            english = main.translate_text_request(request, main.TranslateTextRequest(
+                text="This is a clear English sentence.", target_lang="hi"
+            ))
+            hindi = main.translate_text_request(request, main.TranslateTextRequest(
+                text="यह हिंदी भाषा में लिखा हुआ एक स्पष्ट वाक्य है।", target_lang="mr"
+            ))
+        self.assertEqual(english["detected_source_lang"], "en")
+        self.assertGreater(english["detected_source_lang_prob"], 0.8)
+        self.assertEqual(hindi["detected_source_lang"], "hi")
+        self.assertEqual(translate.call_args_list[0].args[1], "en")
+        self.assertEqual(translate.call_args_list[1].args[1], "hi")
+
+    def test_text_translation_manual_source_override_skips_detection(self):
+        from app import main
+
+        request = SimpleNamespace(session={"user": "operator", "role": "operator"})
+        with patch.object(main, "detect_text_language", side_effect=AssertionError("detector called")), \
+             patch.object(main, "translate_text", return_value="translated") as translate:
+            response = main.translate_text_request(request, main.TranslateTextRequest(
+                text="This is English text.", source_lang="mr", target_lang="hi"
+            ))
+        self.assertEqual(response, {"translated_text": "translated"})
+        self.assertEqual(translate.call_args.args[1], "mr")
+
+    def test_text_translation_detection_rejects_unknown_and_low_confidence(self):
+        from app import main
+        from fastapi import HTTPException
+
+        with self.assertRaises(HTTPException) as unknown:
+            main._resolve_text_source_language("text", "xx")
+        self.assertEqual(unknown.exception.status_code, 400)
+        with patch.object(main, "detect_text_language", side_effect=ValueError("ambiguous")):
+            with self.assertRaises(HTTPException) as low_confidence:
+                main._resolve_text_source_language("text", None)
+        self.assertEqual(low_confidence.exception.status_code, 400)
+        self.assertEqual(low_confidence.exception.detail, "ambiguous")
+
+    def test_queued_text_job_persists_detected_source_language(self):
+        from app import main
+
+        request = SimpleNamespace(session={"user": "operator", "role": "operator"})
+        created = []
+        updates = []
+        submitted = []
+        job = SimpleNamespace(id="detected-text-job")
+        manager = SimpleNamespace(
+            create=lambda **kwargs: (created.append(kwargs), job)[1],
+            update=lambda *_args, **kwargs: updates.append(kwargs),
+            submit_text=lambda function, *args: submitted.append((function, args)),
+        )
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.object(main, "OUTPUTS_DIR", Path(directory)), \
+             patch.object(main, "job_manager", manager):
+            response = main.create_text_job(request, main.CreateTextJobRequest(
+                text="This is a clear English sentence.", target_lang="hi"
+            ))
+        self.assertEqual(response["job_id"], "detected-text-job")
+        self.assertEqual(created[0]["source_lang"], "en")
+        self.assertTrue(any(item.get("detected_source_lang") == "en" for item in updates))
+        self.assertTrue(any(item.get("detected_source_lang_prob", 0) > 0.8 for item in updates))
+        self.assertEqual(submitted[0][1][2], "en")
 
     def test_text_job_persists_typed_input_and_submits_to_text_slot(self):
         from app import main
@@ -263,6 +374,7 @@ class MultimediaTranslationTests(unittest.TestCase):
         )
         with patch.object(main.db, "get_job_row", return_value=row), \
              patch.object(Path, "is_file", return_value=True), \
+               patch.object(main, "probe_media", return_value=SimpleNamespace(has_audio=True, has_video=False)), \
              patch.object(main, "job_manager", fake_manager):
             main.retry_job(request, "audio-job")
         self.assertEqual(submitted, [main.run_audio_pipeline])

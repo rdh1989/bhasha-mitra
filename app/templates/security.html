@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Account Security - {{ app_name }}{% endblock %}
+{% block content %}
+<header class="page-header"><div><h1>Account Security</h1><p class="muted">Configure local password recovery for your account.</p></div></header>
+<section class="card">
+<h2>Recovery questions</h2>
+{% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}{% if success %}<p class="success" role="status">{{ success }}</p>{% endif %}
+{% if user.recovery_configured %}<p class="muted">Recovery questions are configured. Saving this form replaces them.</p>{% else %}<p class="muted">Recovery is not configured for this account.</p>{% endif %}
+<form method="post" action="/account/security/recovery" class="job-form">
+<label>Current password<input type="password" name="current_password" required autocomplete="current-password" /></label>
+{% for index in range(1, 4) %}<label>Recovery question {{ index }}<select name="question_{{ index }}" required><option value="" selected disabled>Select a security question</option>{% for question in recovery_questions %}<option value="{{ question.id }}">{{ question.text }}</option>{% endfor %}</select></label><label>Recovery answer {{ index }}<input type="password" name="answer_{{ index }}" required autocomplete="off" /></label>{% endfor %}
+<button type="submit">Save recovery questions</button>
+</form></section>
+{% endblock %}

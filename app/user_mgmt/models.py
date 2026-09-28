@@ -1,0 +1,5 @@
+from __future__ import annotations
+
+RECOVERY_QUESTION_COUNT = 3
+RECOVERY_TTL_SECONDS = 600
+RECOVERY_MAX_ATTEMPTS = 5

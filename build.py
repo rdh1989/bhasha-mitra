@@ -20,8 +20,8 @@ the final release):
 
     releases/
     └── DDMMYYYY/
-        ├── BhashMitra/
-        │   ├── BhashMitra.exe
+        ├── BhashaMitra/
+        │   ├── BhashaMitra.exe
         │   └── ...
         ├── RELEASE_NOTES.md
         └── BUILD_METADATA.json
@@ -30,8 +30,8 @@ Example for 18 September 2026:
 
     releases/
     └── 18092026/
-        ├── BhashMitra/
-        │   └── BhashMitra.exe
+        ├── BhashaMitra/
+        │   └── BhashaMitra.exe
         ├── RELEASE_NOTES.md
         └── BUILD_METADATA.json
 
@@ -42,16 +42,17 @@ the build succeeds and BhashMitra.exe has been verified. If the build fails,
 _build/ is kept so the failure can be investigated.
 
 The large runtime asset directories are intentionally NOT bundled by
-PyInstaller:
+PyInstaller. Runtime folders are created beside the packaged application;
+model assets must be supplied separately:
 
+    config/
     models/
     data/
-    outputs/
+    output/
     logs/
-    uploads/
+    cache/
 
-These directories must be copied or kept alongside the built application
-according to the path-resolution behavior defined in app/config.py.
+These directories are siblings of the BhashaMitra executable directory.
 
 Packaging Strategy
 ------------------
@@ -122,7 +123,7 @@ from app.config import APP_NAME, APP_VERSION
 
 ROOT = Path(__file__).resolve().parent
 
-PACKAGE_NAME = "BhashMitra"
+PACKAGE_NAME = "BhashaMitra"
 
 SEP = ";" if sys.platform == "win32" else ":"
 
@@ -151,6 +152,15 @@ BUILD_DIR = RELEASES_DIR / "_build"
 # PyInstaller writes its --onedir output directly here, producing
 # releases/DDMMYYYY/BhashMitra/ instead of releases/DDMMYYYY/dist/BhashMitra/.
 DIST_DIR = RELEASES_DIR
+
+RUNTIME_DIRECTORIES = (
+    "config",
+    "models",
+    "data",
+    "output",
+    "logs",
+    "cache",
+)
 
 
 # =============================================================================
@@ -317,6 +327,17 @@ def _build_metadata_runtime_hook(build_value: str) -> Path:
     return hook_path
 
 
+def _copy_ffmpeg_runtime() -> None:
+    """Copy the complete configured third-party FFmpeg tree beside the EXE."""
+    source = ROOT / "models" / "third_party" / "ffmpeg"
+    destination = RELEASES_DIR / "models" / "third_party" / "ffmpeg"
+    if not source.is_dir():
+        raise FileNotFoundError(f"Missing development FFmpeg runtime: {source}")
+    if destination.exists():
+        return
+    shutil.copytree(source, destination)
+
+
 def _write_build_metadata() -> Path:
     """Write BUILD_METADATA.json describing this release."""
 
@@ -368,14 +389,15 @@ def _write_release_notes() -> Path:
         "\n"
         "## Runtime Assets\n"
         "\n"
-        "These directories remain outside the PyInstaller bundle and must be\n"
-        "copied or kept alongside the built application:\n"
+        "These directories remain outside the PyInstaller bundle and beside\n"
+        "the application. Supply model assets under models/:\n"
         "\n"
+        "- config/\n"
         "- models/\n"
         "- data/\n"
-        "- outputs/\n"
+        "- output/\n"
         "- logs/\n"
-        "- uploads/\n"
+        "- cache/\n"
     )
 
     notes_path = RELEASES_DIR / "RELEASE_NOTES.md"
@@ -405,6 +427,7 @@ def main() -> None:
     # Ensure the release directory and temporary build workspace exist.
     RELEASES_DIR.mkdir(parents=True, exist_ok=True)
     BUILD_DIR.mkdir(parents=True, exist_ok=True)
+    _copy_ffmpeg_runtime()
 
     # Generate the build metadata runtime hook.
     runtime_hook = _build_metadata_runtime_hook(BUILD_VALUE)
@@ -463,6 +486,9 @@ def main() -> None:
 
         "--add-data",
         f"{ROOT / 'app' / '_stubs'}{SEP}app/_stubs",
+
+        "--add-data",
+        f"{ROOT / 'config_defaults'}{SEP}config_defaults",
     ]
 
     # ---------------------------------------------------------------------
@@ -539,14 +565,11 @@ def main() -> None:
     print(f"Notes       : {notes_path}")
     print()
     print(
-        "Before running the packaged application, ensure these folders "
-        "are available according to app/config.py:"
+        "Before running the packaged application, supply model assets under "
+        "models and keep these sibling folders available:"
     )
-    print("    models/")
-    print("    data/")
-    print("    outputs/")
-    print("    logs/")
-    print("    uploads/")
+    for name in RUNTIME_DIRECTORIES:
+        print(f"    {name}/")
     print("=" * 60)
 
 

@@ -22,6 +22,7 @@ transformers==4.46.1
 accelerate==1.14.0
 sentencepiece==0.2.2
 IndicTransToolkit==1.1.1
+langdetect==1.0.9
 
 # Speech / TTS (Piper is the current default engine)
 piper-tts==1.7.0

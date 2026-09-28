@@ -103,7 +103,7 @@
 <div id="audio-panel" role="tabpanel" aria-labelledby="audio-tab" data-translation-panel="audio" hidden>
 <section class="card job-card">
   <div class="job-card-header"><div class="job-card-icon" aria-hidden="true">Audio</div><div><h2>Translate audio</h2><p class="job-card-subtitle">Create a dubbed audio track from a local audio file.</p></div></div>
-  <p class="hint">Supported: MP3, WAV, AAC, M4A, FLAC, WMA, OGG</p>
+  <p class="hint">Audio and video formats supported by the bundled FFmpeg runtime.</p>
   <form id="audio-form" class="job-form">
     <input type="hidden" id="audio_paths" name="audio_paths" />
     <div class="file-selection" aria-labelledby="audio-selection-label">
@@ -139,7 +139,7 @@
       </div>
     </div>
     <div class="language-grid">
-      <label for="text_source_lang"><span class="field-label">Source language <span class="required-mark" aria-hidden="true">*</span></span><select id="text_source_lang" required><option value="" selected disabled>Select source language</option>{% for lang in languages %}<option value="{{ lang.code }}">{{ lang.label }}</option>{% endfor %}</select></label>
+      <label for="text_source_lang"><span class="field-label">Source language (optional)</span><select id="text_source_lang"><option value="" selected>Auto-detect source language</option>{% for lang in languages %}<option value="{{ lang.code }}">{{ lang.label }}</option>{% endfor %}</select></label>
       <label for="text_target_lang"><span class="field-label">Target language <span class="required-mark" aria-hidden="true">*</span></span><select id="text_target_lang" required><option value="" selected disabled>Select target language</option>{% for lang in languages %}<option value="{{ lang.code }}">{{ lang.label }}</option>{% endfor %}</select></label>
     </div>
     <button type="submit" id="text-start-btn">Translate text</button>

@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Sign up - {{ app_name }}</title><link rel="icon" href="/static/logo.png" type="image/png" /><link rel="stylesheet" href="/static/style.css" /></head>
+<body class="centered"><main class="login-layout"><form class="card login-card" method="post" action="/signup">
+<img src="/static/logo.png" alt="{{ app_name }}" class="login-logo" /><h1>Create account</h1><p class="muted">Create a local Bhasha Mitra user account.</p>
+{% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+<label>Username<input type="text" name="username" required autocomplete="username" /></label>
+<label>Password<input type="password" name="password" required autocomplete="new-password" /></label>
+<label>Confirm password<input type="password" name="confirm_password" required autocomplete="new-password" /></label>
+{% for index in range(1, 4) %}<label>Recovery question {{ index }}<select name="question_{{ index }}" required><option value="" selected disabled>Select a security question</option>{% for question in recovery_questions %}<option value="{{ question.id }}">{{ question.text }}</option>{% endfor %}</select></label><label>Recovery answer {{ index }}<input type="password" name="answer_{{ index }}" required autocomplete="off" /></label>{% endfor %}
+<button type="submit">Create account</button><p class="muted"><a href="/login">Back to sign in</a></p>
+</form></main></body></html>

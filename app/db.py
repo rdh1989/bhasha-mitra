@@ -16,6 +16,7 @@ import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from hmac import compare_digest
+from pathlib import Path
 
 from app.config import DB_PATH, DEFAULT_ADMIN_PASSWORD, DEFAULT_ADMIN_USERNAME
 
@@ -83,6 +84,18 @@ def init_db() -> None:
                     password_hash TEXT NOT NULL,
                     role TEXT NOT NULL CHECK(role IN ('admin','operator','user')),
                     is_active INTEGER NOT NULL DEFAULT 1,
+                    recovery_question_1 TEXT,
+                    recovery_answer_hash_1 TEXT,
+                    recovery_question_2 TEXT,
+                    recovery_answer_hash_2 TEXT,
+                    recovery_question_3 TEXT,
+                    recovery_answer_hash_3 TEXT,
+                    recovery_configured INTEGER NOT NULL DEFAULT 0,
+                    recovery_reset_token_hash TEXT,
+                    recovery_reset_expires_at TEXT,
+                    recovery_reset_used_at TEXT,
+                    recovery_attempts INTEGER NOT NULL DEFAULT 0,
+                    recovery_locked_until TEXT,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                 );
@@ -126,6 +139,23 @@ def init_db() -> None:
             ):
                 if column not in existing_columns:
                     conn.execute(f"ALTER TABLE jobs ADD COLUMN {column} {ddl_type}")
+            existing_user_columns = {row["name"] for row in conn.execute("PRAGMA table_info(users)")}
+            for column, ddl_type in (
+                ("recovery_question_1", "TEXT"),
+                ("recovery_answer_hash_1", "TEXT"),
+                ("recovery_question_2", "TEXT"),
+                ("recovery_answer_hash_2", "TEXT"),
+                ("recovery_question_3", "TEXT"),
+                ("recovery_answer_hash_3", "TEXT"),
+                ("recovery_configured", "INTEGER NOT NULL DEFAULT 0"),
+                ("recovery_reset_token_hash", "TEXT"),
+                ("recovery_reset_expires_at", "TEXT"),
+                ("recovery_reset_used_at", "TEXT"),
+                ("recovery_attempts", "INTEGER NOT NULL DEFAULT 0"),
+                ("recovery_locked_until", "TEXT"),
+            ):
+                if column not in existing_user_columns:
+                    conn.execute(f"ALTER TABLE users ADD COLUMN {column} {ddl_type}")
             existing = conn.execute("SELECT COUNT(*) AS c FROM users").fetchone()["c"]
             if existing == 0:
                 conn.execute(
@@ -252,6 +282,36 @@ def fail_interrupted_jobs() -> int:
     if rows:
         logger.warning("Marked %d interrupted job(s) as failed after application restart", len(rows))
     return len(rows)
+
+
+def migrate_job_paths(old_root: Path, new_root: Path) -> int:
+    """Rewrite persisted paths rooted in the previous outputs directory."""
+    old_root = Path(old_root).resolve()
+    new_root = Path(new_root).resolve()
+    updates = []
+    with get_connection() as conn:
+        rows = conn.execute("SELECT id, source_path, output_path FROM jobs").fetchall()
+        for row in rows:
+            changed = {}
+            for column in ("source_path", "output_path"):
+                value = row[column]
+                if not value:
+                    continue
+                try:
+                    relative = Path(value).resolve().relative_to(old_root)
+                except ValueError:
+                    continue
+                changed[column] = str(new_root / relative)
+            if changed:
+                updates.append((changed.get("source_path", row["source_path"]),
+                                changed.get("output_path", row["output_path"]), row["id"]))
+        conn.executemany(
+            "UPDATE jobs SET source_path = ?, output_path = ? WHERE id = ?",
+            updates,
+        )
+    if updates:
+        logger.info("Updated legacy output-root paths for %d persisted job(s)", len(updates))
+    return len(updates)
 
 
 def update_job_row(job_id: str, **fields) -> None:

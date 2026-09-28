@@ -13,3 +13,5 @@ diagnostics/
 tests/
 build/
 releases/*
+config/*
+config_defaults/*
